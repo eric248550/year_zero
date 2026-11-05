@@ -4,6 +4,7 @@ export * from "./tick";
 export * from "./metrics";
 export * from "./invariants";
 export * from "./replay";
+export * from "./immediate";
 export * from "./batch";
 export { validateAction, applyAction } from "./systems/agents";
 export { currentResearchTarget, developmentCost } from "./systems/progress";

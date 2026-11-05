@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, lt, lte } from "drizzle-orm";
 import {
   PlayerActionSchema,
   Rng,
@@ -13,6 +13,7 @@ import {
 import { checkEligibility, currentYear, population } from "@genesis/narrative";
 import {
   TickContext,
+  applyImmediate,
   computeMetrics,
   createWorld,
   hashState,
@@ -23,7 +24,7 @@ import {
   type TickMetrics,
 } from "@genesis/simulation";
 import { nowIso, type Db } from "../client";
-import { decisions, historyEvents, runContent, runs, settings, snapshots, tickMetrics } from "../schema";
+import { decisions, historyEvents, immediateActions, runContent, runs, settings, snapshots, tickMetrics } from "../schema";
 import { currentPublishedBundle } from "./content";
 
 export const SNAPSHOT_INTERVAL = 10;
@@ -297,6 +298,34 @@ export function queueAction(db: Db, id: string, raw: unknown): PlayerAction[] {
   return queue;
 }
 
+export interface PlayerActionResult {
+  events: HistoricalEvent[];
+  state: WorldState;
+}
+
+/**
+ * Apply a player action right now, between ticks (join, choose, continue
+ * after death...). The action is logged so replays reproduce it exactly.
+ */
+export function applyPlayerAction(db: Db, id: string, raw: unknown): PlayerActionResult {
+  const row = getRunRow(db, id);
+  if (row.status !== "active") throw new ConflictError("Archived runs are read-only");
+  const head = row.headState as WorldState;
+  const r = applyImmediate(head, raw);
+  if (r.rejected || !r.action) throw new ConflictError(r.rejected ?? "Action rejected");
+  db.transaction((tx) => {
+    const t = tx as unknown as Db;
+    t.insert(immediateActions).values({ runId: id, tick: head.tick, action: r.action, createdAt: nowIso() }).run();
+    insertHistory(t, id, r.events);
+    t.update(runs).set({ headState: r.state, headHash: hashState(r.state), updatedAt: nowIso() }).where(eq(runs.id, id)).run();
+  });
+  return { events: r.events, state: r.state };
+}
+
+export function listImmediateActions(db: Db, id: string) {
+  return db.select().from(immediateActions).where(eq(immediateActions.runId, id)).orderBy(asc(immediateActions.id)).all();
+}
+
 export function clearQueuedActions(db: Db, id: string): void {
   db.update(runs).set({ queuedActions: [] }).where(eq(runs.id, id)).run();
 }
@@ -350,7 +379,17 @@ function decisionLookup(db: Db, id: string): (tick: number) => TickDecisions | u
   return (tick) => map.get(tick);
 }
 
-/** Rebuild the exact world state at any past tick from the nearest snapshot + logged decisions. */
+function immediateLookup(db: Db, id: string): (tick: number) => unknown[] {
+  const map = new Map<number, unknown[]>();
+  for (const r of listImmediateActions(db, id)) map.set(r.tick, [...(map.get(r.tick) ?? []), r.action]);
+  return (tick) => map.get(tick) ?? [];
+}
+
+/**
+ * Rebuild the exact world state at any past tick from the nearest snapshot +
+ * logged decisions. A past tick is shown as it was when that tick ended; the
+ * current tick also includes player actions taken since.
+ */
 export function reconstructState(db: Db, id: string, tick: number) {
   const row = getRunRow(db, id);
   if (tick < 0 || tick > row.currentTick) throw new RangeError(`Tick must be between 0 and ${row.currentTick}`);
@@ -358,7 +397,14 @@ export function reconstructState(db: Db, id: string, tick: number) {
   if (!snap) throw new NotFoundError(`Snapshot at or before tick ${tick}`);
   const from = WorldStateSchema.parse(snap.state) as WorldState;
   const content = getRunContent(db, id);
-  const { state } = replay({ from, toTick: tick, events: content.events, decisions: decisionLookup(db, id) });
+  const { state } = replay({
+    from,
+    toTick: tick,
+    events: content.events,
+    decisions: decisionLookup(db, id),
+    immediates: immediateLookup(db, id),
+    includeFinalImmediates: tick === row.currentTick,
+  });
   return { state, fromSnapshot: snap.tick, replayedTicks: tick - snap.tick };
 }
 
@@ -380,13 +426,14 @@ export function verifyReplay(db: Db, id: string): ReplayVerification {
   if (!first) throw new NotFoundError("Initial snapshot");
   const content = getRunContent(db, id);
   const expectedByTick = new Map(snaps.map((s) => [s.tick, s.hash]));
-  expectedByTick.set(row.currentTick, row.headHash);
   const checks: ReplayVerification["checks"] = [];
-  replay({
+  const { state: final } = replay({
     from: WorldStateSchema.parse(first.state) as WorldState,
     toTick: row.currentTick,
     events: content.events,
     decisions: decisionLookup(db, id),
+    immediates: immediateLookup(db, id),
+    includeFinalImmediates: true,
     onTick: (r) => {
       const expected = expectedByTick.get(r.state.tick);
       if (expected) {
@@ -395,6 +442,8 @@ export function verifyReplay(db: Db, id: string): ReplayVerification {
       }
     },
   });
+  const headActual = hashState(final);
+  checks.push({ tick: row.currentTick, expected: row.headHash, actual: headActual, ok: headActual === row.headHash });
   return { ok: checks.every((c) => c.ok), checks, durationMs: Math.round(performance.now() - started) };
 }
 
@@ -439,7 +488,11 @@ export function forkRun(db: Db, id: string, tick: number, options: ForkOptions =
       updatedAt: at,
     }).run();
     t.insert(runContent).values({ runId: newId, bundle: content }).run();
+    // History ids are allocated sequentially, so anything at or past the forked state's
+    // counter happened later (e.g. player actions taken during the fork tick).
+    const known = (hid: string) => Number(hid.slice(1)) < forked.counters.nextHistory;
     for (const h of t.select().from(historyEvents).where(and(eq(historyEvents.runId, id), lte(historyEvents.tick, tick))).all()) {
+      if (!known(h.id)) continue;
       t.insert(historyEvents).values({ ...h, runId: newId }).run();
     }
     for (const m of t.select().from(tickMetrics).where(and(eq(tickMetrics.runId, id), lte(tickMetrics.tick, tick))).all()) {
@@ -447,6 +500,10 @@ export function forkRun(db: Db, id: string, tick: number, options: ForkOptions =
     }
     for (const d of t.select().from(decisions).where(and(eq(decisions.runId, id), lte(decisions.tick, tick))).all()) {
       t.insert(decisions).values({ runId: newId, tick: d.tick, actions: d.actions, rejected: d.rejected, choiceOverrides: d.choiceOverrides, createdAt: at }).run();
+    }
+    // Player actions taken before the fork tick are already part of the forked state's past.
+    for (const a of t.select().from(immediateActions).where(and(eq(immediateActions.runId, id), lt(immediateActions.tick, tick))).orderBy(asc(immediateActions.id)).all()) {
+      t.insert(immediateActions).values({ runId: newId, tick: a.tick, action: a.action, createdAt: at }).run();
     }
     // Snapshots before the fork point are shared truth; the fork point gets the (possibly modified) state.
     for (const s of t.select().from(snapshots).where(and(eq(snapshots.runId, id), lte(snapshots.tick, tick))).all()) {

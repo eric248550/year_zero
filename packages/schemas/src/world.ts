@@ -81,6 +81,8 @@ export const PlayerSchema = z.object({
   characterId: z.string().nullable(),
   /** Every character this player has controlled, oldest first. */
   lineage: z.array(z.string()),
+  /** Prologue steps completed (first session only). */
+  prologue: z.array(z.string()).optional(),
 });
 export type Player = z.infer<typeof PlayerSchema>;
 

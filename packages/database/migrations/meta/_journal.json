@@ -15,6 +15,20 @@
       "when": 1793829039538,
       "tag": "0001_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793921571359,
+      "tag": "0002_immediate_actions",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793921571779,
+      "tag": "0003_immediate_immutability",
+      "breakpoints": true
     }
   ]
 }

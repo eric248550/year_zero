@@ -2,6 +2,8 @@ import {
   ADULT_AGE,
   LOCATION_BY_ID,
   PROFESSIONS,
+  PROLOGUE_ORDER,
+  PROLOGUE_STEPS,
   type Character,
   type InviteKind,
   type OriginId,
@@ -16,7 +18,7 @@ import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -156,6 +158,7 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
   switch (a.type) {
     case "JOIN_WORLD": {
       if (player && player.status !== "left") return `${player.name} is already in this world`;
+      if (a.trait && !(TRAITS as readonly string[]).includes(a.trait)) return `Unknown trait ${a.trait}`;
       if (a.inviteCode) {
         const r = inviteForJoin(st, a.inviteCode);
         return "error" in r ? r.error! : null;
@@ -215,6 +218,16 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
     }
     case "LEAVE_WORLD":
       return player && player.status !== "left" ? null : "You are not in this world";
+    case "PROLOGUE": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      const done = player!.prologue ?? [];
+      if (done.includes(a.step)) return "You have already made this choice";
+      const expected = PROLOGUE_ORDER.find((s) => !done.includes(s));
+      if (expected !== a.step) return expected ? `Finish "${expected}" first` : "The prologue is over";
+      if (!(PROLOGUE_STEPS[a.step] as readonly string[]).includes(a.choiceId)) return `Unknown choice ${a.choiceId}`;
+      return null;
+    }
   }
 }
 
@@ -226,7 +239,7 @@ function ensurePlayers(st: WorldState): Record<string, Player> {
   return (st.players ??= {});
 }
 
-function newPerson(ctx: TickContext, home: Settlement, age: number, profession: Character["profession"], givenName: string | undefined, story: string): Character {
+function newPerson(ctx: TickContext, home: Settlement, age: number, profession: Character["profession"], givenName: string | undefined, story: string, trait?: string): Character {
   const st = ctx.state;
   const name = randomName(ctx.rng);
   const c: Character = {
@@ -239,7 +252,7 @@ function newPerson(ctx: TickContext, home: Settlement, age: number, profession: 
     profession: age >= ADULT_AGE ? profession ?? ctx.rng.pick(PROFESSIONS) : null,
     homeId: home.id,
     parentIds: [],
-    traits: [ctx.rng.pick(TRAITS)],
+    traits: [trait ?? ctx.rng.pick(TRAITS)],
     lifeEvents: [{ tick: st.tick, text: story, historyId: null }],
   };
   st.characters.push(c);
@@ -306,6 +319,7 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       const info = availableOrigins(st).find((o) => o.id === origin)!;
       if (origin === "haven_deep" && a.characterId) {
         const c = getCharacter(st, a.characterId)!;
+        if (a.givenName?.trim()) c.givenName = a.givenName.trim();
         takeControl(ctx, a.playerId, a.playerName, c, `${fullName(c)} steps forward`, `${fullName(c)} of Haven Deep is now played by ${a.playerName}.`);
         return;
       }
@@ -314,19 +328,19 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       let title: string;
       switch (origin) {
         case "haven_deep":
-          c = newPerson(ctx, home, ctx.rng.int(18, 40), a.profession ?? null, a.givenName, "Lived in the lower levels of Haven Deep");
+          c = newPerson(ctx, home, ctx.rng.int(18, 40), a.profession ?? null, a.givenName, "Lived in the lower levels of Haven Deep", a.trait);
           title = `${fullName(c)} climbs up from the lower levels of Haven Deep`;
           break;
         case "surface_born":
-          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 20), a.profession ?? null, a.givenName, `Grew up under the open sky in ${home.name}`);
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 20), a.profession ?? null, a.givenName, `Grew up under the open sky in ${home.name}`, a.trait);
           title = `${fullName(c)} comes of age in ${home.name}`;
           break;
         case "wanderer":
-          c = newPerson(ctx, home, ctx.rng.int(18, 45), a.profession ?? null, a.givenName, "Survived alone in the wastes");
+          c = newPerson(ctx, home, ctx.rng.int(18, 45), a.profession ?? null, a.givenName, "Survived alone in the wastes", a.trait);
           title = `A wanderer, ${fullName(c)}, arrives at ${home.name}`;
           break;
         case "vault12":
-          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 30), a.profession ?? null, a.givenName, `Walked out of Vault 12 (${LOCATION_BY_ID["vault_12"]?.name ?? "Vault 12"})`);
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 30), a.profession ?? null, a.givenName, `Walked out of Vault 12 (${LOCATION_BY_ID["vault_12"]?.name ?? "Vault 12"})`, a.trait);
           title = `${fullName(c)}, a survivor of Vault 12, reaches ${home.name}`;
           break;
       }
@@ -418,6 +432,9 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       };
       return;
     }
+    case "PROLOGUE":
+      prologue(ctx, a);
+      return;
     case "LEAVE_WORLD": {
       const player = getPlayer(st, a.playerId)!;
       const c = player.characterId ? getCharacter(st, player.characterId) : undefined;
@@ -426,6 +443,93 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       player.characterId = null;
       for (const [code, inv] of Object.entries(st.invites ?? {})) {
         if (inv.fromPlayerId === a.playerId || inv.acceptedBy === a.playerId) delete st.invites![code];
+      }
+      return;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Prologue                                                            */
+/* ------------------------------------------------------------------ */
+
+/** Someone at home to share the moment with: prefer the profession, never yourself or `avoid`. */
+function companionFor(ctx: TickContext, me: Character, profession: Character["profession"] | null, avoid: readonly string[]): Character | undefined {
+  const st = ctx.state;
+  const pool = residents(st, me.homeId).filter((c) => c.id !== me.id && !avoid.includes(c.id) && characterAge(st, c) >= ADULT_AGE);
+  const preferred = profession ? pool.filter((c) => c.profession === profession) : [];
+  const from = preferred.length ? preferred : pool;
+  return from.length ? ctx.rng.pick(from) : undefined;
+}
+
+function bond(st: WorldState, a: Character, b: Character, delta: number) {
+  const key = relationshipKey(a.id, b.id);
+  const before = st.relationships[key] ?? 0;
+  st.relationships[key] = Math.max(-100, Math.min(100, before + delta));
+  return { path: `relationships.${key}`, label: `${fullName(a)} ↔ ${fullName(b)}`, before, after: st.relationships[key]! };
+}
+
+/** The three first-session choices. Small, immediate, and they introduce one person who will be back. */
+function prologue(ctx: TickContext, a: PlayerActionOf<"PROLOGUE">): void {
+  const st = ctx.state;
+  const player = getPlayer(st, a.playerId)!;
+  const me = playerCharacter(st, a.playerId)!;
+  const home = getSettlement(st, me.homeId)!;
+  // Each prologue scene introduces someone new.
+  const met = Object.keys(st.relationships).filter((k) => k.split("|").includes(me.id)).map((k) => k.split("|").find((id) => id !== me.id)!);
+  player.prologue = [...(player.prologue ?? []), a.step];
+
+  const record = (title: string, text: string, other: Character | undefined, changes: ReturnType<typeof bond>[], minor = true) => {
+    const e = ctx.system({
+      category: "social",
+      importance: minor ? "minor" : "notable",
+      title,
+      text,
+      scope: "character",
+      settlementIds: [home.id],
+      characterIds: other ? [me.id, other.id] : [me.id],
+      changes,
+      summary: `Prologue choice: ${a.step} → ${a.choiceId}`,
+    });
+    me.lifeEvents.push({ tick: st.tick, text: title, historyId: e.id });
+    if (other) other.lifeEvents.push({ tick: st.tick, text: title, historyId: e.id });
+  };
+
+  switch (a.step) {
+    case "first_climb": {
+      const surface = a.choiceId === "surface";
+      const partner = companionFor(ctx, me, surface ? "Scout" : "Engineer", met);
+      const changes = partner ? [bond(st, me, partner, 20)] : [];
+      if (!surface) {
+        const before = home.resources.water;
+        home.resources.water = Math.round((before + 2) * 100) / 100;
+        changes.push({ path: `settlements.${home.id}.resources.water`, label: `${home.name} water`, before, after: home.resources.water });
+      }
+      record(
+        surface ? `${fullName(me)} climbs into daylight${partner ? ` with ${fullName(partner)}` : ""}` : `${fullName(me)} helps patch the reclaimers${partner ? ` with ${fullName(partner)}` : ""}`,
+        surface ? "The first sight of the open sky in a lifetime: ash-grey, enormous, and quiet." : "A cracked filter housing, two pairs of hands, and a little more clean water for everyone.",
+        partner,
+        changes,
+      );
+      return;
+    }
+    case "water": {
+      const share = a.choiceId === "share";
+      const asker = companionFor(ctx, me, null, met);
+      record(
+        share ? `${fullName(me)} shares water${asker ? ` with ${fullName(asker)}` : ""}` : `${fullName(me)} refuses${asker ? ` ${fullName(asker)}` : ""} a drink`,
+        share ? "Half a cup, given without being asked twice. It will be remembered." : "Rations are rations. It will be remembered too.",
+        asker,
+        asker ? [bond(st, me, asker, share ? 25 : -15)] : [],
+      );
+      return;
+    }
+    case "static": {
+      const tell = a.choiceId === "tell";
+      if (tell) {
+        record(`${fullName(me)} speaks of a voice in the static`, "Most laugh it off. A few lean closer and ask what it said.", undefined, [], false);
+      } else {
+        me.lifeEvents.push({ tick: st.tick, text: "Heard a voice in the radio static and told no one", historyId: null });
       }
       return;
     }

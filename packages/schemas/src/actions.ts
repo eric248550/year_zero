@@ -15,7 +15,16 @@ export const ORIGIN_IDS = ["haven_deep", "surface_born", "wanderer", "vault12"] 
 export type OriginId = (typeof ORIGIN_IDS)[number];
 
 /** Actions taken by individual players (as opposed to developer/council directives). */
-export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD"] as const;
+export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE"] as const;
+
+/** The first-session prologue: three small choices whose results show at once. Order matters. */
+export const PROLOGUE_STEPS = {
+  first_climb: ["surface", "repair"],
+  water: ["share", "refuse"],
+  static: ["tell", "keep"],
+} as const;
+export type PrologueStep = keyof typeof PROLOGUE_STEPS;
+export const PROLOGUE_ORDER = Object.keys(PROLOGUE_STEPS) as PrologueStep[];
 
 export const PlayerActionSchema = z.discriminatedUnion("type", [
   z.object({
@@ -30,6 +39,8 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
     settlementId: z.string().optional(),
     givenName: z.string().min(1).max(30).optional(),
     profession: z.enum(PROFESSIONS).optional(),
+    /** Personality trait (validated against the simulation's trait list). */
+    trait: z.string().max(24).optional(),
     inviteCode: InviteCodeSchema.optional(),
   }).strict(),
   z.object({ type: z.literal("CHOOSE"), playerId: PlayerIdSchema, decisionId: z.string(), choiceId: z.string() }).strict(),
@@ -49,6 +60,12 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
     characterId: z.string().optional(),
   }).strict(),
   z.object({ type: z.literal("LEAVE_WORLD"), playerId: PlayerIdSchema }).strict(),
+  z.object({
+    type: z.literal("PROLOGUE"),
+    playerId: PlayerIdSchema,
+    step: z.enum(["first_climb", "water", "static"]),
+    choiceId: z.string(),
+  }).strict(),
   z.object({ type: z.literal("SET_POLICY"), policy: PolicySchema }).strict(),
   z.object({ type: z.literal("SET_RESEARCH_FOCUS"), tech: z.string().nullable() }).strict(),
   z.object({
