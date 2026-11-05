@@ -1,0 +1,19 @@
+import { LOCATION_BY_ID, SECRET_BY_ID, TECH_BY_ID, type Effect } from "@genesis/schemas";
+
+/** Human-readable summary of a typed effect (for the Studio and reviews). */
+export function describeEffect(e: Effect): string {
+  const where = (t: "settlement" | "all_settlements") => (t === "all_settlements" ? "every settlement" : "target settlement");
+  switch (e.type) {
+    case "ADJUST_RESOURCE": return `${e.amount >= 0 ? "+" : ""}${e.amount} ${e.resource} (${where(e.target)})`;
+    case "CHANGE_SETTLEMENT_STAT": return `${e.delta >= 0 ? "+" : ""}${e.delta} ${e.stat} (${where(e.target)})`;
+    case "CHANGE_RELATIONSHIP": return `Relationship ${e.a} ↔ ${e.b} ${e.delta >= 0 ? "+" : ""}${e.delta}`;
+    case "DISCOVER_LOCATION": return `Discover ${LOCATION_BY_ID[e.location]?.name ?? e.location}`;
+    case "UNLOCK_TECHNOLOGY": return `Unlock ${TECH_BY_ID[e.tech]?.name ?? e.tech} (prerequisites enforced)`;
+    case "ADD_WORLD_FLAG": return `Set flag ${e.flag} = ${String(e.value)}`;
+    case "REMOVE_WORLD_FLAG": return `Remove flag ${e.flag}`;
+    case "CREATE_HISTORICAL_EVENT": return `Append history: “${e.title}” (${e.importance})`;
+    case "REVEAL_SECRET": return `Reveal secret: ${SECRET_BY_ID[e.secret]?.title ?? e.secret}`;
+    case "ADD_LIFE_EVENT": return `Life event for ${e.role}: “${e.text}”`;
+    case "CHARACTER_DEATH": return `${e.role} dies (${e.cause})`;
+  }
+}

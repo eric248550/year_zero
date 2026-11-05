@@ -1,0 +1,96 @@
+{
+  "id": "settlement-dispute",
+  "title": "Dispute Over Stores",
+  "scope": "settlement",
+  "category": "social",
+  "description": "Two residents clash over how communal stores are shared.",
+  "preconditions": [
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 10
+    },
+    {
+      "type": "technology",
+      "tech": "civic_charter",
+      "has": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "a",
+      "minAge": 16
+    },
+    {
+      "id": "b",
+      "minAge": 16
+    },
+    {
+      "id": "mediator",
+      "minAge": 30,
+      "optional": true
+    }
+  ],
+  "effects": [
+    {
+      "type": "CHANGE_RELATIONSHIP",
+      "a": "a",
+      "b": "b",
+      "delta": -20
+    }
+  ],
+  "choices": [
+    {
+      "id": "mediate",
+      "label": "Mediate",
+      "tags": [
+        "community"
+      ],
+      "requiresRoles": [
+        "mediator"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "a",
+          "b": "b",
+          "delta": 15
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "mediator",
+          "text": "Settled a bitter dispute over the stores"
+        }
+      ],
+      "outcome": "{{mediator}} brokers an uneasy peace."
+    },
+    {
+      "id": "punish",
+      "label": "Punish both",
+      "tags": [
+        "cautious",
+        "secrecy"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -4
+        }
+      ],
+      "outcome": "Both lose a week of rations. Nobody is happy."
+    }
+  ],
+  "priority": 3,
+  "chance": 0.12,
+  "cooldown": 5,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "A quarrel in {{settlement}}",
+    "text": "{{a}} accused {{b}} of taking more than their share from the stores."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

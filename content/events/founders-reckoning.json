@@ -1,0 +1,101 @@
+{
+  "id": "founders-reckoning",
+  "title": "Reckoning with the Founders",
+  "scope": "world",
+  "category": "social",
+  "description": "With Halcyon public, someone notices that Haven Deep's founders appear in the project's staff lists.",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "society.truth_known",
+      "present": true
+    },
+    {
+      "type": "secret",
+      "secret": "founders_pact",
+      "revealed": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "accuser",
+      "minAge": 20
+    },
+    {
+      "id": "defender",
+      "minAge": 40
+    }
+  ],
+  "effects": [
+    {
+      "type": "REVEAL_SECRET",
+      "secret": "founders_pact"
+    }
+  ],
+  "choices": [
+    {
+      "id": "forgive",
+      "label": "Honour the founders anyway",
+      "tags": [
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "accuser",
+          "b": "defender",
+          "delta": -10
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 3,
+          "target": "all_settlements"
+        }
+      ],
+      "outcome": "They built the vault that saved us, says {{defender}}. Most agree."
+    },
+    {
+      "id": "repudiate",
+      "label": "Tear down the founders' memorial",
+      "tags": [
+        "bold",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "accuser",
+          "b": "defender",
+          "delta": -40
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "society.founders_repudiated"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -5,
+          "target": "all_settlements"
+        }
+      ],
+      "outcome": "The memorial plaque in Haven Deep is pried off the wall. {{defender}} never forgives {{accuser}}."
+    }
+  ],
+  "priority": 5,
+  "chance": 0.4,
+  "cooldown": 0,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "the-forgotten-bunker"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "The founders knew",
+    "text": "{{accuser}} held up a staff list from the Halcyon archive. Half the names matched the plaque at the entrance of Haven Deep."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

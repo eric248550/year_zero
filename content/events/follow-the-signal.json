@@ -1,0 +1,109 @@
+{
+  "id": "follow-the-signal",
+  "title": "Follow the Signal",
+  "scope": "settlement",
+  "category": "mystery",
+  "description": "Scouts triangulate the signal and set out toward its source.",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "mystery.signal_heard",
+      "present": true
+    },
+    {
+      "type": "location",
+      "location": "vault_12",
+      "discovered": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "scout",
+      "profession": "Scout",
+      "minAge": 16
+    },
+    {
+      "id": "partner",
+      "minAge": 16,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "go",
+      "label": "Follow the signal",
+      "tags": [
+        "bold",
+        "science"
+      ],
+      "costs": {
+        "food": 6,
+        "water": 6
+      },
+      "effects": [
+        {
+          "type": "DISCOVER_LOCATION",
+          "location": "vault_12"
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "mystery.vault12_found"
+        },
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "scout",
+          "b": "partner",
+          "delta": 20
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "scout",
+          "text": "Found the lost Vault 12"
+        }
+      ],
+      "risk": {
+        "chance": 0.15,
+        "description": "{{scout}} falls into a sinkhole near the vault and is lost.",
+        "effects": [
+          {
+            "type": "CHARACTER_DEATH",
+            "role": "scout",
+            "cause": "fell into a sinkhole near Vault 12"
+          }
+        ]
+      },
+      "outcome": "Three days east, {{scout}} finds a blast door half-buried in a hillside: VAULT 12."
+    },
+    {
+      "id": "wait",
+      "label": "Wait for better equipment",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 3
+        }
+      ],
+      "outcome": "The bearings are logged. The signal keeps repeating."
+    }
+  ],
+  "priority": 5,
+  "chance": 0.3,
+  "cooldown": 8,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "the-forgotten-bunker"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "Following the signal from {{settlement}}",
+    "text": "{{scout}} spread a map across the table and drew three lines. They crossed in the eastern hills, where no vault was supposed to be."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

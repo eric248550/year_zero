@@ -1,0 +1,46 @@
+{
+  "id": "scavenger-cache",
+  "title": "Scavenger Cache",
+  "scope": "settlement",
+  "category": "exploration",
+  "description": "Scouts uncover a sealed pre-collapse supply cache.",
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 1
+    }
+  ],
+  "roles": [
+    {
+      "id": "scout",
+      "profession": "Scout",
+      "minAge": 16
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "materials",
+      "amount": 18
+    },
+    {
+      "type": "ADD_LIFE_EVENT",
+      "role": "scout",
+      "text": "Found a sealed supply cache"
+    }
+  ],
+  "choices": [],
+  "priority": 2,
+  "chance": 0.1,
+  "cooldown": 6,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{scout}} finds a supply cache",
+    "text": "Under a collapsed overpass near {{settlement}}, {{scout}} found a pallet of sealed tool crates."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

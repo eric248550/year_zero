@@ -1,0 +1,109 @@
+{
+  "id": "seed-vault-expedition",
+  "title": "The Seed Vault",
+  "scope": "settlement",
+  "category": "exploration",
+  "description": "Scouts reach the Seed Vault Ruins and attempt to recover viable seed.",
+  "preconditions": [
+    {
+      "type": "location",
+      "location": "seed_vault",
+      "discovered": true
+    },
+    {
+      "type": "flag",
+      "flag": "food.heirloom_seeds",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "scout",
+      "profession": "Scout",
+      "minAge": 16
+    },
+    {
+      "id": "helper",
+      "minAge": 16,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "careful",
+      "label": "Recover seed carefully",
+      "tags": [
+        "cautious",
+        "science"
+      ],
+      "costs": {
+        "food": 6,
+        "materials": 6
+      },
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "food.heirloom_seeds"
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 12
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "scout",
+          "text": "Recovered heirloom seed from the Seed Vault"
+        }
+      ],
+      "outcome": "Packet by packet, {{scout}} brings back seed sealed in 2070."
+    },
+    {
+      "id": "rush",
+      "label": "Grab everything and run",
+      "tags": [
+        "bold",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "food.heirloom_seeds"
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 10
+        }
+      ],
+      "risk": {
+        "chance": 0.25,
+        "description": "The cold-room roof gives way. {{scout}} is crushed.",
+        "effects": [
+          {
+            "type": "CHARACTER_DEATH",
+            "role": "scout",
+            "cause": "crushed in the Seed Vault collapse"
+          }
+        ]
+      },
+      "outcome": "Crates are dragged out of the unstable cold rooms."
+    }
+  ],
+  "priority": 6,
+  "chance": 0.4,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "rebuilding-food-production"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "Into the Seed Vault",
+    "text": "{{scout}} led a team from {{settlement}} into the half-buried cold rooms of the Seed Vault Ruins."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

@@ -1,0 +1,480 @@
+import {
+  ADULT_AGE,
+  LOCATION_BY_ID,
+  PROFESSIONS,
+  type Character,
+  type InviteKind,
+  type OriginId,
+  type PlayerAction,
+  type Player,
+  type Settlement,
+  type WorldState,
+} from "@genesis/schemas";
+import { activeSettlements, characterAge, fullName, getCharacter, getSettlement, relationshipKey, residents } from "@genesis/narrative";
+import type { TickContext } from "../context";
+import { newCharacterId, randomName } from "../world-factory";
+import { TRAITS } from "../names";
+
+type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD">;
+
+export const PLAYERS = {
+  /** Unaccepted invites expire after this many ticks (one real week in the live game). */
+  inviteTtl: 7,
+  /** Relationship strength at which an NPC counts as a close companion. */
+  companionThreshold: 50,
+  /** Wanderers start arriving from the wastes in this year of the world. */
+  wandererTick: 8,
+  /** A surface settlement must have stood this many ticks before people can have grown up there. */
+  surfaceBornTick: 1,
+  /** Age range of a "random rebirth" into an existing child. */
+  rebirthAge: [6, 15] as const,
+  careRelationship: 15,
+} as const;
+
+const HAVEN_ID = "s-haven";
+
+/* ------------------------------------------------------------------ */
+/* Queries                                                             */
+/* ------------------------------------------------------------------ */
+
+export function getPlayer(state: WorldState, playerId: string): Player | undefined {
+  return state.players?.[playerId];
+}
+
+export function playerCharacter(state: WorldState, playerId: string): Character | undefined {
+  const p = getPlayer(state, playerId);
+  if (!p || p.status !== "active" || !p.characterId) return undefined;
+  const c = getCharacter(state, p.characterId);
+  return c && c.deathTick === null ? c : undefined;
+}
+
+/** A character an unaccepted, unexpired invite is holding for someone. */
+export function isReserved(state: WorldState, characterId: string): boolean {
+  return Object.values(state.invites ?? {}).some((i) => i.characterId === characterId && i.acceptedBy === null && i.expiresTick >= state.tick);
+}
+
+function isFree(state: WorldState, c: Character): boolean {
+  return c.deathTick === null && !c.controllerId && !isReserved(state, c.id);
+}
+
+/** How `other` is tied to `self`, if closely enough to continue as them or invite a friend to play them. */
+export function bondKind(state: WorldState, self: Character, other: Character): Exclude<InviteKind, "next_child"> | null {
+  if (other.id === self.id) return null;
+  if (other.parentIds.includes(self.id)) return "child";
+  if (other.caretakerIds?.includes(self.id)) return "ward";
+  if ((state.relationships[relationshipKey(self.id, other.id)] ?? 0) >= PLAYERS.companionThreshold) return "companion";
+  return null;
+}
+
+export interface SuccessionCandidate {
+  characterId: string;
+  kind: Exclude<InviteKind, "next_child">;
+}
+
+/** Characters a player whose character died may continue as: free children, wards and close companions. */
+export function successionCandidates(state: WorldState, playerId: string): SuccessionCandidate[] {
+  const p = getPlayer(state, playerId);
+  const lastId = p?.lineage.at(-1);
+  const last = lastId ? getCharacter(state, lastId) : undefined;
+  if (!p || !last) return [];
+  const out: SuccessionCandidate[] = [];
+  for (const c of state.characters) {
+    if (!isFree(state, c)) continue;
+    const kind = bondKind(state, last, c);
+    if (kind) out.push({ characterId: c.id, kind });
+  }
+  return out;
+}
+
+export interface OriginInfo {
+  id: OriginId;
+  available: boolean;
+  /** Why it is locked, or null when available. */
+  reason: string | null;
+  /** Settlements a character of this origin can start in. */
+  settlementIds: string[];
+}
+
+/** Where new players can come from right now. Year 0 offers only Haven Deep; more open as the world develops. */
+export function availableOrigins(state: WorldState): OriginInfo[] {
+  const active = activeSettlements(state);
+  const haven = getSettlement(state, HAVEN_ID);
+  const surface = active.filter((s) => s.kind === "settlement" && state.tick - s.foundedTick >= PLAYERS.surfaceBornTick);
+  const vault12 = state.flags["mystery.vault12_opened"] === true;
+  const anyActive = active.map((s) => s.id);
+  return [
+    {
+      id: "haven_deep",
+      available: haven?.status === "active",
+      reason: haven?.status === "active" ? null : "Haven Deep has been abandoned",
+      settlementIds: haven?.status === "active" ? [HAVEN_ID] : [],
+    },
+    {
+      id: "surface_born",
+      available: surface.length > 0,
+      reason: surface.length > 0 ? null : "Opens once a surface settlement has stood for a year",
+      settlementIds: surface.map((s) => s.id),
+    },
+    {
+      id: "wanderer",
+      available: state.tick >= PLAYERS.wandererTick && anyActive.length > 0,
+      reason: state.tick >= PLAYERS.wandererTick ? (anyActive.length > 0 ? null : "No settlement left to arrive at") : `Wanderers start arriving in ${state.startYear + PLAYERS.wandererTick}`,
+      settlementIds: state.tick >= PLAYERS.wandererTick ? anyActive : [],
+    },
+    {
+      id: "vault12",
+      available: vault12 && anyActive.length > 0,
+      reason: vault12 ? (anyActive.length > 0 ? null : "No settlement left to arrive at") : "Opens if someone opens Vault 12",
+      settlementIds: vault12 ? anyActive : [],
+    },
+  ];
+}
+
+/* ------------------------------------------------------------------ */
+/* Validation                                                          */
+/* ------------------------------------------------------------------ */
+
+function inviteForJoin(state: WorldState, code: string) {
+  const invite = state.invites?.[code];
+  if (!invite) return { error: "Invite code not found" } as const;
+  if (invite.acceptedBy !== null) return { error: "This invite has already been used" } as const;
+  if (invite.expiresTick < state.tick) return { error: "This invite has expired" } as const;
+  const inviter = playerCharacter(state, invite.fromPlayerId);
+  if (!inviter || inviter.id !== invite.fromCharacterId) return { error: "The person who invited you is no longer alive" } as const;
+  if (invite.characterId) {
+    const c = getCharacter(state, invite.characterId);
+    if (!c || c.deathTick !== null) return { error: "The invited character has died" } as const;
+    if (c.controllerId) return { error: "Someone else is already playing this character" } as const;
+  }
+  return { invite } as const;
+}
+
+export function validatePlayerAction(ctx: TickContext, a: IndividualAction): string | null {
+  const st = ctx.state;
+  const player = getPlayer(st, a.playerId);
+  switch (a.type) {
+    case "JOIN_WORLD": {
+      if (player && player.status !== "left") return `${player.name} is already in this world`;
+      if (a.inviteCode) {
+        const r = inviteForJoin(st, a.inviteCode);
+        return "error" in r ? r.error! : null;
+      }
+      const origin = availableOrigins(st).find((o) => o.id === (a.origin ?? "haven_deep"))!;
+      if (!origin.available) return origin.reason;
+      if (a.settlementId && !origin.settlementIds.includes(a.settlementId)) return `That origin cannot start in ${a.settlementId}`;
+      if (a.characterId) {
+        if (origin.id !== "haven_deep") return "Only Haven Deep residents can be taken over when joining";
+        const c = getCharacter(st, a.characterId);
+        if (!c || c.homeId !== HAVEN_ID) return "That character does not live in Haven Deep";
+        if (!isFree(st, c)) return `${fullName(c)} is not available`;
+        if (characterAge(st, c) < 12) return `${fullName(c)} is too young to take over`;
+      }
+      return null;
+    }
+    case "CHOOSE": {
+      const c = playerCharacter(st, a.playerId);
+      if (!c) return "You have no living character";
+      const pending = (st.pendingDecisions ?? []).find((p) => p.id === a.decisionId);
+      if (!pending) return "That decision is closed or does not exist";
+      if (!pending.participants.includes(c.id)) return `${fullName(c)} is not part of this decision`;
+      return null;
+    }
+    case "CONTINUE_AS": {
+      if (!player || player.status !== "awaiting_succession") return "You can continue only after your character has died";
+      if (a.mode === "character") {
+        if (!a.characterId) return "Choose who to continue as";
+        if (!successionCandidates(st, a.playerId).some((x) => x.characterId === a.characterId)) {
+          return "You can continue only as a free child, ward or close companion of your last character";
+        }
+        return null;
+      }
+      return activeSettlements(st).length > 0 ? null : "No settlement is left to be born into";
+    }
+    case "CARE_FOR": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      const target = getCharacter(st, a.characterId);
+      if (!target || target.deathTick !== null) return "That person is not alive";
+      if (target.id === me.id) return "You cannot care for yourself";
+      if (target.homeId !== me.homeId) return `${fullName(target)} lives elsewhere`;
+      if (target.caretakerIds?.includes(me.id)) return `You already care for ${fullName(target)}`;
+      return null;
+    }
+    case "INVITE": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      if (st.invites?.[a.code]) return "That invite code is already in use";
+      if (a.characterId) {
+        const c = getCharacter(st, a.characterId);
+        if (!c || !isFree(st, c)) return "That character is not available";
+        if (!bondKind(st, me, c)) return `You can invite a friend only as your child, ward or close companion`;
+        return null;
+      }
+      return characterAge(st, me) >= ADULT_AGE ? null : "You are too young to invite someone as your child";
+    }
+    case "LEAVE_WORLD":
+      return player && player.status !== "left" ? null : "You are not in this world";
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Application                                                         */
+/* ------------------------------------------------------------------ */
+
+function ensurePlayers(st: WorldState): Record<string, Player> {
+  return (st.players ??= {});
+}
+
+function newPerson(ctx: TickContext, home: Settlement, age: number, profession: Character["profession"], givenName: string | undefined, story: string): Character {
+  const st = ctx.state;
+  const name = randomName(ctx.rng);
+  const c: Character = {
+    id: newCharacterId(st),
+    givenName: givenName?.trim() || name.givenName,
+    familyName: name.familyName,
+    birthTick: st.tick - age,
+    deathTick: null,
+    causeOfDeath: null,
+    profession: age >= ADULT_AGE ? profession ?? ctx.rng.pick(PROFESSIONS) : null,
+    homeId: home.id,
+    parentIds: [],
+    traits: [ctx.rng.pick(TRAITS)],
+    lifeEvents: [{ tick: st.tick, text: story, historyId: null }],
+  };
+  st.characters.push(c);
+  return c;
+}
+
+function takeControl(ctx: TickContext, playerId: string, playerName: string, c: Character, title: string, text: string): void {
+  const st = ctx.state;
+  const players = ensurePlayers(st);
+  const prev = players[playerId];
+  c.controllerId = playerId;
+  players[playerId] = {
+    id: playerId,
+    name: prev?.name ?? playerName,
+    joinedTick: prev?.joinedTick ?? st.tick,
+    status: "active",
+    characterId: c.id,
+    lineage: [...(prev?.lineage ?? []), c.id],
+  };
+  const e = ctx.system({
+    category: "demographic",
+    importance: "minor",
+    title,
+    text,
+    scope: "character",
+    settlementIds: [c.homeId],
+    characterIds: [c.id],
+    summary: "Player action (logged for replay)",
+  });
+  c.lifeEvents.push({ tick: st.tick, text: title, historyId: e.id });
+}
+
+export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
+  const st = ctx.state;
+  switch (a.type) {
+    case "JOIN_WORLD": {
+      if (a.inviteCode) {
+        const r = inviteForJoin(st, a.inviteCode);
+        if ("error" in r) return;
+        const invite = st.invites![a.inviteCode]!;
+        const inviter = getCharacter(st, invite.fromCharacterId)!;
+        if (invite.characterId) {
+          const c = getCharacter(st, invite.characterId)!;
+          delete st.invites![a.inviteCode];
+          const key = relationshipKey(inviter.id, c.id);
+          st.relationships[key] = Math.min(100, (st.relationships[key] ?? 0) + 10);
+          takeControl(ctx, a.playerId, a.playerName, c, `${fullName(c)} answers ${fullName(inviter)}'s call`, `A new player now lives the life of ${fullName(c)}, invited by ${fullName(inviter)}.`);
+        } else {
+          invite.acceptedBy = a.playerId;
+          const players = ensurePlayers(st);
+          const prev = players[a.playerId];
+          players[a.playerId] = {
+            id: a.playerId,
+            name: prev?.name ?? a.playerName,
+            joinedTick: prev?.joinedTick ?? st.tick,
+            status: "awaiting_birth",
+            characterId: null,
+            lineage: prev?.lineage ?? [],
+          };
+        }
+        return;
+      }
+      const origin = a.origin ?? "haven_deep";
+      const info = availableOrigins(st).find((o) => o.id === origin)!;
+      if (origin === "haven_deep" && a.characterId) {
+        const c = getCharacter(st, a.characterId)!;
+        takeControl(ctx, a.playerId, a.playerName, c, `${fullName(c)} steps forward`, `${fullName(c)} of Haven Deep is now played by ${a.playerName}.`);
+        return;
+      }
+      const home = getSettlement(st, a.settlementId ?? ctx.rng.pick(info.settlementIds))!;
+      let c: Character;
+      let title: string;
+      switch (origin) {
+        case "haven_deep":
+          c = newPerson(ctx, home, ctx.rng.int(18, 40), a.profession ?? null, a.givenName, "Lived in the lower levels of Haven Deep");
+          title = `${fullName(c)} climbs up from the lower levels of Haven Deep`;
+          break;
+        case "surface_born":
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 20), a.profession ?? null, a.givenName, `Grew up under the open sky in ${home.name}`);
+          title = `${fullName(c)} comes of age in ${home.name}`;
+          break;
+        case "wanderer":
+          c = newPerson(ctx, home, ctx.rng.int(18, 45), a.profession ?? null, a.givenName, "Survived alone in the wastes");
+          title = `A wanderer, ${fullName(c)}, arrives at ${home.name}`;
+          break;
+        case "vault12":
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 30), a.profession ?? null, a.givenName, `Walked out of Vault 12 (${LOCATION_BY_ID["vault_12"]?.name ?? "Vault 12"})`);
+          title = `${fullName(c)}, a survivor of Vault 12, reaches ${home.name}`;
+          break;
+      }
+      takeControl(ctx, a.playerId, a.playerName, c, title, `${title}. Played by ${a.playerName}.`);
+      return;
+    }
+    case "CHOOSE": {
+      const c = playerCharacter(st, a.playerId)!;
+      const pending = st.pendingDecisions!.find((p) => p.id === a.decisionId)!;
+      pending.responses[c.id] = a.choiceId;
+      return;
+    }
+    case "CONTINUE_AS": {
+      const player = getPlayer(st, a.playerId)!;
+      const lastId = player.lineage.at(-1);
+      const last = lastId ? getCharacter(st, lastId) : undefined;
+      if (a.mode === "character") {
+        const c = getCharacter(st, a.characterId!)!;
+        const kind = last ? bondKind(st, last, c) : null;
+        const tie = kind === "child" ? "child" : kind === "ward" ? "ward" : "companion";
+        takeControl(ctx, a.playerId, player.name, c, `${fullName(c)} carries on`, `${player.name}'s story continues through ${fullName(c)}${last ? `, ${tie} of ${fullName(last)}` : ""}.`);
+        return;
+      }
+      const [minAge, maxAge] = PLAYERS.rebirthAge;
+      const pool = st.characters.filter((c) => isFree(st, c) && characterAge(st, c) >= minAge && characterAge(st, c) <= maxAge);
+      if (pool.length > 0) {
+        const c = ctx.rng.pick(pool);
+        takeControl(ctx, a.playerId, player.name, c, `A new life: ${fullName(c)}`, `${player.name} is reborn as ${fullName(c)}, a child of ${getSettlement(st, c.homeId)?.name ?? "the wastes"}.`);
+        return;
+      }
+      const home = ctx.rng.pick(activeSettlements(st));
+      const adults = residents(st, home.id).filter((c) => characterAge(st, c) >= 18 && characterAge(st, c) <= 45);
+      const parents = ctx.rng.shuffle(adults).slice(0, 2);
+      const name = randomName(ctx.rng, parents[0]?.familyName);
+      const baby: Character = {
+        id: newCharacterId(st),
+        ...name,
+        birthTick: st.tick,
+        deathTick: null,
+        causeOfDeath: null,
+        profession: null,
+        homeId: home.id,
+        parentIds: parents.map((p) => p.id),
+        traits: [ctx.rng.pick(TRAITS)],
+        lifeEvents: [{ tick: st.tick, text: `Born in ${home.name}`, historyId: null }],
+      };
+      st.characters.push(baby);
+      st.stats.births += 1;
+      ctx.births += 1;
+      for (const p of parents) p.lifeEvents.push({ tick: st.tick, text: `Child ${baby.givenName} born`, historyId: null });
+      takeControl(ctx, a.playerId, player.name, baby, `Birth of ${fullName(baby)}`, `${fullName(baby)} is born in ${home.name}${parents.length ? ` to ${parents.map(fullName).join(" and ")}` : ""}. ${player.name} begins a new life.`);
+      return;
+    }
+    case "CARE_FOR": {
+      const me = playerCharacter(st, a.playerId)!;
+      const target = getCharacter(st, a.characterId)!;
+      target.caretakerIds = [...(target.caretakerIds ?? []), me.id];
+      const key = relationshipKey(me.id, target.id);
+      const before = st.relationships[key] ?? 0;
+      st.relationships[key] = Math.min(100, before + PLAYERS.careRelationship);
+      const adopt = characterAge(st, target) < ADULT_AGE;
+      const e = ctx.system({
+        category: "social",
+        importance: "minor",
+        title: adopt ? `${fullName(me)} takes in ${fullName(target)}` : `${fullName(me)} looks after ${fullName(target)}`,
+        text: adopt ? `${fullName(me)} takes ${fullName(target)} under their roof.` : `${fullName(me)} has begun caring for ${fullName(target)}.`,
+        scope: "character",
+        settlementIds: [me.homeId],
+        characterIds: [me.id, target.id],
+        changes: [{ path: `relationships.${key}`, label: `${fullName(me)} ↔ ${fullName(target)}`, before, after: st.relationships[key]! }],
+        summary: "Player action (logged for replay)",
+      });
+      me.lifeEvents.push({ tick: st.tick, text: e.title, historyId: e.id });
+      target.lifeEvents.push({ tick: st.tick, text: e.title, historyId: e.id });
+      return;
+    }
+    case "INVITE": {
+      const me = playerCharacter(st, a.playerId)!;
+      const target = a.characterId ? getCharacter(st, a.characterId)! : null;
+      (st.invites ??= {})[a.code] = {
+        code: a.code,
+        fromPlayerId: a.playerId,
+        fromCharacterId: me.id,
+        characterId: target?.id ?? null,
+        kind: target ? bondKind(st, me, target)! : "next_child",
+        createdTick: st.tick,
+        expiresTick: st.tick + PLAYERS.inviteTtl,
+        acceptedBy: null,
+      };
+      return;
+    }
+    case "LEAVE_WORLD": {
+      const player = getPlayer(st, a.playerId)!;
+      const c = player.characterId ? getCharacter(st, player.characterId) : undefined;
+      if (c) delete c.controllerId;
+      player.status = "left";
+      player.characterId = null;
+      for (const [code, inv] of Object.entries(st.invites ?? {})) {
+        if (inv.fromPlayerId === a.playerId || inv.acceptedBy === a.playerId) delete st.invites![code];
+      }
+      return;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* End-of-tick bookkeeping                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Runs after every other system. Players whose character died this tick await
+ * succession; invites expire; friends invited as "your next child" are born.
+ * Consumes no randomness.
+ */
+export function playerUpkeep(ctx: TickContext): void {
+  const st = ctx.state;
+  if (!st.players && !st.invites) return;
+
+  for (const p of Object.values(st.players ?? {})) {
+    if (p.status !== "active" || !p.characterId) continue;
+    const c = getCharacter(st, p.characterId);
+    if (c && c.deathTick === null) continue;
+    p.status = "awaiting_succession";
+    p.characterId = null;
+  }
+
+  for (const [code, inv] of Object.entries(st.invites ?? {})) {
+    const inviter = getCharacter(st, inv.fromCharacterId);
+    const inviterGone = !inviter || inviter.deathTick !== null || getPlayer(st, inv.fromPlayerId)?.characterId !== inviter.id;
+    if (inv.acceptedBy === null) {
+      if (inv.expiresTick < st.tick || inviterGone) delete st.invites![code];
+      continue;
+    }
+    // Accepted "next child" invite: wait for a birth to the inviter.
+    const waiting = getPlayer(st, inv.acceptedBy);
+    if (!waiting || waiting.status !== "awaiting_birth") {
+      delete st.invites![code];
+      continue;
+    }
+    const baby = inviter
+      ? st.characters.find((c) => c.birthTick === st.tick && c.deathTick === null && !c.controllerId && c.parentIds.includes(inviter.id))
+      : undefined;
+    if (baby) {
+      delete st.invites![code];
+      takeControl(ctx, waiting.id, waiting.name, baby, `${fullName(baby)} is born`, `${fullName(inviter!)}'s child ${fullName(baby)} is born, played by ${waiting.name}.`);
+    } else if (inviterGone) {
+      delete st.invites![code];
+      waiting.status = "left";
+    }
+  }
+}

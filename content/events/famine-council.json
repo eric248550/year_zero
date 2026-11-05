@@ -1,0 +1,132 @@
+{
+  "id": "famine-council",
+  "title": "The Hungry Year",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "A sustained food shortage forces desperate choices.",
+  "preconditions": [
+    {
+      "type": "shortage",
+      "resource": "food",
+      "active": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "forager",
+      "profession": "Scout",
+      "minAge": 16,
+      "optional": true
+    },
+    {
+      "id": "elder",
+      "minAge": 55,
+      "optional": true
+    }
+  ],
+  "effects": [
+    {
+      "type": "CHANGE_SETTLEMENT_STAT",
+      "stat": "morale",
+      "delta": -8
+    }
+  ],
+  "choices": [
+    {
+      "id": "forage",
+      "label": "Send foragers into the wastes",
+      "tags": [
+        "bold",
+        "growth"
+      ],
+      "requiresRoles": [
+        "forager"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 20
+        }
+      ],
+      "risk": {
+        "chance": 0.25,
+        "description": "{{forager}} does not return from the ash fields.",
+        "effects": [
+          {
+            "type": "CHARACTER_DEATH",
+            "role": "forager",
+            "cause": "lost while foraging during the famine"
+          }
+        ]
+      },
+      "outcome": "{{forager}} leads foragers far past the known ruins."
+    },
+    {
+      "id": "strip",
+      "label": "Strip the materials stores for trade",
+      "tags": [
+        "industry"
+      ],
+      "costs": {
+        "materials": 15
+      },
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 15
+        }
+      ],
+      "outcome": "Tools and scrap are boiled down, bartered, or eaten around."
+    },
+    {
+      "id": "elders_fast",
+      "label": "The elders give up their rations",
+      "tags": [
+        "community"
+      ],
+      "requiresRoles": [
+        "elder"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 5
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "elder",
+          "text": "Gave up rations so the children could eat during the famine"
+        }
+      ],
+      "risk": {
+        "chance": 0.4,
+        "description": "{{elder}} dies before the harvest.",
+        "effects": [
+          {
+            "type": "CHARACTER_DEATH",
+            "role": "elder",
+            "cause": "self-imposed starvation during the famine"
+          }
+        ]
+      },
+      "outcome": "{{elder}} announces that the old will eat last."
+    }
+  ],
+  "priority": 9,
+  "chance": 0.6,
+  "cooldown": 3,
+  "storylineIds": [
+    "rebuilding-food-production"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "The hungry year in {{settlement}}",
+    "text": "Bowls in {{settlement}} came back from the kitchen half-full, then quarter-full."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

@@ -1,0 +1,96 @@
+{
+  "id": "aquifer-rumour",
+  "title": "Rumour of Clean Water",
+  "scope": "settlement",
+  "category": "exploration",
+  "description": "An old municipal map suggests a clean aquifer beneath a drained reservoir.",
+  "preconditions": [
+    {
+      "type": "location",
+      "location": "old_reservoir",
+      "discovered": false
+    },
+    {
+      "type": "resource",
+      "resource": "water",
+      "op": "<",
+      "value": 4,
+      "perCapita": true,
+      "scope": "target"
+    }
+  ],
+  "roles": [
+    {
+      "id": "scout",
+      "profession": "Scout",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "expedition",
+      "label": "Send an expedition",
+      "tags": [
+        "bold",
+        "growth"
+      ],
+      "costs": {
+        "food": 8
+      },
+      "effects": [
+        {
+          "type": "DISCOVER_LOCATION",
+          "location": "old_reservoir"
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "scout",
+          "text": "Found the Old Reservoir's clean aquifer"
+        }
+      ],
+      "risk": {
+        "chance": 0.15,
+        "description": "{{scout}} is caught in a dust storm on the return and never comes home.",
+        "effects": [
+          {
+            "type": "CHARACTER_DEATH",
+            "role": "scout",
+            "cause": "lost in a dust storm returning from the Old Reservoir"
+          }
+        ]
+      },
+      "outcome": "{{scout}} follows the map to the Old Reservoir. Beneath the cracked basin, water runs clear."
+    },
+    {
+      "id": "ignore",
+      "label": "Not worth the risk",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 3
+        }
+      ],
+      "outcome": "The map is filed away in the archive."
+    }
+  ],
+  "priority": 5,
+  "chance": 0.3,
+  "cooldown": 6,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "first-water-crisis"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "A map to clean water",
+    "text": "Sorting salvaged paper, {{scout}} found a municipal water map marking an aquifer under the Old Reservoir."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

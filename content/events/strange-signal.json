@@ -1,0 +1,52 @@
+{
+  "id": "strange-signal",
+  "title": "A Signal in the Static",
+  "scope": "settlement",
+  "category": "mystery",
+  "description": "A repeating, faint transmission is heard on salvaged equipment.",
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 6
+    },
+    {
+      "type": "flag",
+      "flag": "mystery.signal_heard",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "listener",
+      "minAge": 12
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADD_WORLD_FLAG",
+      "flag": "mystery.signal_heard"
+    },
+    {
+      "type": "ADD_LIFE_EVENT",
+      "role": "listener",
+      "text": "First heard the Vault 12 signal"
+    }
+  ],
+  "choices": [],
+  "priority": 4,
+  "chance": 0.12,
+  "cooldown": 0,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "the-forgotten-bunker"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "A signal in the static",
+    "text": "Tinkering with a salvaged receiver, {{listener}} heard it: three short tones, a pause, and a voice too broken to understand. It repeats every nine minutes."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

@@ -1,0 +1,50 @@
+{
+  "id": "elder-teachings",
+  "title": "An Elder's Teachings",
+  "scope": "character",
+  "category": "social",
+  "description": "An elder who remembers the bunker's early years records what they know.",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "elder",
+      "minAge": 60
+    },
+    {
+      "id": "student",
+      "minAge": 12,
+      "maxAge": 30
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "knowledge",
+      "amount": 10
+    },
+    {
+      "type": "CHANGE_RELATIONSHIP",
+      "a": "elder",
+      "b": "student",
+      "delta": 30
+    },
+    {
+      "type": "ADD_LIFE_EVENT",
+      "role": "student",
+      "text": "Apprenticed to an elder"
+    }
+  ],
+  "choices": [],
+  "priority": 2,
+  "chance": 0.12,
+  "cooldown": 8,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{elder}} teaches {{student}}",
+    "text": "Every evening that winter, {{elder}} sat with {{student}} and dictated everything they remembered of the vault manuals."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

@@ -1,0 +1,61 @@
+{
+  "id": "first-surface-harvest",
+  "title": "First Surface Harvest",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "A surface settlement brings in its first real harvest from the open ground.",
+  "preconditions": [
+    {
+      "type": "settlement_kind",
+      "kind": "settlement"
+    },
+    {
+      "type": "flag",
+      "flag": "food.surface_farming",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "farmer",
+      "minAge": 16
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "food",
+      "amount": 25
+    },
+    {
+      "type": "CHANGE_SETTLEMENT_STAT",
+      "stat": "morale",
+      "delta": 10
+    },
+    {
+      "type": "ADD_WORLD_FLAG",
+      "flag": "food.surface_farming"
+    },
+    {
+      "type": "ADD_LIFE_EVENT",
+      "role": "farmer",
+      "text": "Brought in the first surface harvest"
+    }
+  ],
+  "choices": [],
+  "priority": 6,
+  "chance": 0.6,
+  "cooldown": 0,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "rebuilding-food-production"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "The first surface harvest at {{settlement}}",
+    "text": "In {{year}}, {{farmer}} carried the first basket of open-air grain into {{settlement}}. People wept."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

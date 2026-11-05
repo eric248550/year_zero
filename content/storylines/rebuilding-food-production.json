@@ -1,0 +1,18 @@
+{
+  "id": "rebuilding-food-production",
+  "title": "Rebuilding Food Production",
+  "summary": "Bunker grow-rooms can feed a vault, not a civilization. The survivors must learn to farm a damaged surface: recovering seed, fighting blight, and surviving lean years. Success unlocks growth; failure means famine.",
+  "themes": ["agriculture", "risk", "knowledge"],
+  "beats": [
+    { "id": "blight", "title": "Blight", "description": "Monoculture grow-racks are fragile; a single pathogen can wipe out a harvest.", "eventIds": ["grow-room-blight"] },
+    { "id": "first-harvest", "title": "First surface harvest", "description": "A surface settlement brings in its first real harvest.", "eventIds": ["first-surface-harvest"] },
+    { "id": "seeds", "title": "The seed vault", "description": "Scouts find a pre-collapse seed bank; its contents could transform agriculture.", "eventIds": ["seed-vault-expedition", "heirloom-hydroponics"] },
+    { "id": "famine", "title": "The hungry years", "description": "If all else fails, famine forces desperate choices.", "eventIds": ["famine-council"] }
+  ],
+  "possibleOutcomes": [
+    "Heirloom seeds and hydroponics end chronic hunger.",
+    "Surface farms make the settlements self-sufficient and the bunker becomes a museum.",
+    "Recurring famine keeps the population small and fearful."
+  ],
+  "status": "published"
+}

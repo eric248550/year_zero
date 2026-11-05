@@ -1,0 +1,103 @@
+{
+  "id": "halcyon-logs",
+  "title": "The Halcyon Logs",
+  "scope": "settlement",
+  "category": "mystery",
+  "description": "Vault 12's archive contains records of Project Halcyon \u2014 the intervention that began the collapse.",
+  "preconditions": [
+    {
+      "type": "secret",
+      "secret": "vault12_fate",
+      "revealed": true
+    },
+    {
+      "type": "secret",
+      "secret": "project_halcyon",
+      "revealed": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "scientist",
+      "profession": "Scientist",
+      "minAge": 16
+    }
+  ],
+  "effects": [
+    {
+      "type": "REVEAL_SECRET",
+      "secret": "project_halcyon"
+    },
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "knowledge",
+      "amount": 30
+    }
+  ],
+  "choices": [
+    {
+      "id": "share",
+      "label": "Share the truth with everyone",
+      "tags": [
+        "openness",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "society.truth_known"
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "mystery.halcyon_archive"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -8,
+          "target": "all_settlements"
+        }
+      ],
+      "outcome": "{{scientist}} reads the logs aloud in every settlement. The old world did this to itself."
+    },
+    {
+      "id": "conceal",
+      "label": "Keep it among the archivists",
+      "tags": [
+        "secrecy",
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "society.secret_kept"
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "mystery.halcyon_archive"
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "scientist",
+          "text": "Swore to keep the Halcyon logs secret"
+        }
+      ],
+      "outcome": "The archive is locked. Only a few know why the sky went wrong."
+    }
+  ],
+  "priority": 6,
+  "chance": 0.5,
+  "cooldown": 0,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "the-forgotten-bunker"
+  ],
+  "importance": "critical",
+  "narrative": {
+    "headline": "The Halcyon logs",
+    "text": "Among Vault 12's records, {{scientist}} found a sealed drive labelled HALCYON \u2014 MITIGATION REVIEW, 2088."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

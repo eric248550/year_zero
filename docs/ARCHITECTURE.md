@@ -1,0 +1,181 @@
+# Architecture
+
+## Principles
+
+1. **The engine owns the truth.** World state changes only through
+   `stepWorld` (rules) and the typed effect pipeline (narrative). No other code path,
+   and certainly no LLM output, can mutate state.
+2. **Deterministic and reproducible.** A run is fully defined by
+   `(seed, rulesVersion, frozen content bundle, logged developer decisions)`.
+3. **Framework-independent core.** `schemas`, `narrative` and `simulation` are pure
+   TypeScript with no React, Next.js or database dependency, so a future game server
+   can use them unchanged. Persistence is isolated in `database`.
+4. **Observable.** Every historical event records why it happened (precondition
+   trace, roll, priority), what was decided (choice, alternatives, scores, risk
+   roll), what changed (before → after), and what caused it.
+
+## Package dependency graph
+
+```
+schemas  ←  narrative  ←  simulation  ←  database  ←  apps/studio
+                ↑                             ↑
+                └──────────── ai ─────────────┘ (studio uses ai)
+```
+
+`schemas` is the shared kernel: Zod schemas and inferred types, the closed world
+catalog (resources, professions, technologies, locations, secrets, policies), the
+`Rng` (mulberry32) and canonical hashing. The catalog lives here because both the
+narrative validator and the simulation rules must agree on the same vocabulary.
+
+## Time
+
+- `worldTick` (`state.tick`) is the only authoritative time. One tick = one year in
+  this MVP; `year = startYear + tick`.
+- Character age = `tick − birthTick` (frozen at `deathTick`). Never wall-clock.
+- Developer execution time is measured separately (`tick_metrics.exec_ms`).
+- The future server can call `stepWorld` on a schedule; the Studio calls it on demand.
+
+## The tick (`packages/simulation/src/tick.ts`)
+
+`stepWorld(state, { events, actions, choiceOverrides })` is pure: it clones the
+input and returns `{ state, events, acceptedActions, rejectedActions,
+rejectedEvents, metrics }`. Phases:
+
+1. advance clock
+2. developer actions — validated by `validateAction`, then applied (logged)
+3. council agent — founding settlements under crowding, relief caravans
+4. production → consumption (shortages open with a causal history event; stocks never go negative)
+5. wellbeing (morale/health drift)
+6. mortality (age curve × health × medicine; starvation/dehydration deaths link to the shortage event)
+7. births → coming of age (profession by policy mix)
+8. research (prerequisites + min population enforced), development, exploration
+9. narrative phase (storylets)
+10. abandonment, collapse and milestones
+
+The RNG state is stored in `WorldState.rng`, so a snapshot fully captures the random
+stream. Tunable constants live next to each system (`ECONOMY`, `DEMOGRAPHY`).
+
+## Storylets (`packages/narrative`)
+
+Three separate things:
+
+| Concept | Where | Mutable? |
+| --- | --- | --- |
+| Event definition — what *may* happen | `event_definitions` (+ `content/events`) | Versioned; draft → validated → published → archived |
+| Storyline — a group of related possibilities | `storylines` | Editable; beats are not a script |
+| Historical event — what *did* happen | `history_events` | Append-only (DB triggers) |
+
+Each tick, published definitions are sorted by priority. For each one,
+`checkEligibility` evaluates status, max occurrences, cooldown, then for every
+anchor (each active settlement, or the world) the preconditions, whether required
+roles can be filled by distinct **living** characters, and whether at least one
+choice is available (costs affordable, requirements met, required roles fillable).
+An eligible event fires if `rng < chance` (max 3 per tick).
+
+`executeEvent` resolves roles, picks a choice (developer override, else a
+policy-weighted roll over choice tags), then runs everything inside `transact` on a
+deep copy: base effects → choice costs (`spendResources` fails if unaffordable) →
+choice effects → optional risk roll. Any `EffectError` rolls the whole event back
+and records a rejection.
+
+Typed effects: `ADJUST_RESOURCE`, `CHANGE_RELATIONSHIP`, `DISCOVER_LOCATION`,
+`UNLOCK_TECHNOLOGY` (prerequisites enforced), `CHANGE_SETTLEMENT_STAT`,
+`ADD_WORLD_FLAG` / `REMOVE_WORLD_FLAG` (reserved `secret.`/`system.` namespaces
+rejected), `CREATE_HISTORICAL_EVENT` (appends a linked child record — there is no
+edit/delete effect), `REVEAL_SECRET` (the only way a secret becomes known),
+`ADD_LIFE_EVENT`, `CHARACTER_DEATH`. Unknown types are rejected both by validation
+and at runtime.
+
+**Provenance.** `flagOrigins`, `eventMemory.lastHistoryId`, `secrets[].historyId`
+and `settlement.shortageOrigin` map state back to the history event that produced
+it, so satisfied preconditions yield `causeIds`.
+
+## Validation (`validateEventDefinition`)
+
+1. A pre-pass reports unsupported effect types with a clear message.
+2. Zod (strict objects, discriminated unions, ranges).
+3. Rules: unknown technologies/locations/secrets/storylines/roles; scope mismatches
+   (settlement effects or conditions in world-scoped events); contradictory or
+   impossible preconditions (interval analysis per metric, boolean conflicts, tech
+   required while its prerequisite is forbidden, one-shot events requiring
+   themselves); reserved flags; duplicate roles/choices; warnings for unguarded
+   tech unlocks, lethal effects, large swings, pacing, unknown template placeholders.
+
+The same pure validator runs in the browser (live editor feedback) and on the server.
+
+## AI pipeline (`packages/ai`)
+
+```
+prompt → context (World Bible, catalog, JSON Schema, allowed effects)
+       → provider.generate()          (Anthropic or Mock; server-side)
+       → JSON extraction
+       → status forced to "draft", provenance in `source`
+       → Zod + rule validation
+       → developer preview → approve (stored as draft) | reject
+       → validate → publish (separate explicit steps)
+```
+
+`EventDraftProvider` is the replaceable interface. Every attempt is logged in
+`ai_generations` with provider, model, `is_mock`, raw output and outcome. The mock
+is never substituted for a failed model call: errors are surfaced.
+
+## Persistence & replay (`packages/database`)
+
+Tables: `runs` (head state + hash, queued actions, choice overrides), `run_content`
+(frozen bundle), `snapshots` (every 10 ticks + tick 0 + fork points), `history_events`
+(append-only), `decisions` (append-only; accepted actions and overrides per tick),
+`tick_metrics`, `event_definitions` + `event_definition_versions` (append-only),
+`storylines`, `ai_generations`, `settings`.
+
+`stepRun` commits a whole batch atomically. `reconstructState(run, tick)` loads the
+nearest snapshot ≤ tick and replays logged decisions with the frozen content — no
+LLM calls. `verifyReplay` replays the run and compares every snapshot hash and the
+head hash. `forkRun` copies history/metrics/decisions/snapshots up to the fork tick
+and optionally changes policy or reseeds the RNG.
+
+Migrating to Postgres: the services use Drizzle query builders and JSON columns;
+the SQLite-specific parts are `json_each` filters in `services/history.ts` and the
+triggers in `migrations/0001_immutability.sql`.
+
+## Testing
+
+`tests/` covers determinism, invariants across seeds and policies (stress),
+resources, aging and death, event preconditions and roles, the effect pipeline,
+validation, immutable history, snapshots and replay, persistence (including the
+DB-level immutability triggers, reset and fork), and the AI pipeline.
+`pnpm sim:run` is the balance and regression harness.
+
+## Players (`packages/simulation/src/systems/players.ts`, `packages/narrative/src/decisions.ts`)
+
+The world is multiplayer: each player controls at most one living character
+(`Character.controllerId`); everyone else is an NPC run by the simulation.
+Player state lives in optional `WorldState.players`, `pendingDecisions` and
+`invites`, so worlds that never had a player keep their exact previous shape
+and replay hashes.
+
+- **Joining** (`JOIN_WORLD`). `availableOrigins(state)` lists where a new
+  character can come from. Year 0 offers only Haven Deep (take over a free
+  founder or arrive as a new resident; population is not capped). Surface-born
+  opens once a surface settlement has stood a year, wanderers from year 8,
+  Vault 12 survivors once someone opens Vault 12.
+- **Everyone decides for themselves.** When an event fires and a participant
+  is player-controlled, the engine applies the base effects, records the event
+  and opens a `PendingDecision` instead of letting the council choose.
+  Participants are the role holders (`participation: "roles"`, default) or
+  every resident aged 12+ (`participation: "everyone"`). Players answer with
+  `CHOOSE` before the next tick; whoever does not answer is decided for by
+  autopilot (policy weights × personality traits). At resolution participants
+  are grouped by choice: the choice's `effects` run once per group,
+  `memberEffects` and risk once per member (role `actor`), and risk chance is
+  divided by √(group size). Events with no player participants behave exactly
+  as before.
+- **Death and succession** (`CONTINUE_AS`). A dead character's player waits in
+  `awaiting_succession` and may continue as a free child, ward (`CARE_FOR`
+  sets `caretakerIds`) or close companion (relationship ≥ 50) of their last
+  character, or be reborn at random as a free child aged 6–15 (a newborn if
+  none exists).
+- **Invites** (`INVITE` + `JOIN_WORLD { inviteCode }`). A player reserves a free
+  child, ward or companion for a friend, or invites them as their next child
+  (assigned when born to the inviter). Unused invites expire after 7 ticks.
+- The council never relocates a player's character when founding settlements.
+- `LEAVE_WORLD` hands the character back to the simulation.

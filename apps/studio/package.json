@@ -1,0 +1,36 @@
+{
+  "name": "@genesis/studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genesis/ai": "workspace:*",
+    "@genesis/database": "workspace:*",
+    "@genesis/narrative": "workspace:*",
+    "@genesis/schemas": "workspace:*",
+    "@genesis/simulation": "workspace:*",
+    "better-sqlite3": "^12.4.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "15.5.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "recharts": "^3.3.0",
+    "server-only": "0.0.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "tailwindcss": "^4.1.16",
+    "typescript": "~5.9.3"
+  }
+}

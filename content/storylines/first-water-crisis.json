@@ -1,0 +1,18 @@
+{
+  "id": "first-water-crisis",
+  "title": "First Water Crisis",
+  "summary": "Haven Deep's reclaimers were built for a sealed vault, not a growing surface population. As people spread out, clean water becomes the first hard limit on survival. The crisis can be solved by engineering, by finding a clean source, by rationing — or not at all.",
+  "themes": ["scarcity", "trust", "engineering"],
+  "beats": [
+    { "id": "failure", "title": "The filters fail", "description": "Aging reclaimer filters clog or crack while demand grows.", "eventIds": ["reclaimer-filter-failure"] },
+    { "id": "contamination", "title": "Something in the water", "description": "Thirst drives people to unsafe sources; sickness follows.", "eventIds": ["contaminated-well"] },
+    { "id": "response", "title": "Who controls the water", "description": "A council forms to ration water, or scouts chase rumours of a clean aquifer.", "eventIds": ["water-rationing-council", "aquifer-rumour"] }
+  ],
+  "possibleOutcomes": [
+    "Water purification is rediscovered and the crisis fades into memory.",
+    "A rationing council becomes the first real government on the surface.",
+    "The Old Reservoir is found and becomes the region's lifeline.",
+    "Repeated shortages hollow out the bunker and its people scatter or die."
+  ],
+  "status": "published"
+}

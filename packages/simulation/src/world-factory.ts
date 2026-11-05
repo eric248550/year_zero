@@ -1,0 +1,140 @@
+import {
+  ADULT_AGE,
+  LOCATIONS,
+  PROFESSIONS,
+  RULES_VERSION,
+  Rng,
+  START_YEAR,
+  seedToState,
+  type Character,
+  type PolicyId,
+  type Profession,
+  type WorldState,
+} from "@genesis/schemas";
+import { FAMILY_NAMES, GIVEN_NAMES, TRAITS } from "./names";
+
+export interface CreateWorldOptions {
+  seed: number;
+  policy?: PolicyId;
+  worldName?: string;
+  survivors?: number;
+}
+
+export function newCharacterId(state: WorldState): string {
+  const id = `c${String(state.counters.nextCharacter).padStart(4, "0")}`;
+  state.counters.nextCharacter += 1;
+  return id;
+}
+
+export function randomName(rng: Rng, family?: string): { givenName: string; familyName: string } {
+  return { givenName: rng.pick(GIVEN_NAMES), familyName: family ?? rng.pick(FAMILY_NAMES) };
+}
+
+/**
+ * Create the seeded starting world: Haven Deep bunker, two known surface sites,
+ * hidden locations to discover, and ~20 survivors. Fully deterministic per seed.
+ */
+export function createWorld(options: CreateWorldOptions): WorldState {
+  const rng = new Rng(seedToState(options.seed));
+  const survivors = options.survivors ?? 20;
+
+  const state: WorldState = {
+    schemaVersion: 1,
+    rulesVersion: RULES_VERSION,
+    worldName: options.worldName ?? "Year Zero",
+    seed: options.seed,
+    tick: 0,
+    ticksPerYear: 1,
+    startYear: START_YEAR,
+    rng: 0,
+    policy: options.policy ?? "balanced",
+    researchFocus: null,
+    settlements: [
+      {
+        id: "s-haven",
+        name: "Haven Deep",
+        locationId: "haven_deep",
+        kind: "bunker",
+        status: "active",
+        foundedTick: 0,
+        abandonedTick: null,
+        level: 2,
+        morale: rng.int(50, 62),
+        health: rng.int(64, 74),
+        capacity: 32,
+        resources: {
+          food: rng.int(60, 80),
+          water: rng.int(60, 80),
+          materials: rng.int(40, 55),
+          knowledge: rng.int(15, 25),
+        },
+        shortage: { food: 0, water: 0 },
+        shortageOrigin: { food: null, water: null },
+      },
+    ],
+    locations: LOCATIONS.map((l) => ({
+      id: l.id,
+      discovered: l.initiallyKnown,
+      discoveredTick: l.initiallyKnown ? 0 : null,
+      settlementId: l.id === "haven_deep" ? "s-haven" : null,
+    })),
+    characters: [],
+    technologies: [],
+    techUnlockedAt: {},
+    flags: { "world.surface_open": true },
+    flagOrigins: {},
+    secrets: {},
+    relationships: {},
+    eventMemory: { lastFiredTick: {}, counts: {}, lastHistoryId: {} },
+    counters: { nextCharacter: 1, nextHistory: 1, nextSettlement: 1 },
+    milestones: [],
+    stats: { births: 0, deaths: 0, peakPopulation: 0 },
+  };
+
+  const children = Math.max(0, Math.round(survivors * 0.1));
+  const adults = survivors - children;
+  // Guarantee every profession is represented, then fill randomly.
+  const professions: Profession[] = [...PROFESSIONS];
+  while (professions.length < adults) professions.push(rng.pick(PROFESSIONS));
+  const shuffled = rng.shuffle(professions);
+
+  const adultsList: Character[] = [];
+  for (let i = 0; i < adults; i++) {
+    const age = rng.int(18, 58);
+    const c: Character = {
+      id: newCharacterId(state),
+      ...randomName(rng),
+      birthTick: -age,
+      deathTick: null,
+      causeOfDeath: null,
+      profession: shuffled[i] ?? "Engineer",
+      homeId: "s-haven",
+      parentIds: [],
+      traits: [rng.pick(TRAITS)],
+      lifeEvents: [{ tick: -age, text: "Born in Haven Deep (Vault 7)", historyId: null }],
+    };
+    c.lifeEvents.push({ tick: 0, text: `Among the survivors who opened the Haven Deep blast door, working as a ${c.profession}`, historyId: null });
+    adultsList.push(c);
+    state.characters.push(c);
+  }
+  for (let i = 0; i < children; i++) {
+    const age = rng.int(2, ADULT_AGE - 2);
+    const parent = rng.pick(adultsList.filter((a) => -a.birthTick - age >= 18));
+    const c: Character = {
+      id: newCharacterId(state),
+      ...randomName(rng, parent?.familyName),
+      birthTick: -age,
+      deathTick: null,
+      causeOfDeath: null,
+      profession: null,
+      homeId: "s-haven",
+      parentIds: parent ? [parent.id] : [],
+      traits: [rng.pick(TRAITS)],
+      lifeEvents: [{ tick: -age, text: "Born in Haven Deep (Vault 7)", historyId: null }],
+    };
+    state.characters.push(c);
+  }
+  state.stats.peakPopulation = state.characters.length;
+  state.rng = rng.state;
+  return state;
+}

@@ -1,0 +1,48 @@
+{
+  "id": "dust-storm",
+  "title": "Dust Storm",
+  "scope": "world",
+  "category": "environment",
+  "description": "A wall of toxic dust rolls across the region.",
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 2
+    }
+  ],
+  "roles": [],
+  "effects": [
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "water",
+      "amount": -8,
+      "target": "all_settlements"
+    },
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "food",
+      "amount": -6,
+      "target": "all_settlements"
+    },
+    {
+      "type": "CHANGE_SETTLEMENT_STAT",
+      "stat": "morale",
+      "delta": -4,
+      "target": "all_settlements"
+    }
+  ],
+  "choices": [],
+  "priority": 3,
+  "chance": 0.08,
+  "cooldown": 5,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "A dust storm darkens the sky",
+    "text": "In {{year}} the sky turned ochre at noon. For nine days nobody went outside."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

@@ -1,0 +1,182 @@
+import { LOCATION_BY_ID, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
+import { characterAge, hasTech, residents, round2 } from "@genesis/narrative";
+import { ADULT_AGE, ELDER_AGE } from "@genesis/schemas";
+import type { TickContext } from "../context";
+
+/** Tunable economic constants. Changing these changes RULES_VERSION semantics. */
+export const ECONOMY = {
+  foodPerLabor: 1.3,
+  waterPerLabor: 1.15,
+  forageFoodPerScout: 0.6,
+  materialsPerEngineer: 2.2,
+  materialsPerLabor: 0.25,
+  knowledgePerScientist: 2.0,
+  knowledgePerLabor: 0.1,
+  bunkerWaterReclaimer: 5,
+  adultNeed: 1,
+  childNeed: 0.6,
+  foodSpoilage: 0.08,
+  waterLoss: 0.05,
+  materialsUpkeepPerResident: 0.12,
+  materialsUpkeepPerLevel: 0.8,
+} as const;
+
+export interface Workforce {
+  residents: number;
+  adults: number;
+  children: number;
+  labor: number;
+  scientists: number;
+  engineers: number;
+  medics: number;
+  scouts: number;
+}
+
+export function workforce(ctx: TickContext, s: Settlement): Workforce {
+  const people = residents(ctx.state, s.id);
+  const w: Workforce = { residents: people.length, adults: 0, children: 0, labor: 0, scientists: 0, engineers: 0, medics: 0, scouts: 0 };
+  for (const c of people) {
+    const age = characterAge(ctx.state, c);
+    if (age < ADULT_AGE) {
+      w.children++;
+      continue;
+    }
+    w.adults++;
+    const effort = age >= ELDER_AGE ? 0.5 : 1;
+    w.labor += effort;
+    if (c.profession === "Scientist") w.scientists += effort;
+    if (c.profession === "Engineer") w.engineers += effort;
+    if (c.profession === "Medic") w.medics += effort;
+    if (c.profession === "Scout") w.scouts += effort;
+  }
+  return w;
+}
+
+function multipliers(ctx: TickContext, s: Settlement) {
+  const features = LOCATION_BY_ID[s.locationId]?.features ?? [];
+  const t = (id: string) => hasTech(ctx.state, id);
+  const grid = t("power_grid") ? 1.1 : 1;
+  let food = s.kind === "bunker" ? 0.95 : 1.05;
+  if (features.includes("fertile")) food *= 1.25;
+  if (t("hydroponics")) food *= 1.25;
+  if (t("irrigation") && s.kind !== "bunker") food *= 1.3;
+  if (t("crop_genetics")) food *= 1.3;
+  food *= grid;
+  if (ctx.state.flags["food.heirloom_seeds"]) food *= 1.1;
+  let water = 1;
+  if (t("water_purification")) water *= 1.3;
+  if (features.includes("clean_aquifer")) water *= 1.3;
+  if (features.includes("river")) water *= 1.15;
+  water *= grid;
+  let materials = 1;
+  if (features.includes("ruins")) materials *= 1.4;
+  if (t("salvage_tools")) materials *= 1.4;
+  if (t("solar_power")) materials *= 1.1;
+  materials *= grid;
+  let knowledge = 1;
+  if (t("solar_power")) knowledge *= 1.2;
+  if (ctx.state.flags["mystery.halcyon_archive"]) knowledge *= 1.15;
+  return { food, water, materials, knowledge };
+}
+
+/** Resource production for every active settlement. */
+export function produce(ctx: TickContext): void {
+  for (const s of ctx.state.settlements) {
+    if (s.status !== "active") continue;
+    const w = workforce(ctx, s);
+    const m = multipliers(ctx, s);
+    const efficiency = (0.6 + 0.4 * (s.health / 100)) * (0.75 + 0.35 * (s.morale / 100));
+    // One shared "season" roll per settlement per tick: drought years hit food and water together.
+    const season = Math.min(1.3, Math.max(0.65, ctx.rng.gaussian(1, 0.12)));
+    const out: Record<ResourceId, number> = {
+      food: (w.labor * ECONOMY.foodPerLabor * m.food * season + w.scouts * ECONOMY.forageFoodPerScout) * efficiency,
+      water: (w.labor * ECONOMY.waterPerLabor * m.water * season) * efficiency + (s.kind === "bunker" ? ECONOMY.bunkerWaterReclaimer : 0),
+      materials: (w.engineers * ECONOMY.materialsPerEngineer + w.labor * ECONOMY.materialsPerLabor) * m.materials * efficiency,
+      knowledge: (w.scientists * ECONOMY.knowledgePerScientist + w.labor * ECONOMY.knowledgePerLabor) * m.knowledge * efficiency,
+    };
+    for (const r of Object.keys(out) as ResourceId[]) s.resources[r] = round2(s.resources[r] + out[r]);
+  }
+}
+
+/** Consumption, spoilage, upkeep and shortage tracking. Stocks never go negative. */
+export function consume(ctx: TickContext): void {
+  for (const s of ctx.state.settlements) {
+    if (s.status !== "active") continue;
+    const w = workforce(ctx, s);
+    const need = w.adults * ECONOMY.adultNeed + w.children * ECONOMY.childNeed;
+    const deficit = { food: 0, water: 0 };
+
+    for (const r of ["food", "water"] as const) {
+      const available = s.resources[r];
+      const unmet = Math.max(0, need - available);
+      s.resources[r] = round2(Math.max(0, available - need));
+      deficit[r] = need > 0 ? unmet / need : 0;
+      const loss = r === "food" ? ECONOMY.foodSpoilage : ECONOMY.waterLoss;
+      s.resources[r] = round2(s.resources[r] * (1 - loss));
+
+      if (deficit[r] > 0.02) {
+        if (s.shortage[r] === 0) {
+          const change: StateChange = { path: `settlements.${s.id}.shortage.${r}`, label: `${s.name} ${r} shortage`, before: false, after: true };
+          const e = ctx.system({
+            category: "resource",
+            importance: "notable",
+            title: `${r === "food" ? "Food" : "Water"} shortage in ${s.name}`,
+            text: `${s.name} could not meet ${Math.round(deficit[r] * 100)}% of its ${r} needs this year. Rationing begins; the weak and the young suffer first.`,
+            settlementIds: [s.id],
+            changes: [change],
+            summary: `Stock (${round2(available)}) fell short of the yearly need (${round2(need)}) for ${w.residents} residents`,
+          });
+          s.shortageOrigin[r] = e.id;
+        }
+        s.shortage[r] += 1;
+      } else if (s.shortage[r] > 0) {
+        const origin = s.shortageOrigin[r];
+        ctx.system({
+          category: "resource",
+          importance: "minor",
+          title: `${s.name} recovers from ${r} shortage`,
+          text: `After ${s.shortage[r]} lean year(s), ${s.name} once again meets its ${r} needs.`,
+          settlementIds: [s.id],
+          causeIds: origin ? [origin] : [],
+        });
+        s.shortage[r] = 0;
+        s.shortageOrigin[r] = null;
+      }
+    }
+    ctx.deficits.set(s.id, deficit);
+
+    const upkeep = w.residents * ECONOMY.materialsUpkeepPerResident + s.level * ECONOMY.materialsUpkeepPerLevel;
+    if (s.resources.materials < upkeep) s.morale = Math.max(0, s.morale - 3); // infrastructure decays
+    s.resources.materials = round2(Math.max(0, s.resources.materials - upkeep));
+  }
+}
+
+/** Morale and health drift toward targets shaped by conditions. */
+export function wellbeing(ctx: TickContext): void {
+  const st = ctx.state;
+  for (const s of st.settlements) {
+    if (s.status !== "active") continue;
+    const w = workforce(ctx, s);
+    const d = ctx.deficits.get(s.id) ?? { food: 0, water: 0 };
+    const crowded = w.residents > s.capacity;
+    const foodPerCapita = w.residents > 0 ? s.resources.food / w.residents : 0;
+
+    let morale = 52 + s.level * 2;
+    if (hasTech(st, "civic_charter")) morale += 10;
+    if (foodPerCapita > 3) morale += 5;
+    morale -= d.food * 40 + d.water * 45;
+    if (crowded) morale -= 15;
+    if (st.flags["society.truth_known"]) morale -= 4;
+    if (st.flags["governance.ration_council"]) morale += 3;
+
+    let health = 58 + Math.min(20, w.medics * 4);
+    if (hasTech(st, "field_medicine")) health += 8;
+    if (hasTech(st, "antibiotics")) health += 10;
+    if (hasTech(st, "water_purification")) health += 4;
+    health -= d.food * 30 + d.water * 40;
+    if (crowded) health -= 10;
+
+    s.morale = round2(Math.min(100, Math.max(0, s.morale + (morale - s.morale) * 0.3)));
+    s.health = round2(Math.min(100, Math.max(0, s.health + (health - s.health) * 0.3)));
+  }
+}

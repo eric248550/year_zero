@@ -1,0 +1,82 @@
+{
+  "id": "heirloom-hydroponics",
+  "title": "Heirloom Hydroponics",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "Scientists combine recovered seed with bunker grow-rack designs.",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "food.heirloom_seeds",
+      "present": true
+    },
+    {
+      "type": "technology",
+      "tech": "hydroponics",
+      "has": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "scientist",
+      "profession": "Scientist",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "experiment",
+      "label": "Dedicate the lab to it",
+      "tags": [
+        "science",
+        "growth"
+      ],
+      "costs": {
+        "knowledge": 15
+      },
+      "effects": [
+        {
+          "type": "UNLOCK_TECHNOLOGY",
+          "tech": "hydroponics"
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "scientist",
+          "text": "Developed heirloom hydroponics"
+        }
+      ],
+      "outcome": "{{scientist}} gets the heirloom strains to fruit under grow lamps. Hydroponics is reborn."
+    },
+    {
+      "id": "wait",
+      "label": "Plant them outside instead",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 10
+        }
+      ],
+      "outcome": "The seed goes into ordinary soil and does well enough."
+    }
+  ],
+  "priority": 5,
+  "chance": 0.35,
+  "cooldown": 5,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "rebuilding-food-production"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "Heirloom seed under the lamps of {{settlement}}",
+    "text": "{{scientist}} spread the recovered seed across a lab bench and began cross-referencing it with the bunker's grow manuals."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

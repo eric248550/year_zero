@@ -1,0 +1,96 @@
+{
+  "id": "sealed-vault-door",
+  "title": "The Sealed Door",
+  "scope": "settlement",
+  "category": "mystery",
+  "description": "Vault 12's blast door is welded shut from the inside. Opening it will take engineering \u2014 and nerve.",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "mystery.vault12_found",
+      "present": true
+    },
+    {
+      "type": "flag",
+      "flag": "mystery.vault12_opened",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "engineer",
+      "profession": "Engineer",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "cut",
+      "label": "Cut through the door",
+      "tags": [
+        "bold",
+        "industry",
+        "science"
+      ],
+      "costs": {
+        "materials": 25
+      },
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "mystery.vault12_opened"
+        },
+        {
+          "type": "REVEAL_SECRET",
+          "secret": "vault12_fate"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -5
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "engineer",
+          "text": "Cut open the blast door of Vault 12"
+        }
+      ],
+      "outcome": "Inside, {{engineer}} finds an orderly tomb: cots, quarantine tape, and a final log entry."
+    },
+    {
+      "id": "leave",
+      "label": "Leave the dead in peace",
+      "tags": [
+        "cautious",
+        "secrecy"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "mystery.vault12_left_sealed"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 2
+        }
+      ],
+      "outcome": "The door is marked with a warning sign and left alone \u2014 for now."
+    }
+  ],
+  "priority": 5,
+  "chance": 0.35,
+  "cooldown": 6,
+  "storylineIds": [
+    "the-forgotten-bunker"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "The sealed door of Vault 12",
+    "text": "{{engineer}} ran a hand along the weld seam. Whoever sealed Vault 12 had done it from the inside."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

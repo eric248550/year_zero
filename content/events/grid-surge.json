@@ -1,0 +1,81 @@
+{
+  "id": "grid-surge",
+  "title": "Grid Surge",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "A surge on the new power grid burns out transformers. Only possible once a power grid exists.",
+  "preconditions": [
+    {
+      "type": "technology",
+      "tech": "power_grid",
+      "has": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "engineer",
+      "profession": "Engineer",
+      "minAge": 16
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "materials",
+      "amount": -15
+    }
+  ],
+  "choices": [
+    {
+      "id": "repair",
+      "label": "Repair and add breakers",
+      "tags": [
+        "industry",
+        "cautious"
+      ],
+      "costs": {
+        "materials": 10
+      },
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 8
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "engineer",
+          "text": "Rebuilt the grid after the great surge"
+        }
+      ],
+      "outcome": "{{engineer}} designs breakers from salvaged relays."
+    },
+    {
+      "id": "ration_power",
+      "label": "Ration power",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -5
+        }
+      ],
+      "outcome": "Lights go out at dusk again, for now."
+    }
+  ],
+  "priority": 4,
+  "chance": 0.2,
+  "cooldown": 8,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "Grid surge in {{settlement}}",
+    "text": "A lightning strike sent a surge down the new lines into {{settlement}}. {{engineer}} smelled burning copper."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

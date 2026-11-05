@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "SF Pro Text", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --color-bg: #0a0c0b;
+  --color-surface: #111513;
+  --color-surface-2: #161b18;
+  --color-surface-3: #1d2420;
+  --color-line: #232b26;
+  --color-line-strong: #2f3a33;
+  --color-ink: #e8ece6;
+  --color-ink-2: #aab4ac;
+  --color-ink-3: #74807a;
+
+  --color-signal: #f0a531;
+  --color-signal-dim: #6b4a15;
+  --color-food: #a3d15c;
+  --color-water: #4cc3d9;
+  --color-materials: #e07b4c;
+  --color-knowledge: #9aa8ff;
+  --color-danger: #ef5d5d;
+  --color-ok: #57c78a;
+  --color-warn: #e8b44a;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1, "cv11" 1;
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgba(240, 165, 49, 0.07), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(76, 195, 217, 0.05), transparent 60%),
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: auto, auto, 32px 32px, 32px 32px;
+    background-attachment: fixed;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+  ::selection {
+    background: rgba(240, 165, 49, 0.35);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface/90 backdrop-blur-sm;
+  }
+  .label-xs {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-3;
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .scroll-x {
+    @apply flex gap-2 overflow-x-auto;
+    scrollbar-width: none;
+  }
+  .scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+  /* Grid/flex children must be allowed to shrink below their content width (no overflow at 375px). */
+  .grid > * {
+    min-width: 0;
+  }
+  .field {
+    @apply w-full rounded-xl border border-line-strong bg-surface-2 px-3 py-2.5 text-ink placeholder:text-ink-3 focus:border-signal focus:outline-none;
+  }
+}
+
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
+}
+@media (min-width: 1024px) {
+  .pb-safe {
+    padding-bottom: 2.5rem;
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "id": "reclaimer-filter-failure",
+  "title": "Reclaimer Filter Failure",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "The bunker's water reclaimer filters, built for a sealed population, crack under surface grit and rising demand.",
+  "preconditions": [
+    {
+      "type": "technology",
+      "tech": "water_purification",
+      "has": false
+    },
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 12
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 1
+    }
+  ],
+  "roles": [
+    {
+      "id": "engineer",
+      "profession": "Engineer",
+      "minAge": 16,
+      "description": "The engineer on watch"
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "water",
+      "amount": -20
+    }
+  ],
+  "choices": [
+    {
+      "id": "jury_rig",
+      "label": "Jury-rig the filters",
+      "tags": [
+        "industry",
+        "cautious"
+      ],
+      "costs": {
+        "materials": 12
+      },
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "water",
+          "amount": 10
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "water.filters_patched"
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "engineer",
+          "text": "Kept the reclaimers running with scrap and stubbornness"
+        }
+      ],
+      "outcome": "{{engineer}} rebuilds the filter beds from scrap. They will not last forever."
+    },
+    {
+      "id": "ration",
+      "label": "Ration water",
+      "tags": [
+        "cautious",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -6
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "water.rationing"
+        }
+      ],
+      "outcome": "Cups are counted. Tempers shorten."
+    },
+    {
+      "id": "study",
+      "label": "Study the failure",
+      "tags": [
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 8
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "health",
+          "delta": -4
+        }
+      ],
+      "outcome": "The failed membranes are taken apart; the lessons are expensive."
+    }
+  ],
+  "priority": 7,
+  "chance": 0.35,
+  "cooldown": 8,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "first-water-crisis"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "Reclaimer filters fail in {{settlement}}",
+    "text": "In {{year}}, the water reclaimers in {{settlement}} began to cough up grey sludge. {{engineer}} was the first to see the cracked filter housings."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

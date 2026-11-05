@@ -1,0 +1,108 @@
+{
+  "id": "fever-season",
+  "title": "Fever Season",
+  "scope": "settlement",
+  "category": "health",
+  "description": "A seasonal fever spreads in crowded quarters.",
+  "preconditions": [
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 15
+    },
+    {
+      "type": "settlement_stat",
+      "stat": "health",
+      "op": "<",
+      "value": 65
+    },
+    {
+      "type": "technology",
+      "tech": "antibiotics",
+      "has": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "patient",
+      "minAge": 0
+    },
+    {
+      "id": "medic",
+      "profession": "Medic",
+      "minAge": 16,
+      "optional": true
+    }
+  ],
+  "effects": [
+    {
+      "type": "CHANGE_SETTLEMENT_STAT",
+      "stat": "health",
+      "delta": -8
+    }
+  ],
+  "choices": [
+    {
+      "id": "treat",
+      "label": "Treat with what we have",
+      "tags": [
+        "community",
+        "science"
+      ],
+      "requiresRoles": [
+        "medic"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "health",
+          "delta": 5
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "medic",
+          "text": "Nursed the sick through fever season"
+        }
+      ],
+      "outcome": "{{medic}} works without sleep for a week."
+    },
+    {
+      "id": "isolate",
+      "label": "Isolate the sick",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -4
+        }
+      ],
+      "risk": {
+        "chance": 0.3,
+        "description": "{{patient}} dies alone in the isolation ward.",
+        "effects": [
+          {
+            "type": "CHARACTER_DEATH",
+            "role": "patient",
+            "cause": "fever"
+          }
+        ]
+      },
+      "outcome": "The sick are walled off in the east tunnels."
+    }
+  ],
+  "priority": 6,
+  "chance": 0.25,
+  "cooldown": 5,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "Fever season in {{settlement}}",
+    "text": "It started with {{patient}}: a cough, then the shakes."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}

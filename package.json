@@ -1,0 +1,49 @@
+{
+  "name": "genesis",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Genesis Studio \u2014 deterministic post-apocalyptic civilization simulation and narrative tooling",
+  "packageManager": "pnpm@10.18.1",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @genesis/studio dev",
+    "dev:lan": "pnpm --filter @genesis/studio exec next dev --port 3000 --hostname 0.0.0.0",
+    "build": "pnpm --filter @genesis/studio build",
+    "start": "pnpm --filter @genesis/studio start",
+    "db:generate": "pnpm --filter @genesis/database db:generate",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "db:seed": "tsx scripts/db-seed.ts",
+    "db:reset": "tsx scripts/db-reset.ts",
+    "sim:run": "tsx scripts/sim-run.ts",
+    "content:validate": "tsx scripts/content-validate.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @genesis/studio typecheck",
+    "check": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@genesis/ai": "workspace:*",
+    "@genesis/database": "workspace:*",
+    "@genesis/narrative": "workspace:*",
+    "@genesis/schemas": "workspace:*",
+    "@genesis/simulation": "workspace:*"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "sharp",
+      "@tailwindcss/oxide",
+      "unrs-resolver"
+    ]
+  }
+}

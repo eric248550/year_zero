@@ -1,0 +1,19 @@
+{
+  "id": "the-forgotten-bunker",
+  "title": "The Forgotten Bunker",
+  "summary": "A faint, repeating signal hints at a second vault that appears on no Haven Deep map. Following it leads to Vault 12, sealed from the inside, and to records that could explain the collapse — and implicate Haven Deep's own founders. Whether the truth is shared or buried is up to the survivors.",
+  "themes": ["mystery", "truth", "legacy"],
+  "beats": [
+    { "id": "signal", "title": "A signal in the static", "description": "Someone — or something — is still transmitting.", "eventIds": ["strange-signal"] },
+    { "id": "search", "title": "The search", "description": "Scouts follow the signal across dangerous ground.", "eventIds": ["follow-the-signal"] },
+    { "id": "door", "title": "The sealed door", "description": "Vault 12's blast door is welded shut from within.", "eventIds": ["sealed-vault-door"] },
+    { "id": "logs", "title": "The Halcyon logs", "description": "The vault's archive explains the collapse.", "eventIds": ["halcyon-logs"] },
+    { "id": "reckoning", "title": "Reckoning with the founders", "description": "If the truth is out, Haven Deep must face what its founders knew.", "eventIds": ["founders-reckoning"] }
+  ],
+  "possibleOutcomes": [
+    "The truth about Project Halcyon becomes common knowledge and reshapes how survivors see the old world.",
+    "A small circle keeps the secret, and the archive becomes a source of hidden power.",
+    "The signal is never followed, and Vault 12 stays a rumour."
+  ],
+  "status": "published"
+}

@@ -1,0 +1,101 @@
+{
+  "id": "water-rationing-council",
+  "title": "The Water Council",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "After contamination and shortage, residents demand a fair system for sharing water. A council is formed.",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "water.contamination_known",
+      "present": true
+    },
+    {
+      "type": "flag",
+      "flag": "governance.ration_council",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "speaker",
+      "minAge": 30,
+      "description": "A respected elder who calls the first meeting"
+    },
+    {
+      "id": "dissenter",
+      "minAge": 18
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "elect",
+      "label": "Elect a water council",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "governance.ration_council"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 6
+        },
+        {
+          "type": "CREATE_HISTORICAL_EVENT",
+          "title": "First election on the surface",
+          "description": "For the first time since the collapse, survivors vote. The water council is chosen by show of hands.",
+          "importance": "major"
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "speaker",
+          "text": "Called the first water council"
+        }
+      ],
+      "outcome": "Hands are raised in the old mess hall. {{speaker}} is chosen to keep the water ledger."
+    },
+    {
+      "id": "appoint",
+      "label": "Let the engineers decide",
+      "tags": [
+        "industry",
+        "secrecy"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "governance.ration_council",
+          "value": "technocratic"
+        },
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "speaker",
+          "b": "dissenter",
+          "delta": -25
+        }
+      ],
+      "outcome": "The engineers take control of the valves. {{dissenter}} calls it theft."
+    }
+  ],
+  "priority": 6,
+  "chance": 0.5,
+  "cooldown": 10,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "first-water-crisis"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "The Water Council of {{settlement}}",
+    "text": "After the sickness, {{speaker}} stood on a crate in the mess hall and asked who should decide how water is shared."
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed"
+}
