@@ -197,6 +197,7 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
     case "CARE_FOR": {
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
+      if (characterAge(st, me) < ADULT_AGE) return "You are too young to look after someone";
       const target = getCharacter(st, a.characterId);
       if (!target || target.deathTick !== null) return "That person is not alive";
       if (target.id === me.id) return "You cannot care for yourself";
@@ -265,6 +266,7 @@ function takeControl(ctx: TickContext, playerId: string, playerName: string, c: 
   const prev = players[playerId];
   c.controllerId = playerId;
   players[playerId] = {
+    ...prev,
     id: playerId,
     name: prev?.name ?? playerName,
     joinedTick: prev?.joinedTick ?? st.tick,

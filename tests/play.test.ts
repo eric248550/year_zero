@@ -73,6 +73,24 @@ describe("immediate player actions", () => {
   });
 });
 
+describe("prologue across lives", () => {
+  it("a player who continues as someone else does not redo the prologue", () => {
+    let s = applyImmediate(createWorld({ seed: 3 }), join_("p")).state;
+    for (const [step, choiceId] of [["first_climb", "surface"], ["water", "share"], ["static", "tell"]] as const) {
+      s = applyImmediate(s, { type: "PROLOGUE", playerId: "p", step, choiceId }).state;
+    }
+    const me = playerCharacter(s, "p")!;
+    const ward = s.characters.find((c) => c.id !== me.id)!;
+    s = applyImmediate(s, { type: "CARE_FOR", playerId: "p", characterId: ward.id }).state;
+    getCharacter(s, me.id)!.deathTick = s.tick;
+    getCharacter(s, me.id)!.causeOfDeath = "test";
+    s.players!.p = { ...s.players!.p!, status: "awaiting_succession", characterId: null };
+    const r = applyImmediate(s, { type: "CONTINUE_AS", playerId: "p", mode: "character", characterId: ward.id });
+    expect(r.rejected).toBeNull();
+    expect(r.state.players!.p!.prologue).toEqual(["first_climb", "water", "static"]);
+  });
+});
+
 describe("persisted play", () => {
   it("between-tick actions are logged and replay exactly, including the head", () => {
     const run = createRun(db, { name: "play", seed: 77 });

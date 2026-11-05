@@ -1,0 +1,56 @@
+"use client";
+
+import clsx from "clsx";
+import { Check } from "lucide-react";
+import { useI18n } from "@/components/i18n";
+import { useAct } from "./use-act";
+
+export interface DecisionView {
+  id: string;
+  title: string;
+  text: string;
+  choices: { id: string; label: string; description: string | null }[];
+  myChoice: string | null;
+  others: number;
+}
+
+/** One pending decision. The player can change their answer until the year ends. */
+export function DecisionCard({ d }: { d: DecisionView }) {
+  const { t } = useI18n();
+  const { act, busy, error } = useAct();
+  const mine = d.choices.find((c) => c.id === d.myChoice);
+  return (
+    <article className="card space-y-3 p-4">
+      <h3 className="text-[17px] font-semibold leading-snug">{d.title}</h3>
+      <p className="whitespace-pre-line text-sm leading-relaxed text-ink-2">{d.text}</p>
+      <div className="grid gap-2">
+        {d.choices.map((c) => {
+          const selected = c.id === d.myChoice;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              disabled={busy}
+              aria-pressed={selected}
+              onClick={() => void act({ type: "CHOOSE", decisionId: d.id, choiceId: c.id })}
+              className={clsx("flex min-h-12 items-start gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors", selected ? "border-signal/60 bg-signal/12" : "border-line-strong bg-surface-2 hover:bg-surface-3")}
+            >
+              <span className={clsx("mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border", selected ? "border-signal bg-signal text-black" : "border-line-strong")}>
+                {selected && <Check size={11} strokeWidth={3} />}
+              </span>
+              <span className="min-w-0">
+                <span className="block font-medium">{c.label}</span>
+                {c.description && <span className="mt-0.5 block text-xs text-ink-3">{c.description}</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs text-ink-3">
+        {mine ? t("play.decisions.chosen", { choice: mine.label }) : t("play.decisions.autopilot")}
+        {d.others > 0 && <> · {t("play.decisions.others", { n: d.others })}</>}
+      </p>
+      {error && <p role="alert" className="text-sm text-danger">{t("play.error", { message: error })}</p>}
+    </article>
+  );
+}

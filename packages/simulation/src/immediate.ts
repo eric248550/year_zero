@@ -23,7 +23,11 @@ export interface ImmediateResult {
  * so logging these actions in order is enough to replay them exactly.
  */
 export function applyImmediate(prev: WorldState, raw: unknown): ImmediateResult {
-  if (!isImmediateAction(raw)) return { state: prev, events: [], action: null, rejected: "Only player actions can be applied immediately" };
+  const parsed = PlayerActionSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { state: prev, events: [], action: null, rejected: `Malformed action: ${parsed.error.issues.map((i) => `${i.path.join(".") || "action"}: ${i.message}`).join("; ")}` };
+  }
+  if (!IMMEDIATE.has(parsed.data.type)) return { state: prev, events: [], action: null, rejected: "Only player actions can be applied immediately" };
   const state = structuredClone(prev);
   const rng = new Rng(state.rng);
   const ctx = new TickContext(state, rng);
