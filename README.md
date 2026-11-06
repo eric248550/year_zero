@@ -76,10 +76,13 @@ The game itself, phone-first: open `http://localhost:3000/play` (or
 - **Joining.** In year 0 everyone comes out of Haven Deep; surface-born,
   wanderer and Vault 12 origins unlock as the world develops. A three-step
   prologue gives instant results and introduces two people.
-- **This year.** Decisions waiting for you (each participant decides for
+- **This year.** One yearly activity with an instant result (scavenge, work
+  for the settlement, study, spend time with someone, rest; see
+  `packages/simulation/src/systems/year-actions.ts`), decisions waiting for you (each participant decides for
   themselves and can change their mind until the year ends; unanswered ones
   are decided by your character's nature), your story, and news from home.
-- **People.** Family, people you care for, bonds; care for someone; invite a
+- **People.** Family, people you care for, bonds (grown through events and
+  time spent together); invite a
   friend as your child, ward, close friend, or next child (`/play?invite=CODE`).
 - **Death.** Continue as a child, ward or close friend, or be reborn at random.
 - **Time.** Set `GENESIS_TICK_MINUTES` (e.g. `240` = 4 hours per world year

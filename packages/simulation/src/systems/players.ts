@@ -16,9 +16,10 @@ import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { initAttributes } from "./attributes";
+import { applyYearAction, validateYearAction } from "./year-actions";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "YEAR_ACTION">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -225,6 +226,8 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (me.givenName === a.givenName && me.familyName === a.familyName) return "That is already your name";
       return null;
     }
+    case "YEAR_ACTION":
+      return validateYearAction(st, playerCharacter(st, a.playerId), a, player?.yearAction?.tick === st.tick);
     case "PROLOGUE": {
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
@@ -446,6 +449,11 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
     case "PROLOGUE":
       prologue(ctx, a);
       return;
+    case "YEAR_ACTION": {
+      const r = applyYearAction(ctx, playerCharacter(st, a.playerId)!, a);
+      getPlayer(st, a.playerId)!.yearAction = { tick: st.tick, action: a.action, ...r };
+      return;
+    }
     case "RENAME": {
       const me = playerCharacter(st, a.playerId)!;
       const before = fullName(me);

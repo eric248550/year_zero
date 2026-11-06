@@ -15,3 +15,4 @@ export { availableOrigins, successionCandidates, bondKind, playerCharacter, getP
 export { playerUpkeep } from "./systems/players";
 export { TRAITS } from "./names";
 export { rollAttributes, healthMortality } from "./systems/attributes";
+export { YEAR_ACTION_MIN_AGE } from "./systems/year-actions";

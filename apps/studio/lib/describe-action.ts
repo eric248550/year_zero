@@ -20,6 +20,7 @@ export function describeAction(a: PlayerAction, { t, term }: Pick<I18n, "t" | "t
     case "INVITE": return t("action.desc.invite", { player: a.playerId, code: a.code });
     case "LEAVE_WORLD": return t("action.desc.leave", { player: a.playerId });
     case "ENABLE_ATTRIBUTES": return t("action.desc.enableAttributes");
+    case "YEAR_ACTION": return t("action.desc.yearAction", { player: a.playerId, action: a.action });
     case "RENAME": return t("action.desc.rename", { player: a.playerId, name: `${a.familyName} ${a.givenName}`.trim() });
     case "PROLOGUE": return t("action.desc.prologue", { player: a.playerId, step: a.step, choice: a.choiceId });
     case "TRANSFER_RESOURCES": return t("action.desc.transfer", { amount: a.amount, resource: term.resource(a.resource), from: a.fromSettlementId, to: a.toSettlementId });
