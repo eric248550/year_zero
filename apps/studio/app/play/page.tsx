@@ -72,7 +72,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
     );
   }
 
-  if ((player.prologue?.length ?? 0) < 3) return <Prologue done={player.prologue ?? []} nextTickAt={ctx.clock.nextTickAt} />;
+  if ((player.prologue?.length ?? 0) < 3) return <Prologue done={player.prologue ?? []} nextTickAt={ctx.clock.nextTickAt} minutes={ctx.clock.minutes} />;
 
   const home = state.settlements.find((s) => s.id === character.homeId);
   const decisions = decisionViews(ctx);

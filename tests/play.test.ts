@@ -151,6 +151,16 @@ describe("real-time clock", () => {
     expect(advanceClock(db, run.id, t0 + 100 * 3_600_000, 60).stepped).toBe(10);
     expect(getRun(db, run.id).state.tick).toBe(11);
   });
+
+  it("accepts sub-minute years for local testing", () => {
+    const run = createRun(db, { name: "clock-fast", seed: 82 });
+    const t0 = Date.parse("2030-01-01T00:00:00Z");
+    advanceClock(db, run.id, t0, 0.5);
+    expect(advanceClock(db, run.id, t0 + 29_000, 0.5).stepped).toBe(0);
+    const s = advanceClock(db, run.id, t0 + 31_000, 0.5);
+    expect(s.stepped).toBe(1);
+    expect(s.nextTickAt).toBe(new Date(t0 + 60_000).toISOString());
+  });
 });
 
 describe("renaming", () => {

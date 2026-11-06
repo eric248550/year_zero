@@ -5,11 +5,11 @@ import { ArrowRight } from "lucide-react";
 import { PROLOGUE_ORDER, PROLOGUE_STEPS, type PrologueStep } from "@genesis/schemas";
 import { useI18n } from "@/components/i18n";
 import { buttonClass } from "@/components/ui";
-import { Countdown } from "./countdown";
+import { Countdown, YearProgress } from "./countdown";
 import { useAct } from "./use-act";
 
 /** The three first-session choices. Each result shows at once, before moving on. */
-export function Prologue({ done, nextTickAt }: { done: string[]; nextTickAt: string | null }) {
+export function Prologue({ done, nextTickAt, minutes }: { done: string[]; nextTickAt: string | null; minutes: number | null }) {
   const { t } = useI18n();
   const { act, busy, error, refresh } = useAct();
   const step = PROLOGUE_ORDER.find((s) => !done.includes(s)) as PrologueStep | undefined;
@@ -20,7 +20,7 @@ export function Prologue({ done, nextTickAt }: { done: string[]; nextTickAt: str
       <div className="space-y-4 py-10">
         <h1 className="text-2xl font-semibold tracking-tight">{t("play.pro.done.title")}</h1>
         <p className="text-ink-2">{t("play.pro.done.body")}</p>
-        <p className="text-sm"><Countdown nextTickAt={nextTickAt} /></p>
+        <div className="space-y-2 text-sm"><Countdown nextTickAt={nextTickAt} minutes={minutes} /><YearProgress nextTickAt={nextTickAt} minutes={minutes} className="rounded-full" /></div>
       </div>
     );
   }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LocaleSwitcher } from "@/components/i18n";
-import { Countdown } from "@/components/play/countdown";
+import { Countdown, YearProgress } from "@/components/play/countdown";
 import { PlayTabBar } from "@/components/play/tab-bar";
 import { loadPlay } from "@/lib/play";
 import { getI18n } from "@/lib/i18n/server";
@@ -25,9 +25,10 @@ export default async function PlayLayout({ children }: { children: React.ReactNo
       >
         <div className="min-w-0">
           <div className="text-sm font-semibold tracking-tight">Year Zero{ctx && <span className="num ml-2 text-ink-3">{t("play.yearN", { year: ctx.state.startYear + ctx.state.tick })}</span>}</div>
-          {ctx && playing && <div className="truncate text-xs text-ink-2"><Countdown nextTickAt={ctx.clock.nextTickAt} /></div>}
+          {ctx && playing && <div className="truncate text-xs text-ink-2"><Countdown nextTickAt={ctx.clock.nextTickAt} minutes={ctx.clock.minutes} /></div>}
         </div>
         <LocaleSwitcher />
+        {ctx && playing && <YearProgress nextTickAt={ctx.clock.nextTickAt} minutes={ctx.clock.minutes} className="absolute inset-x-0 bottom-0" />}
       </header>
       <main className={playing ? "flex-1 px-4 pb-28 pt-4" : "flex-1 px-4 pb-10"}>{children}</main>
       {playing && <PlayTabBar />}

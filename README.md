@@ -83,7 +83,8 @@ The game itself, phone-first: open `http://localhost:3000/play` (or
   friend as your child, ward, close friend, or next child (`/play?invite=CODE`).
 - **Death.** Continue as a child, ward or close friend, or be reborn at random.
 - **Time.** Set `GENESIS_TICK_MINUTES` (e.g. `240` = 4 hours per world year
-  for playtests, `1440` = one real day). The world advances lazily whenever
+  for playtests, `1440` = one real day, `0.5` = 30 seconds for local
+  testing). A progress bar under the header shows how far the year has run. The world advances lazily whenever
   someone opens the game; point a cron at `POST /api/play/clock` to keep it
   moving when nobody does. Unset = time only moves when the Studio steps it.
 - **Identity.** Closed-playtest only: a random player id in an httpOnly
