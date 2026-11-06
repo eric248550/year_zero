@@ -1,7 +1,10 @@
 import { fullName, getCharacter } from "@genesis/narrative";
 import { availableOrigins, successionCandidates, TRAITS, PLAYERS } from "@genesis/simulation";
 import { queryHistory } from "@genesis/database";
-import { EmptyState, SectionTitle } from "@/components/ui";
+import { ATTRIBUTES } from "@genesis/schemas";
+import { EmptyState, ProgressBar, SectionTitle } from "@/components/ui";
+
+const ATTR_COLOR = { health: "bg-ok", social: "bg-signal", knowledge: "bg-knowledge", survival: "bg-materials" } as const;
 import { DecisionCard } from "@/components/play/decision-card";
 import { Onboarding, type InviteInfo } from "@/components/play/onboarding";
 import { Prologue } from "@/components/play/prologue";
@@ -89,6 +92,16 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
           <RenameCharacter givenName={character.givenName} familyName={character.familyName} />
         </div>
       </section>
+      {character.attributes && (
+        <section className="card mt-3 grid grid-cols-2 gap-x-4 gap-y-3 p-4" aria-label={t("play.attr.title")}>
+          {ATTRIBUTES.map((k) => (
+            <div key={k} className="min-w-0 space-y-1" title={t(`play.attr.${k}.hint`)}>
+              <div className="flex justify-between text-xs"><span className="text-ink-2">{t(`play.attr.${k}`)}</span><span className="num">{character.attributes![k]}</span></div>
+              <ProgressBar value={character.attributes![k]} max={100} color={ATTR_COLOR[k]} />
+            </div>
+          ))}
+        </section>
+      )}
 
       <SectionTitle>{t("play.decisions.title")}</SectionTitle>
       {decisions.length === 0 ? (

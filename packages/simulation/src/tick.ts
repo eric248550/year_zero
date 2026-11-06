@@ -8,6 +8,7 @@ import { births, comingOfAge, mortality } from "./systems/demographics";
 import { development, exploration, research } from "./systems/progress";
 import { abandonment, milestones } from "./systems/settlements";
 import { playerUpkeep } from "./systems/players";
+import { attributeDrift } from "./systems/attributes";
 
 export const MAX_EVENTS_PER_TICK = 3;
 
@@ -71,6 +72,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   produce(ctx);
   consume(ctx);
   wellbeing(ctx);
+  attributeDrift(ctx);
   mortality(ctx);
   births(ctx);
   comingOfAge(ctx);

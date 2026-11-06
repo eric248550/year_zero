@@ -3,7 +3,8 @@ import type { Character } from "@genesis/schemas";
 import { fullName, relationshipKey, residents } from "@genesis/narrative";
 import { bondKind, isReserved } from "@genesis/simulation";
 import { Pill, SectionTitle } from "@/components/ui";
-import { CareButton, CopyLink, InviteButton, LeaveWorld } from "@/components/play/people-actions";
+import { CopyLink, InviteButton, LeaveWorld } from "@/components/play/people-actions";
+import { bondTier } from "@/components/play/bond";
 import { requirePlaying } from "@/components/play/guard";
 import { ageOf } from "@/lib/play";
 import { getI18n } from "@/lib/i18n/server";
@@ -35,8 +36,8 @@ export default async function PeoplePage() {
   const Row = ({ c, note }: { c: Character; note?: string }) => {
     const alive = c.deathTick === null;
     const controller = c.controllerId ? state.players?.[c.controllerId] : undefined;
-    const canCare = alive && ageOf(state, me) >= 16 && c.homeId === me.homeId && !c.caretakerIds?.includes(me.id);
     const v = bond(c);
+    const tier = bondTier(v);
     return (
       <li className="space-y-2 px-4 py-3">
         <div className="flex items-start justify-between gap-3">
@@ -46,12 +47,12 @@ export default async function PeoplePage() {
               {note && <>{note} · </>}
               {alive ? t("play.me.age", { age: ageOf(state, c) }) : t("play.people.dead", { year: state.startYear + c.deathTick! })}
               {c.profession && <> · {term.profession(c.profession)}</>}
-              {v !== 0 && <> · <span className={v > 0 ? "text-ok" : "text-danger"}>{t("play.rel.value", { value: v })}</span></>}
+
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {controller && <Pill tone="ok">{t("play.people.player")}</Pill>}
-            {canCare && <CareButton characterId={c.id} />}
+            {v !== 0 && <span className={`num text-xs ${tier.tone}`}>{t(tier.key)} {v > 0 ? "+" : ""}{v}</span>}
           </div>
         </div>
         {invitable(c) && <InviteButton characterId={c.id} label={t("play.people.inviteAs", { name: c.givenName })} />}
@@ -82,6 +83,7 @@ export default async function PeoplePage() {
       {known.length > 0 && (
         <>
           <SectionTitle>{t("play.people.bonds")}</SectionTitle>
+          <p className="mb-2 text-xs text-ink-3">{t("play.people.bondsHint")}</p>
           <ul className="card divide-y divide-line">{known.map(({ c }) => <Row key={c.id} c={c} />)}</ul>
         </>
       )}

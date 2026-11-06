@@ -230,7 +230,10 @@ function resolveGroup(
         const c = getCharacter(draft, m.characterId);
         if (!c || c.deathTick !== null) return;
         if (choice.memberEffects?.length) applyEffects(draft, choice.memberEffects, ctx, memberRec);
-        if (choice.risk && riskRolls[i]! < riskChance) {
+        // Seasoned survivors are harder to hurt: survival 50 = as written, 100 = 30% less, 0 = 30% more.
+        const survival = draft.attributesEnabled ? c.attributes?.survival : undefined;
+        const personal = survival === undefined ? riskChance : riskChance * Math.min(1.3, Math.max(0.7, 1.3 - (survival / 100) * 0.6));
+        if (choice.risk && riskRolls[i]! < personal) {
           applyEffects(draft, choice.risk.effects, ctx, memberRec);
           struck.push(m.characterId);
         }

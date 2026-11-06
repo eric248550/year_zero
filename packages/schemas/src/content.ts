@@ -9,7 +9,7 @@ import {
   RESOURCES,
   SETTLEMENT_STATS,
 } from "./catalog";
-import { FlagValueSchema } from "./world";
+import { ATTRIBUTES, FlagValueSchema } from "./world";
 
 /* ------------------------------------------------------------------ */
 /* Conditions (preconditions / choice requirements)                    */
@@ -64,6 +64,17 @@ export const RoleSchema = z.object({
   maxAge: z.number().int().min(0).optional(),
   /** Optional roles do not block eligibility when nobody qualifies. */
   optional: z.boolean().default(false),
+  /** Only player-controlled characters can fill this role (personal events). */
+  player: z.boolean().optional(),
+  /** Only children whose parents are all dead and who have nobody caring for them. */
+  orphan: z.boolean().optional(),
+  /**
+   * Prefer people who already have history with the character in this other
+   * role (friends and enemies alike), so relationships keep developing.
+   */
+  familiarWith: z.string().optional(),
+  /** Minimum attribute values (worlds without attributes treat everyone as 50). */
+  minAttributes: z.object({ health: z.number(), social: z.number(), knowledge: z.number(), survival: z.number() }).partial().strict().optional(),
 }).strict();
 export type Role = z.infer<typeof RoleSchema>;
 
@@ -85,6 +96,8 @@ export const EFFECT_TYPES = [
   "REVEAL_SECRET",
   "ADD_LIFE_EVENT",
   "CHARACTER_DEATH",
+  "ADJUST_ATTRIBUTE",
+  "ADD_CARETAKER",
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -121,6 +134,9 @@ export const EffectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("REVEAL_SECRET"), secret: z.string() }).strict(),
   z.object({ type: z.literal("ADD_LIFE_EVENT"), role: z.string(), text: z.string().min(1).max(400) }).strict(),
   z.object({ type: z.literal("CHARACTER_DEATH"), role: z.string(), cause: z.string().min(1).max(200) }).strict(),
+  z.object({ type: z.literal("ADJUST_ATTRIBUTE"), role: z.string(), attribute: z.enum(ATTRIBUTES), delta: z.number().int().min(-50).max(50) }).strict(),
+  /** `caretaker` now looks after `ward` (adoption, nursing, apprenticeship). */
+  z.object({ type: z.literal("ADD_CARETAKER"), caretaker: z.string(), ward: z.string() }).strict(),
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
 export type EffectInput = z.input<typeof EffectSchema>;

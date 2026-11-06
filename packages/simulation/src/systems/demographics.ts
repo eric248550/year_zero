@@ -3,6 +3,7 @@ import { characterAge, fullName, hasTech, residents } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
+import { healthMortality, initAttributes } from "./attributes";
 import { professionName, say } from "@genesis/narrative";
 
 export const DEMOGRAPHY = {
@@ -41,7 +42,7 @@ export function mortality(ctx: TickContext): void {
 
     for (const c of people) {
       const age = characterAge(st, c);
-      const natural = baseMortality(age) * mult;
+      const natural = baseMortality(age) * mult * healthMortality(c);
       const accident = c.profession === "Scout" ? 0.006 : 0;
       const p = natural + accident + starvation + thirst;
       const roll = ctx.rng.next();
@@ -129,6 +130,7 @@ export function births(ctx: TickContext): void {
         lifeEvents: [],
       };
       st.characters.push(child);
+      initAttributes(st, ctx.rng, child);
       st.stats.births += 1;
       ctx.births += 1;
       const e = ctx.system({

@@ -179,3 +179,20 @@ and replay hashes.
   (assigned when born to the inviter). Unused invites expire after 7 ticks.
 - The council never relocates a player's character when founding settlements.
 - `LEAVE_WORLD` hands the character back to the simulation.
+
+## Attributes and bonds
+
+Worlds created now have `attributesEnabled`; every character has `attributes`
+(health, social, knowledge, survival, 0–100), rolled from profession and nature
+(`systems/attributes.ts`). They drift yearly without randomness (health follows
+the settlement and age, children learn, work trains its skills) and they matter:
+health scales personal mortality, survival scales personal risk in decisions,
+social scales positive relationship changes, and roles can require
+`minAttributes`. Older worlds get them through the logged `ENABLE_ATTRIBUTES`
+developer action.
+
+Bonds grow through events, not buttons. Personal scenes (`content/events/` with
+`tags: ["bonds"]`) use a `player: true` role so they only fall on players, an
+`orphan` role filter, `familiarWith` to prefer people the player already has
+history with, and two effects: `ADJUST_ATTRIBUTE` and `ADD_CARETAKER` (which is
+how someone becomes a ward and a succession candidate).

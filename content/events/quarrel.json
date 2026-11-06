@@ -1,0 +1,106 @@
+{
+  "id": "quarrel",
+  "title": "爭執",
+  "scope": "settlement",
+  "category": "social",
+  "description": "兩個人為了配給吵了起來。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 14
+    },
+    {
+      "id": "other",
+      "minAge": 14,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "apologize",
+      "label": "先道歉",
+      "tags": [
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "other",
+          "delta": 5
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "social",
+          "delta": 1
+        }
+      ],
+      "outcome": "{{other}}愣了一下，然後也說了對不起。"
+    },
+    {
+      "id": "stand",
+      "label": "堅持立場",
+      "tags": [
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "other",
+          "delta": -20
+        }
+      ],
+      "outcome": "{{other}}甩頭就走。之後在走廊上碰到，誰也不看誰。"
+    },
+    {
+      "id": "fight",
+      "label": "動手",
+      "tags": [
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "other",
+          "delta": -40
+        }
+      ],
+      "risk": {
+        "chance": 0.4,
+        "description": "{{you}}在扭打中受了傷。",
+        "effects": [
+          {
+            "type": "ADJUST_ATTRIBUTE",
+            "role": "you",
+            "attribute": "health",
+            "delta": -10
+          }
+        ]
+      },
+      "outcome": "旁邊的人好不容易才把兩個人拉開。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 2,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "和{{other}}起了爭執",
+    "text": "為了一桶水該怎麼分，{{you}}和{{other}}吵了起來，越吵越大聲。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "bonds"
+  ]
+}

@@ -13,6 +13,7 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { placeName, professionName, say } from "@genesis/narrative";
+import { rollAttributes } from "./systems/attributes";
 import { FAMILY_NAMES, GIVEN_NAMES, TRAITS, ZH_FAMILY_NAMES, ZH_GIVEN_NAMES } from "./names";
 
 export interface CreateWorldOptions {
@@ -49,6 +50,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
   const state: WorldState = {
     schemaVersion: 1,
     locale,
+    attributesEnabled: true,
     rulesVersion: RULES_VERSION,
     worldName: options.worldName ?? "Year Zero",
     seed: options.seed,
@@ -143,6 +145,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     };
     state.characters.push(c);
   }
+  for (const c of state.characters) c.attributes = rollAttributes(rng, c, -c.birthTick);
   state.stats.peakPopulation = state.characters.length;
   state.rng = rng.state;
   return state;

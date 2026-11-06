@@ -15,6 +15,7 @@ import { activeSettlements, characterAge, fullName, getCharacter, getSettlement,
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
+import { initAttributes } from "./attributes";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
 export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME">;
@@ -262,6 +263,7 @@ function newPerson(ctx: TickContext, home: Settlement, age: number, profession: 
     lifeEvents: [{ tick: st.tick, text: story, historyId: null }],
   };
   st.characters.push(c);
+  initAttributes(st, ctx.rng, c);
   return c;
 }
 
@@ -396,6 +398,7 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
         lifeEvents: [{ tick: st.tick, text: say(st).bornIn(home.name), historyId: null }],
       };
       st.characters.push(baby);
+      initAttributes(st, ctx.rng, baby);
       st.stats.births += 1;
       ctx.births += 1;
       for (const p of parents) p.lifeEvents.push({ tick: st.tick, text: say(st).childBorn(baby.givenName), historyId: null });
@@ -505,6 +508,12 @@ function prologue(ctx: TickContext, a: PlayerActionOf<"PROLOGUE">): void {
   // Each prologue scene introduces someone new.
   const met = Object.keys(st.relationships).filter((k) => k.split("|").includes(me.id)).map((k) => k.split("|").find((id) => id !== me.id)!);
   player.prologue = [...(player.prologue ?? []), a.step];
+  // Each first choice leaves a small mark on who you are.
+  const NUDGE: Record<string, [keyof NonNullable<Character["attributes"]>, number]> = {
+    surface: ["survival", 3], repair: ["knowledge", 3], share: ["social", 3], refuse: ["survival", 2], tell: ["social", 2], keep: ["knowledge", 2],
+  };
+  const nudge = NUDGE[a.choiceId];
+  if (me.attributes && nudge) me.attributes[nudge[0]] = Math.min(100, me.attributes[nudge[0]] + nudge[1]);
 
   const record = (title: string, text: string, other: Character | undefined, changes: ReturnType<typeof bond>[], minor = true) => {
     const e = ctx.system({

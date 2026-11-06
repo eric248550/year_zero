@@ -133,7 +133,7 @@ describe("everyone decides for themselves", () => {
     const d = opened.state.pendingDecisions![0]!;
     expect(d.participants).toEqual([medic.id]);
     const done = step(opened.state, [{ type: "CHOOSE", playerId: "doc", decisionId: d.id, choiceId: "save" }], [triage]);
-    expect(getCharacter(done.state, medic.id)!.lifeEvents.at(-1)!.text).toMatch(/Save the child/);
+    expect(getCharacter(done.state, medic.id)!.lifeEvents.some((e) => /Save the child/.test(e.text))).toBe(true);
     expect(getCharacter(done.state, medic.id)!.lifeEvents.map((e) => e.text)).toContain("Saved a child");
   });
 
@@ -291,5 +291,48 @@ describe("determinism with players", () => {
       return hashState(s);
     };
     expect(run()).toBe(run());
+  });
+});
+
+describe("attributes and bonds", () => {
+  it("new worlds give everyone attributes shaped by profession", () => {
+    const w = createWorld({ seed: 30 });
+    expect(w.attributesEnabled).toBe(true);
+    for (const c of w.characters) {
+      for (const v of Object.values(c.attributes!)) expect(v).toBeGreaterThanOrEqual(0);
+    }
+    const scouts = w.characters.filter((c) => c.profession === "Scout");
+    const others = w.characters.filter((c) => c.profession === "Scientist");
+    const avg = (cs: typeof scouts, k: "survival" | "knowledge") => cs.reduce((s, c) => s + c.attributes![k], 0) / Math.max(1, cs.length);
+    if (scouts.length && others.length) expect(avg(scouts, "survival")).toBeGreaterThan(avg(others, "survival"));
+  });
+
+  it("older worlds can be given attributes by a logged developer action", () => {
+    const w = createWorld({ seed: 31, locale: "en" });
+    delete w.attributesEnabled;
+    for (const c of w.characters) delete c.attributes;
+    const r = step(w, [{ type: "ENABLE_ATTRIBUTES" }]);
+    expect(r.state.attributesEnabled).toBe(true);
+    expect(r.state.characters.filter((c) => c.deathTick === null).every((c) => c.attributes)).toBe(true);
+  });
+
+  it("an orphan scene lets a player take a child in, which makes them a ward", () => {
+    const w = createWorld({ seed: 32 });
+    const orphan = w.characters.find((c) => characterAge(w, c) < 14)!;
+    for (const pid of orphan.parentIds) { const p = getCharacter(w, pid)!; p.deathTick = 0; p.causeOfDeath = "test"; }
+    const adult = w.characters.find((c) => characterAge(w, c) >= 25 && !orphan.parentIds.includes(c.id))!;
+    const orphanEvent = seedContent.events.find((e) => e.id === "orphan-child")!;
+    const opened = step(w, [join("p", { characterId: adult.id })], [{ ...orphanEvent, chance: 1 }]);
+    const d = opened.state.pendingDecisions?.find((x) => x.definitionId === "orphan-child");
+    expect(d?.roles.child).toBe(orphan.id);
+    const done = step(opened.state, [{ type: "CHOOSE", playerId: "p", decisionId: d!.id, choiceId: "adopt" }], [orphanEvent]);
+    expect(getCharacter(done.state, orphan.id)!.caretakerIds).toContain(adult.id);
+    expect(done.state.relationships[relationshipKey(adult.id, orphan.id)]).toBeGreaterThan(20);
+  });
+
+  it("personal scenes only ever fall on players", () => {
+    const watch = { ...seedContent.events.find((e) => e.id === "night-watch")!, chance: 1, cooldown: 0 };
+    const npcOnly = step(createWorld({ seed: 33 }), [], [watch]);
+    expect(npcOnly.events.some((e) => e.definitionId === "night-watch")).toBe(false);
   });
 });

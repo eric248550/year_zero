@@ -79,6 +79,8 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
     settlers: z.number().int().min(4).max(40),
   }).strict(),
   z.object({ type: z.literal("LAUNCH_EXPEDITION"), settlementId: z.string() }).strict(),
+  /** Give an older world character attributes. Applied at the next tick and logged, so replays stay exact. */
+  z.object({ type: z.literal("ENABLE_ATTRIBUTES") }).strict(),
   z.object({ type: z.literal("ASSIGN_PROFESSION"), characterId: z.string(), profession: z.enum(PROFESSIONS) }).strict(),
   z.object({
     type: z.literal("TRANSFER_RESOURCES"),

@@ -47,6 +47,17 @@ export const LifeEventSchema = z.object({
 });
 export type LifeEvent = z.infer<typeof LifeEventSchema>;
 
+/** Personal attributes, 0–100. */
+export const ATTRIBUTES = ["health", "social", "knowledge", "survival"] as const;
+export type AttributeId = (typeof ATTRIBUTES)[number];
+export const AttributesSchema = z.object({
+  health: z.number().min(0).max(100),
+  social: z.number().min(0).max(100),
+  knowledge: z.number().min(0).max(100),
+  survival: z.number().min(0).max(100),
+});
+export type Attributes = z.infer<typeof AttributesSchema>;
+
 export const CharacterSchema = z.object({
   id: z.string(),
   givenName: z.string(),
@@ -63,6 +74,8 @@ export const CharacterSchema = z.object({
   controllerId: z.string().optional(),
   /** Characters who adopted or cared for this one (succession candidates for their players). */
   caretakerIds: z.array(z.string()).optional(),
+  /** Present in worlds with attributes enabled. */
+  attributes: AttributesSchema.optional(),
 });
 export type Character = z.infer<typeof CharacterSchema>;
 
@@ -130,6 +143,8 @@ export const WorldStateSchema = z.object({
   schemaVersion: z.literal(1),
   /** Language of engine-generated text. Absent = English (worlds created before locales existed). */
   locale: z.enum(WORLD_LOCALES).optional(),
+  /** Characters have attributes (health, social, knowledge, survival). Absent in older worlds. */
+  attributesEnabled: z.boolean().optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),
