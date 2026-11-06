@@ -1,9 +1,9 @@
 {
   "id": "founders-reckoning",
-  "title": "Reckoning with the Founders",
+  "title": "清算創建者",
   "scope": "world",
   "category": "social",
-  "description": "With Halcyon public, someone notices that Haven Deep's founders appear in the project's staff lists.",
+  "description": "海爾西恩計畫公開之後，有人發現深港地堡的創建者出現在計畫的職員名單上。",
   "preconditions": [
     {
       "type": "flag",
@@ -35,7 +35,7 @@
   "choices": [
     {
       "id": "forgive",
-      "label": "Honour the founders anyway",
+      "label": "依然尊敬創建者",
       "tags": [
         "community"
       ],
@@ -53,11 +53,11 @@
           "target": "all_settlements"
         }
       ],
-      "outcome": "They built the vault that saved us, says {{defender}}. Most agree."
+      "outcome": "「是他們蓋了救了我們的地堡。」{{defender}}說。大多數人都同意。"
     },
     {
       "id": "repudiate",
-      "label": "Tear down the founders' memorial",
+      "label": "拆掉創建者的紀念碑",
       "tags": [
         "bold",
         "openness"
@@ -80,7 +80,7 @@
           "target": "all_settlements"
         }
       ],
-      "outcome": "The memorial plaque in Haven Deep is pried off the wall. {{defender}} never forgives {{accuser}}."
+      "outcome": "深港地堡的紀念牌被從牆上撬了下來。{{defender}}再也沒有原諒{{accuser}}。"
     }
   ],
   "priority": 5,
@@ -92,8 +92,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "The founders knew",
-    "text": "{{accuser}} held up a staff list from the Halcyon archive. Half the names matched the plaque at the entrance of Haven Deep."
+    "headline": "創建者早就知道",
+    "text": "{{accuser}}舉起一份海爾西恩檔案裡的職員名單。上面有一半的名字，和深港地堡入口的紀念牌一模一樣。"
   },
   "version": 1,
   "status": "published",

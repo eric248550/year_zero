@@ -8,6 +8,8 @@ import { PolicySchema } from "./world";
  * replayed without any external input.
  */
 const PlayerIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "player ids are 1-64 letters, digits, _ or -");
+/** One part of a character's name. Trimmed; no control characters. */
+const NamePartSchema = z.string().trim().min(1).max(20).regex(/^[^\p{C}]+$/u, "names cannot contain control characters");
 const InviteCodeSchema = z.string().regex(/^[A-Za-z0-9_-]{4,32}$/, "invite codes are 4-32 letters, digits, _ or -");
 
 /** Ways a new player can enter the world. Most unlock as the world develops. */
@@ -15,7 +17,16 @@ export const ORIGIN_IDS = ["haven_deep", "surface_born", "wanderer", "vault12"] 
 export type OriginId = (typeof ORIGIN_IDS)[number];
 
 /** Actions taken by individual players (as opposed to developer/council directives). */
-export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD"] as const;
+export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME"] as const;
+
+/** The first-session prologue: three small choices whose results show at once. Order matters. */
+export const PROLOGUE_STEPS = {
+  first_climb: ["surface", "repair"],
+  water: ["share", "refuse"],
+  static: ["tell", "keep"],
+} as const;
+export type PrologueStep = keyof typeof PROLOGUE_STEPS;
+export const PROLOGUE_ORDER = Object.keys(PROLOGUE_STEPS) as PrologueStep[];
 
 export const PlayerActionSchema = z.discriminatedUnion("type", [
   z.object({
@@ -28,8 +39,11 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
     characterId: z.string().optional(),
     /** Settlement to arrive at / grow up in (surface_born, wanderer, vault12). */
     settlementId: z.string().optional(),
-    givenName: z.string().min(1).max(30).optional(),
+    givenName: NamePartSchema.optional(),
+    familyName: NamePartSchema.optional(),
     profession: z.enum(PROFESSIONS).optional(),
+    /** Personality trait (validated against the simulation's trait list). */
+    trait: z.string().max(24).optional(),
     inviteCode: InviteCodeSchema.optional(),
   }).strict(),
   z.object({ type: z.literal("CHOOSE"), playerId: PlayerIdSchema, decisionId: z.string(), choiceId: z.string() }).strict(),
@@ -49,6 +63,13 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
     characterId: z.string().optional(),
   }).strict(),
   z.object({ type: z.literal("LEAVE_WORLD"), playerId: PlayerIdSchema }).strict(),
+  z.object({ type: z.literal("RENAME"), playerId: PlayerIdSchema, givenName: NamePartSchema, familyName: NamePartSchema.or(z.literal("")) }).strict(),
+  z.object({
+    type: z.literal("PROLOGUE"),
+    playerId: PlayerIdSchema,
+    step: z.enum(["first_climb", "water", "static"]),
+    choiceId: z.string(),
+  }).strict(),
   z.object({ type: z.literal("SET_POLICY"), policy: PolicySchema }).strict(),
   z.object({ type: z.literal("SET_RESEARCH_FOCUS"), tech: z.string().nullable() }).strict(),
   z.object({

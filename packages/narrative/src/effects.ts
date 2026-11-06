@@ -16,6 +16,7 @@ import {
 } from "@genesis/schemas";
 import { EffectError, InsufficientResourcesError } from "./errors";
 import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, relationshipKey, round2 } from "./queries";
+import { say } from "./texts";
 
 /** Collects every transition made inside a transaction. */
 export interface ChangeRecorder {
@@ -229,7 +230,7 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       if (!c) return;
       c.deathTick = state.tick;
       c.causeOfDeath = effect.cause;
-      c.lifeEvents.push({ tick: state.tick, text: `Died: ${effect.cause}`, historyId: ctx.historyId });
+      c.lifeEvents.push({ tick: state.tick, text: say(state).diedEvent(effect.cause), historyId: ctx.historyId });
       state.stats.deaths += 1;
       record(rec, `characters.${c.id}.alive`, `${fullName(c)} alive`, true, false);
       return;

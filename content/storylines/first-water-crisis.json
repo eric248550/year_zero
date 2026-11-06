@@ -1,18 +1,44 @@
 {
   "id": "first-water-crisis",
-  "title": "First Water Crisis",
-  "summary": "Haven Deep's reclaimers were built for a sealed vault, not a growing surface population. As people spread out, clean water becomes the first hard limit on survival. The crisis can be solved by engineering, by finding a clean source, by rationing — or not at all.",
-  "themes": ["scarcity", "trust", "engineering"],
+  "title": "第一次水危機",
+  "summary": "深港地堡的濾水機是為密封的地堡設計的，不是為了不斷增加的地表人口。人們往外擴散之後，乾淨的水成了生存的第一道硬限制。這場危機可以靠工程解決、靠找到乾淨水源解決、靠配給解決——也可能根本解決不了。",
+  "themes": [
+    "scarcity",
+    "trust",
+    "engineering"
+  ],
   "beats": [
-    { "id": "failure", "title": "The filters fail", "description": "Aging reclaimer filters clog or crack while demand grows.", "eventIds": ["reclaimer-filter-failure"] },
-    { "id": "contamination", "title": "Something in the water", "description": "Thirst drives people to unsafe sources; sickness follows.", "eventIds": ["contaminated-well"] },
-    { "id": "response", "title": "Who controls the water", "description": "A council forms to ration water, or scouts chase rumours of a clean aquifer.", "eventIds": ["water-rationing-council", "aquifer-rumour"] }
+    {
+      "id": "failure",
+      "title": "濾水機故障",
+      "description": "老舊的濾芯在用水量增加時堵塞或破裂。",
+      "eventIds": [
+        "reclaimer-filter-failure"
+      ]
+    },
+    {
+      "id": "contamination",
+      "title": "水裡有東西",
+      "description": "口渴逼得人們去喝不安全的水，疾病隨之而來。",
+      "eventIds": [
+        "contaminated-well"
+      ]
+    },
+    {
+      "id": "response",
+      "title": "誰來掌控水",
+      "description": "成立議會來配水，或是讓斥候去追查乾淨含水層的傳聞。",
+      "eventIds": [
+        "water-rationing-council",
+        "aquifer-rumour"
+      ]
+    }
   ],
   "possibleOutcomes": [
-    "Water purification is rediscovered and the crisis fades into memory.",
-    "A rationing council becomes the first real government on the surface.",
-    "The Old Reservoir is found and becomes the region's lifeline.",
-    "Repeated shortages hollow out the bunker and its people scatter or die."
+    "淨水技術被重新找回，這場危機成了往事。",
+    "配水議會成了地表上第一個真正的政府。",
+    "舊水庫被找到，成為整個地區的命脈。",
+    "一再的短缺掏空了地堡，人們四散或死去。"
   ],
   "status": "published"
 }

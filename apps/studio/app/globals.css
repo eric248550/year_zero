@@ -94,3 +94,8 @@
     padding-bottom: 2.5rem;
   }
 }
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}

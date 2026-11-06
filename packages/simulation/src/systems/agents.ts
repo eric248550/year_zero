@@ -1,5 +1,5 @@
 import { LOCATION_BY_ID, PLAYER_ACTION_TYPES, POLICY_INFO, PlayerActionSchema, TECH_BY_ID, type PlayerAction, type ResourceId } from "@genesis/schemas";
-import { activeSettlements, characterAge, fullName, getSettlement, newRecorder, population, residents, round2, spendResources } from "@genesis/narrative";
+import { activeSettlements, characterAge, fullName, getSettlement, newRecorder, population, professionName, residents, resourceName, round2, say, spendResources } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { attemptExploration, researchable } from "./progress";
 import { foundSettlement, foundingBlocker } from "./settlements";
@@ -106,7 +106,7 @@ export function applyAction(ctx: TickContext, a: PlayerAction): void {
       const c = st.characters.find((x) => x.id === a.characterId)!;
       const before = c.profession;
       c.profession = a.profession;
-      c.lifeEvents.push({ tick: st.tick, text: `Reassigned to work as a ${a.profession}`, historyId: null });
+      c.lifeEvents.push({ tick: st.tick, text: say(st).reassigned(professionName(st, a.profession)), historyId: null });
       directive(ctx, `${fullName(c)} becomes a ${a.profession}`, `${fullName(c)} leaves work as a ${before ?? "youth"}.`, [c.homeId], [{ path: `characters.${c.id}.profession`, label: `${fullName(c)} profession`, before, after: a.profession }]);
       return;
     }
@@ -168,8 +168,8 @@ export function councilDecisions(ctx: TickContext): void {
       ctx.system({
         category: "resource",
         importance: "minor",
-        title: `Relief caravan: ${amount} ${r} to ${needy.name}`,
-        text: `${donor.name} sends ${amount} ${r} to ease the shortage in ${needy.name}.`,
+        title: say(st).reliefTitle(amount, resourceName(st, r), needy.name),
+        text: say(st).reliefText(donor.name, amount, resourceName(st, r), needy.name),
         settlementIds: [donor.id, needy.id],
         causeIds: needy.shortageOrigin[r] ? [needy.shortageOrigin[r]!] : [],
         changes: rec.changes,

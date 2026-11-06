@@ -2,6 +2,7 @@ import { LOCATION_BY_ID, type ResourceId, type Settlement, type StateChange } fr
 import { characterAge, hasTech, residents, round2 } from "@genesis/narrative";
 import { ADULT_AGE, ELDER_AGE } from "@genesis/schemas";
 import type { TickContext } from "../context";
+import { resourceName, say } from "@genesis/narrative";
 
 /** Tunable economic constants. Changing these changes RULES_VERSION semantics. */
 export const ECONOMY = {
@@ -120,8 +121,8 @@ export function consume(ctx: TickContext): void {
           const e = ctx.system({
             category: "resource",
             importance: "notable",
-            title: `${r === "food" ? "Food" : "Water"} shortage in ${s.name}`,
-            text: `${s.name} could not meet ${Math.round(deficit[r] * 100)}% of its ${r} needs this year. Rationing begins; the weak and the young suffer first.`,
+            title: say(ctx.state).shortageTitle(r, s.name),
+            text: say(ctx.state).shortageText(s.name, Math.round(deficit[r] * 100), resourceName(ctx.state, r)),
             settlementIds: [s.id],
             changes: [change],
             summary: `Stock (${round2(available)}) fell short of the yearly need (${round2(need)}) for ${w.residents} residents`,
@@ -134,8 +135,8 @@ export function consume(ctx: TickContext): void {
         ctx.system({
           category: "resource",
           importance: "minor",
-          title: `${s.name} recovers from ${r} shortage`,
-          text: `After ${s.shortage[r]} lean year(s), ${s.name} once again meets its ${r} needs.`,
+          title: say(ctx.state).recoverTitle(s.name, resourceName(ctx.state, r)),
+          text: say(ctx.state).recoverText(s.shortage[r], s.name, resourceName(ctx.state, r)),
           settlementIds: [s.id],
           causeIds: origin ? [origin] : [],
         });

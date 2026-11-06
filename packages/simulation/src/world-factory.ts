@@ -9,12 +9,16 @@ import {
   type Character,
   type PolicyId,
   type Profession,
+  type WorldLocale,
   type WorldState,
 } from "@genesis/schemas";
-import { FAMILY_NAMES, GIVEN_NAMES, TRAITS } from "./names";
+import { placeName, professionName, say } from "@genesis/narrative";
+import { FAMILY_NAMES, GIVEN_NAMES, TRAITS, ZH_FAMILY_NAMES, ZH_GIVEN_NAMES } from "./names";
 
 export interface CreateWorldOptions {
   seed: number;
+  /** Language of engine-generated text. Default zh-TW; "en" for English worlds. */
+  locale?: WorldLocale;
   policy?: PolicyId;
   worldName?: string;
   survivors?: number;
@@ -26,8 +30,10 @@ export function newCharacterId(state: WorldState): string {
   return id;
 }
 
-export function randomName(rng: Rng, family?: string): { givenName: string; familyName: string } {
-  return { givenName: rng.pick(GIVEN_NAMES), familyName: family ?? rng.pick(FAMILY_NAMES) };
+/** A default name in the world's language. Children keep their parent's family name. */
+export function randomName(rng: Rng, family?: string, locale?: WorldLocale): { givenName: string; familyName: string } {
+  const zh = locale === "zh-TW";
+  return { givenName: rng.pick(zh ? ZH_GIVEN_NAMES : GIVEN_NAMES), familyName: family ?? rng.pick(zh ? ZH_FAMILY_NAMES : FAMILY_NAMES) };
 }
 
 /**
@@ -38,8 +44,11 @@ export function createWorld(options: CreateWorldOptions): WorldState {
   const rng = new Rng(seedToState(options.seed));
   const survivors = options.survivors ?? 20;
 
+  const locale: WorldLocale = options.locale ?? "zh-TW";
+  const t = say({ locale });
   const state: WorldState = {
     schemaVersion: 1,
+    locale,
     rulesVersion: RULES_VERSION,
     worldName: options.worldName ?? "Year Zero",
     seed: options.seed,
@@ -52,7 +61,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     settlements: [
       {
         id: "s-haven",
-        name: "Haven Deep",
+        name: placeName({ locale }, "haven_deep"),
         locationId: "haven_deep",
         kind: "bunker",
         status: "active",
@@ -103,7 +112,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     const age = rng.int(18, 58);
     const c: Character = {
       id: newCharacterId(state),
-      ...randomName(rng),
+      ...randomName(rng, undefined, locale),
       birthTick: -age,
       deathTick: null,
       causeOfDeath: null,
@@ -111,9 +120,9 @@ export function createWorld(options: CreateWorldOptions): WorldState {
       homeId: "s-haven",
       parentIds: [],
       traits: [rng.pick(TRAITS)],
-      lifeEvents: [{ tick: -age, text: "Born in Haven Deep (Vault 7)", historyId: null }],
+      lifeEvents: [{ tick: -age, text: t.bornHaven(), historyId: null }],
     };
-    c.lifeEvents.push({ tick: 0, text: `Among the survivors who opened the Haven Deep blast door, working as a ${c.profession}`, historyId: null });
+    c.lifeEvents.push({ tick: 0, text: t.openedDoor(professionName({ locale }, c.profession)), historyId: null });
     adultsList.push(c);
     state.characters.push(c);
   }
@@ -122,7 +131,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     const parent = rng.pick(adultsList.filter((a) => -a.birthTick - age >= 18));
     const c: Character = {
       id: newCharacterId(state),
-      ...randomName(rng, parent?.familyName),
+      ...randomName(rng, parent?.familyName, locale),
       birthTick: -age,
       deathTick: null,
       causeOfDeath: null,
@@ -130,7 +139,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
       homeId: "s-haven",
       parentIds: parent ? [parent.id] : [],
       traits: [rng.pick(TRAITS)],
-      lifeEvents: [{ tick: -age, text: "Born in Haven Deep (Vault 7)", historyId: null }],
+      lifeEvents: [{ tick: -age, text: t.bornHaven(), historyId: null }],
     };
     state.characters.push(c);
   }

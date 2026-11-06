@@ -13,6 +13,7 @@ import {
   unlockTechnology,
 } from "@genesis/narrative";
 import type { TickContext } from "../context";
+import { placeDescription, placeName, say, techText } from "@genesis/narrative";
 
 export function researchable(ctx: TickContext, tech: TechnologyInfo): boolean {
   const st = ctx.state;
@@ -65,8 +66,8 @@ export function research(ctx: TickContext): void {
   ctx.system({
     category: "technology",
     importance: "major",
-    title: `${target.name} rediscovered`,
-    text: `After years of work, the survivors master ${target.name}. ${target.description} Effect: ${target.effect}`,
+    title: say(st).techTitle(techText(st, target.id).name),
+    text: say(st).techBody(techText(st, target.id).name, techText(st, target.id).description, techText(st, target.id).effect),
     changes: [{ path: "knowledge.total", label: "Total knowledge", before, after: round2(totalResource(st, "knowledge")) }, ...rec.changes],
     summary: `Accumulated knowledge reached the research cost (${target.cost}); prerequisites ${target.prerequisites.length ? target.prerequisites.join(", ") : "none"} satisfied`,
   });
@@ -91,8 +92,8 @@ export function development(ctx: TickContext): void {
     ctx.system({
       category: "settlement",
       importance: "notable",
-      title: `${s.name} grows to level ${s.level}`,
-      text: `Engineers in ${s.name} raise new shelters and workshops. Capacity rises to ${s.capacity}.`,
+      title: say(ctx.state).growTitle(s.name, s.level),
+      text: say(ctx.state).growText(s.name, s.capacity),
       settlementIds: [s.id],
       changes: [
         { path: `settlements.${s.id}.level`, label: `${s.name} level`, before: before.level, after: s.level },
@@ -121,14 +122,14 @@ export function attemptExploration(ctx: TickContext, s: Settlement, bonus: numbe
   const e = ctx.system({
     category: "exploration",
     importance: "notable",
-    title: `${info.name} discovered`,
-    text: `${fullName(scout)}, scouting from ${s.name}, reaches ${info.name}. ${info.description}${info.settleable ? " The site could support a settlement." : ""}`,
+    title: say(st).discoverTitle(placeName(st, info.id)),
+    text: say(st).discoverText(fullName(scout), s.name, placeName(st, info.id), placeDescription(st, info.id), info.settleable),
     settlementIds: [s.id],
     characterIds: [scout.id],
     changes: rec.changes,
     summary: reason,
   });
-  scout.lifeEvents.push({ tick: st.tick, text: `Discovered ${info.name}`, historyId: e.id });
+  scout.lifeEvents.push({ tick: st.tick, text: say(st).discoveredLife(placeName(st, info.id)), historyId: e.id });
   return true;
 }
 

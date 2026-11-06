@@ -1,9 +1,9 @@
 {
   "id": "strange-signal",
-  "title": "A Signal in the Static",
+  "title": "雜訊裡的訊號",
   "scope": "settlement",
   "category": "mystery",
-  "description": "A repeating, faint transmission is heard on salvaged equipment.",
+  "description": "撿回來的設備收到一段微弱、不斷重複的訊號。",
   "preconditions": [
     {
       "type": "world_tick",
@@ -30,7 +30,7 @@
     {
       "type": "ADD_LIFE_EVENT",
       "role": "listener",
-      "text": "First heard the Vault 12 signal"
+      "text": "第一個聽見第十二號避難所的訊號"
     }
   ],
   "choices": [],
@@ -43,8 +43,8 @@
   ],
   "importance": "notable",
   "narrative": {
-    "headline": "A signal in the static",
-    "text": "Tinkering with a salvaged receiver, {{listener}} heard it: three short tones, a pause, and a voice too broken to understand. It repeats every nine minutes."
+    "headline": "雜訊裡的訊號",
+    "text": "{{listener}}在修一台撿回來的收音機時聽到了：三聲短音、一段停頓，然後是一個破碎到聽不清的人聲。每九分鐘重複一次。"
   },
   "version": 1,
   "status": "published",

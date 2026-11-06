@@ -1,9 +1,9 @@
 {
   "id": "settlement-dispute",
-  "title": "Dispute Over Stores",
+  "title": "庫存糾紛",
   "scope": "settlement",
   "category": "social",
-  "description": "Two residents clash over how communal stores are shared.",
+  "description": "兩位居民為了公共庫存要怎麼分而起衝突。",
   "preconditions": [
     {
       "type": "population",
@@ -42,7 +42,7 @@
   "choices": [
     {
       "id": "mediate",
-      "label": "Mediate",
+      "label": "出面調解",
       "tags": [
         "community"
       ],
@@ -59,14 +59,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "mediator",
-          "text": "Settled a bitter dispute over the stores"
+          "text": "調解了一場激烈的庫存糾紛"
         }
       ],
-      "outcome": "{{mediator}} brokers an uneasy peace."
+      "outcome": "{{mediator}}促成了一個勉強的和解。"
     },
     {
       "id": "punish",
-      "label": "Punish both",
+      "label": "兩個都罰",
       "tags": [
         "cautious",
         "secrecy"
@@ -78,7 +78,7 @@
           "delta": -4
         }
       ],
-      "outcome": "Both lose a week of rations. Nobody is happy."
+      "outcome": "兩人都被扣了一星期的配給。沒有人滿意。"
     }
   ],
   "priority": 3,
@@ -87,8 +87,8 @@
   "storylineIds": [],
   "importance": "minor",
   "narrative": {
-    "headline": "A quarrel in {{settlement}}",
-    "text": "{{a}} accused {{b}} of taking more than their share from the stores."
+    "headline": "{{settlement}}的爭吵",
+    "text": "{{a}}指控{{b}}從庫存裡拿了超過自己該拿的份。"
   },
   "version": 1,
   "status": "published",

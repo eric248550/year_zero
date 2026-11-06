@@ -1,9 +1,9 @@
 {
   "id": "grid-surge",
-  "title": "Grid Surge",
+  "title": "電網突波",
   "scope": "settlement",
   "category": "technology",
-  "description": "A surge on the new power grid burns out transformers. Only possible once a power grid exists.",
+  "description": "新電網的一次突波燒毀了變壓器。只有在電網建成後才會發生。",
   "preconditions": [
     {
       "type": "technology",
@@ -28,7 +28,7 @@
   "choices": [
     {
       "id": "repair",
-      "label": "Repair and add breakers",
+      "label": "修好並加裝斷路器",
       "tags": [
         "industry",
         "cautious"
@@ -45,14 +45,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "engineer",
-          "text": "Rebuilt the grid after the great surge"
+          "text": "在大突波之後重建電網"
         }
       ],
-      "outcome": "{{engineer}} designs breakers from salvaged relays."
+      "outcome": "{{engineer}}用回收來的繼電器設計出斷路器。"
     },
     {
       "id": "ration_power",
-      "label": "Ration power",
+      "label": "限量供電",
       "tags": [
         "cautious"
       ],
@@ -63,7 +63,7 @@
           "delta": -5
         }
       ],
-      "outcome": "Lights go out at dusk again, for now."
+      "outcome": "天一黑燈又滅了，暫時只能這樣。"
     }
   ],
   "priority": 4,
@@ -72,8 +72,8 @@
   "storylineIds": [],
   "importance": "notable",
   "narrative": {
-    "headline": "Grid surge in {{settlement}}",
-    "text": "A lightning strike sent a surge down the new lines into {{settlement}}. {{engineer}} smelled burning copper."
+    "headline": "{{settlement}}的電網突波",
+    "text": "一道閃電讓突波沿著新電線竄進{{settlement}}。{{engineer}}聞到了銅線燒焦的味道。"
   },
   "version": 1,
   "status": "published",

@@ -1,19 +1,58 @@
 {
   "id": "the-forgotten-bunker",
-  "title": "The Forgotten Bunker",
-  "summary": "A faint, repeating signal hints at a second vault that appears on no Haven Deep map. Following it leads to Vault 12, sealed from the inside, and to records that could explain the collapse — and implicate Haven Deep's own founders. Whether the truth is shared or buried is up to the survivors.",
-  "themes": ["mystery", "truth", "legacy"],
+  "title": "被遺忘的地堡",
+  "summary": "一段微弱、不斷重複的訊號，暗示有第二座地堡存在，而它不在任何一張深港地堡的地圖上。追著訊號走，會找到從裡面封死的第十二號避難所，以及可能解釋崩潰原因的紀錄——還可能牽連到深港地堡自己的創建者。真相要公開還是埋葬，由倖存者決定。",
+  "themes": [
+    "mystery",
+    "truth",
+    "legacy"
+  ],
   "beats": [
-    { "id": "signal", "title": "A signal in the static", "description": "Someone — or something — is still transmitting.", "eventIds": ["strange-signal"] },
-    { "id": "search", "title": "The search", "description": "Scouts follow the signal across dangerous ground.", "eventIds": ["follow-the-signal"] },
-    { "id": "door", "title": "The sealed door", "description": "Vault 12's blast door is welded shut from within.", "eventIds": ["sealed-vault-door"] },
-    { "id": "logs", "title": "The Halcyon logs", "description": "The vault's archive explains the collapse.", "eventIds": ["halcyon-logs"] },
-    { "id": "reckoning", "title": "Reckoning with the founders", "description": "If the truth is out, Haven Deep must face what its founders knew.", "eventIds": ["founders-reckoning"] }
+    {
+      "id": "signal",
+      "title": "雜訊裡的訊號",
+      "description": "有人——或有什麼東西——還在發送訊號。",
+      "eventIds": [
+        "strange-signal"
+      ]
+    },
+    {
+      "id": "search",
+      "title": "搜尋",
+      "description": "斥候跟著訊號，穿越危險的地帶。",
+      "eventIds": [
+        "follow-the-signal"
+      ]
+    },
+    {
+      "id": "door",
+      "title": "封死的門",
+      "description": "第十二號避難所的防爆門從裡面被焊死了。",
+      "eventIds": [
+        "sealed-vault-door"
+      ]
+    },
+    {
+      "id": "logs",
+      "title": "海爾西恩日誌",
+      "description": "避難所的檔案解釋了崩潰的原因。",
+      "eventIds": [
+        "halcyon-logs"
+      ]
+    },
+    {
+      "id": "reckoning",
+      "title": "清算創建者",
+      "description": "如果真相公開，深港地堡就必須面對創建者早就知道的事。",
+      "eventIds": [
+        "founders-reckoning"
+      ]
+    }
   ],
   "possibleOutcomes": [
-    "The truth about Project Halcyon becomes common knowledge and reshapes how survivors see the old world.",
-    "A small circle keeps the secret, and the archive becomes a source of hidden power.",
-    "The signal is never followed, and Vault 12 stays a rumour."
+    "海爾西恩計畫的真相成了眾所皆知的事，改變了倖存者看待舊世界的方式。",
+    "一小群人守住了祕密，檔案成了隱藏的權力來源。",
+    "沒有人去追那個訊號，第十二號避難所一直只是個傳聞。"
   ],
   "status": "published"
 }

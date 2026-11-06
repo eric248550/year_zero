@@ -81,6 +81,8 @@ export const PlayerSchema = z.object({
   characterId: z.string().nullable(),
   /** Every character this player has controlled, oldest first. */
   lineage: z.array(z.string()),
+  /** Prologue steps completed (first session only). */
+  prologue: z.array(z.string()).optional(),
 });
 export type Player = z.infer<typeof PlayerSchema>;
 
@@ -121,8 +123,13 @@ export const InviteSchema = z.object({
 });
 export type Invite = z.infer<typeof InviteSchema>;
 
+export const WORLD_LOCALES = ["en", "zh-TW"] as const;
+export type WorldLocale = (typeof WORLD_LOCALES)[number];
+
 export const WorldStateSchema = z.object({
   schemaVersion: z.literal(1),
+  /** Language of engine-generated text. Absent = English (worlds created before locales existed). */
+  locale: z.enum(WORLD_LOCALES).optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),

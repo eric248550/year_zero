@@ -1,6 +1,7 @@
 import { LOCATION_BY_ID, TECHNOLOGIES, type Character, type Settlement } from "@genesis/schemas";
 import { activeSettlements, characterAge, hasTech, population, residents, round2 } from "@genesis/narrative";
 import type { TickContext } from "../context";
+import { placeDescription, placeName, say } from "@genesis/narrative";
 
 export const FOUNDING_MATERIALS = 30;
 
@@ -48,7 +49,7 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
 
   const settlement: Settlement = {
     id,
-    name: info.name,
+    name: placeName(st, locationId),
     locationId,
     kind: "settlement",
     status: "active",
@@ -69,8 +70,8 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
   const e = ctx.system({
     category: "settlement",
     importance: "major",
-    title: `Founding of ${info.name}`,
-    text: `${movers.length} people leave ${from.name} to build a new home at ${info.name}. ${info.description}`,
+    title: say(st).foundTitle(placeName(st, locationId)),
+    text: say(st).foundText(movers.length, from.name, placeName(st, locationId), placeDescription(st, locationId)),
     settlementIds: [id, from.id],
     characterIds: movers.map((m) => m.id),
     changes: [
@@ -80,7 +81,7 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
     ],
     summary: reason,
   });
-  for (const m of movers) m.lifeEvents.push({ tick: st.tick, text: `Helped found ${info.name}`, historyId: e.id });
+  for (const m of movers) m.lifeEvents.push({ tick: st.tick, text: say(st).helpedFound(placeName(st, locationId)), historyId: e.id });
   return settlement;
 }
 
@@ -96,8 +97,8 @@ export function abandonment(ctx: TickContext): void {
     ctx.system({
       category: "settlement",
       importance: "major",
-      title: `${s.name} falls silent`,
-      text: `The last resident of ${s.name} is gone. Its shelters stand empty.`,
+      title: say(st).silentTitle(s.name),
+      text: say(st).silentText(s.name),
       settlementIds: [s.id],
       changes: [{ path: `settlements.${s.id}.status`, label: s.name, before: "active", after: "abandoned" }],
     });
@@ -107,8 +108,8 @@ export function abandonment(ctx: TickContext): void {
     ctx.system({
       category: "milestone",
       importance: "critical",
-      title: "The last survivor dies",
-      text: "Human civilization in the region has collapsed. The world continues without them.",
+      title: say(st).lastTitle(),
+      text: say(st).lastText(),
     });
   }
 }
@@ -126,18 +127,18 @@ export function milestones(ctx: TickContext): void {
       ctx.system({
         category: "milestone",
         importance: "major",
-        title: `Population reaches ${m}`,
-        text: `For the first time since the collapse, ${pop} people live in the region.`,
+        title: say(st).popTitle(m),
+        text: say(st).popText(pop),
       });
     }
   }
   const settlements = activeSettlements(st).length;
   if (settlements >= 3 && !st.milestones.includes("settlements.3")) {
     st.milestones.push("settlements.3");
-    ctx.system({ category: "milestone", importance: "major", title: "A network of settlements", text: `${settlements} communities now trade, quarrel and share news.` });
+    ctx.system({ category: "milestone", importance: "major", title: say(st).networkTitle(), text: say(st).networkText(settlements) });
   }
   if (st.technologies.length === TECHNOLOGIES.length && !st.milestones.includes("tech.all")) {
     st.milestones.push("tech.all");
-    ctx.system({ category: "milestone", importance: "critical", title: "The age of rebuilding is complete", text: "Every known technology of the bunker archives has been recovered." });
+    ctx.system({ category: "milestone", importance: "critical", title: say(st).rebuildTitle(), text: say(st).rebuildText() });
   }
 }

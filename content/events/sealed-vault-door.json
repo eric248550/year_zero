@@ -1,9 +1,9 @@
 {
   "id": "sealed-vault-door",
-  "title": "The Sealed Door",
+  "title": "封死的門",
   "scope": "settlement",
   "category": "mystery",
-  "description": "Vault 12's blast door is welded shut from the inside. Opening it will take engineering \u2014 and nerve.",
+  "description": "第十二號避難所的防爆門從裡面被焊死了。要打開它，需要技術，也需要膽量。",
   "preconditions": [
     {
       "type": "flag",
@@ -27,7 +27,7 @@
   "choices": [
     {
       "id": "cut",
-      "label": "Cut through the door",
+      "label": "把門切開",
       "tags": [
         "bold",
         "industry",
@@ -53,14 +53,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "engineer",
-          "text": "Cut open the blast door of Vault 12"
+          "text": "切開了第十二號避難所的防爆門"
         }
       ],
-      "outcome": "Inside, {{engineer}} finds an orderly tomb: cots, quarantine tape, and a final log entry."
+      "outcome": "門內，{{engineer}}看到的是一座整整齊齊的墳墓：行軍床、隔離膠帶，還有最後一則日誌。"
     },
     {
       "id": "leave",
-      "label": "Leave the dead in peace",
+      "label": "讓死者安息",
       "tags": [
         "cautious",
         "secrecy"
@@ -76,7 +76,7 @@
           "delta": 2
         }
       ],
-      "outcome": "The door is marked with a warning sign and left alone \u2014 for now."
+      "outcome": "門上被畫了警告標誌，暫時沒人再去碰它。"
     }
   ],
   "priority": 5,
@@ -87,8 +87,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "The sealed door of Vault 12",
-    "text": "{{engineer}} ran a hand along the weld seam. Whoever sealed Vault 12 had done it from the inside."
+    "headline": "第十二號避難所封死的門",
+    "text": "{{engineer}}用手摸過焊縫。不管是誰封了第十二號避難所，都是從裡面封的。"
   },
   "version": 1,
   "status": "published",

@@ -14,6 +14,7 @@ import { applyEffects, newRecorder, spendResources, transact, type ChangeRecorde
 import { EffectError } from "./errors";
 import { allocateHistoryId, characterAge, currentYear, fullName, getCharacter, round2 } from "./queries";
 import { renderTemplate } from "./template";
+import { listNames, say, templateValues } from "./texts";
 
 /** Minimum age to take part in an "everyone" event. */
 export const PARTICIPATION_MIN_AGE = 12;
@@ -242,22 +243,10 @@ function resolveGroup(
   });
 
   const names = (ids: readonly string[]) => ids.map((id) => getCharacter(state, id)).filter((c): c is Character => !!c).map(fullName);
-  const values: Record<string, string> = {
-    settlement: settlement?.name ?? "the settlements",
-    year: String(currentYear(state)),
-    world: state.worldName,
-    choice: choice.label,
-  };
-  for (const [role, id] of Object.entries({ ...p.roles, actor: members[0]!.characterId })) {
-    const c = getCharacter(state, id);
-    if (c) {
-      values[role] = fullName(c);
-      values[`${role}.profession`] = c.profession ?? "youth";
-    }
-  }
+  const values = { ...templateValues(state, settlement, { ...p.roles, actor: members[0]!.characterId }), choice: choice.label };
 
   const memberNames = names(members.map((m) => m.characterId));
-  const parts = [`${memberNames.join(", ")} chose: ${choice.label}.`];
+  const parts = [say(state).chose(listNames(state, memberNames), choice.label)];
   if (choice.outcome) parts.push(renderTemplate(choice.outcome, values));
   if (choice.risk && struck.length > 0) {
     for (const id of struck) parts.push(renderTemplate(choice.risk.description, { ...values, actor: names([id])[0] ?? "" }));

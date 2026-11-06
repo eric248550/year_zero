@@ -1,9 +1,9 @@
 {
   "id": "famine-council",
-  "title": "The Hungry Year",
+  "title": "飢餓之年",
   "scope": "settlement",
   "category": "resource",
-  "description": "A sustained food shortage forces desperate choices.",
+  "description": "持續的糧食短缺，逼得大家做出孤注一擲的選擇。",
   "preconditions": [
     {
       "type": "shortage",
@@ -34,7 +34,7 @@
   "choices": [
     {
       "id": "forage",
-      "label": "Send foragers into the wastes",
+      "label": "派人到荒野採集",
       "tags": [
         "bold",
         "growth"
@@ -51,20 +51,20 @@
       ],
       "risk": {
         "chance": 0.25,
-        "description": "{{forager}} does not return from the ash fields.",
+        "description": "{{forager}}從灰燼荒原出去之後，再也沒有回來。",
         "effects": [
           {
             "type": "CHARACTER_DEATH",
             "role": "forager",
-            "cause": "lost while foraging during the famine"
+            "cause": "饑荒期間外出採集時失蹤"
           }
         ]
       },
-      "outcome": "{{forager}} leads foragers far past the known ruins."
+      "outcome": "{{forager}}帶著採集隊，走到比已知廢墟更遠的地方。"
     },
     {
       "id": "strip",
-      "label": "Strip the materials stores for trade",
+      "label": "拿物資庫存去換糧食",
       "tags": [
         "industry"
       ],
@@ -78,11 +78,11 @@
           "amount": 15
         }
       ],
-      "outcome": "Tools and scrap are boiled down, bartered, or eaten around."
+      "outcome": "工具和廢料被熔掉、拿去交換，或乾脆不吃不喝地撐著。"
     },
     {
       "id": "elders_fast",
-      "label": "The elders give up their rations",
+      "label": "長者讓出自己的配給",
       "tags": [
         "community"
       ],
@@ -98,21 +98,21 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "elder",
-          "text": "Gave up rations so the children could eat during the famine"
+          "text": "在饑荒中讓出配給，讓孩子們有飯吃"
         }
       ],
       "risk": {
         "chance": 0.4,
-        "description": "{{elder}} dies before the harvest.",
+        "description": "{{elder}}沒能撐到收成。",
         "effects": [
           {
             "type": "CHARACTER_DEATH",
             "role": "elder",
-            "cause": "self-imposed starvation during the famine"
+            "cause": "饑荒中自願絕食"
           }
         ]
       },
-      "outcome": "{{elder}} announces that the old will eat last."
+      "outcome": "{{elder}}宣布：老人最後吃。"
     }
   ],
   "priority": 9,
@@ -123,8 +123,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "The hungry year in {{settlement}}",
-    "text": "Bowls in {{settlement}} came back from the kitchen half-full, then quarter-full."
+    "headline": "{{settlement}}的飢餓之年",
+    "text": "{{settlement}}廚房送回來的碗，從半滿變成了四分之一滿。"
   },
   "version": 1,
   "status": "published",

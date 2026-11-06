@@ -68,6 +68,35 @@ provider uses the official SDK (streaming, `effort: medium`, server-side refusal
 fallback enabled via `fallbacks: "default"`); remove those two fields in
 `packages/ai/src/anthropic.ts` if you prefer not to use the fallback beta.
 
+## The player app (`/play`)
+
+The game itself, phone-first: open `http://localhost:3000/play` (or
+`pnpm dev:lan` and the LAN address on a phone). Players join the **active run**.
+
+- **Joining.** In year 0 everyone comes out of Haven Deep; surface-born,
+  wanderer and Vault 12 origins unlock as the world develops. A three-step
+  prologue gives instant results and introduces two people.
+- **This year.** Decisions waiting for you (each participant decides for
+  themselves and can change their mind until the year ends; unanswered ones
+  are decided by your character's nature), your story, and news from home.
+- **People.** Family, people you care for, bonds; care for someone; invite a
+  friend as your child, ward, close friend, or next child (`/play?invite=CODE`).
+- **Death.** Continue as a child, ward or close friend, or be reborn at random.
+- **Time.** Set `GENESIS_TICK_MINUTES` (e.g. `240` = 4 hours per world year
+  for playtests, `1440` = one real day). The world advances lazily whenever
+  someone opens the game; point a cron at `POST /api/play/clock` to keep it
+  moving when nobody does. Unset = time only moves when the Studio steps it.
+- **Identity.** Closed-playtest only: a random player id in an httpOnly
+  cookie, no accounts. Player actions apply immediately and are logged in
+  `immediate_actions`, so runs still replay and verify exactly.
+
+Game content is written in Traditional Chinese (台灣繁體中文): the events and
+storylines in `content/`, the World Bible, and the text the engine writes into
+history. New worlds are `locale: "zh-TW"`; pass `locale: "en"` to `createRun`
+for an English world. Worlds created before locales existed have no locale and
+stay English, so they still replay exactly. The app's own text is in English
+and Traditional Chinese.
+
 ## The Studio
 
 Bottom navigation on mobile, sidebar on desktop. The UI is available in
@@ -160,10 +189,7 @@ Known limitations, stated plainly:
 - `ticksPerYear` exists in the state, but the economy and demography rates assume
   1 tick = 1 year.
 - Single-process SQLite; no authentication (out of scope for this internal tool).
-- **Translation covers the Studio UI only.** Messages live in
-  `apps/studio/lib/i18n/messages/` (a missing Chinese key is a type error) and
-  catalog terms (resources, professions, technologies, policies, statuses…) in
-  `apps/studio/lib/i18n/terms.ts`. Authored narrative content (event
-  definitions, storylines, generated history text, condition/effect
-  descriptions), API error messages and proper nouns (place and character
-  names) stay in English.
+- **Language.** Game content and engine-written history are Traditional
+  Chinese in new worlds; the Studio UI is English or Chinese. Engine validation
+  messages (why an action was rejected) are still English, and character names
+  are romanized.

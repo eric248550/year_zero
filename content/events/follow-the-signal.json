@@ -1,9 +1,9 @@
 {
   "id": "follow-the-signal",
-  "title": "Follow the Signal",
+  "title": "追蹤訊號",
   "scope": "settlement",
   "category": "mystery",
-  "description": "Scouts triangulate the signal and set out toward its source.",
+  "description": "斥候用三角定位找出訊號的方向，朝來源出發。",
   "preconditions": [
     {
       "type": "flag",
@@ -32,7 +32,7 @@
   "choices": [
     {
       "id": "go",
-      "label": "Follow the signal",
+      "label": "跟著訊號走",
       "tags": [
         "bold",
         "science"
@@ -59,25 +59,25 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "scout",
-          "text": "Found the lost Vault 12"
+          "text": "找到了失落的第十二號避難所"
         }
       ],
       "risk": {
         "chance": 0.15,
-        "description": "{{scout}} falls into a sinkhole near the vault and is lost.",
+        "description": "{{scout}}在避難所附近掉進一個天坑，從此下落不明。",
         "effects": [
           {
             "type": "CHARACTER_DEATH",
             "role": "scout",
-            "cause": "fell into a sinkhole near Vault 12"
+            "cause": "在第十二號避難所附近掉進天坑"
           }
         ]
       },
-      "outcome": "Three days east, {{scout}} finds a blast door half-buried in a hillside: VAULT 12."
+      "outcome": "往東走了三天，{{scout}}在山坡上發現一扇半埋在土裡的防爆門：第十二號避難所。"
     },
     {
       "id": "wait",
-      "label": "Wait for better equipment",
+      "label": "等裝備更好再說",
       "tags": [
         "cautious"
       ],
@@ -88,7 +88,7 @@
           "amount": 3
         }
       ],
-      "outcome": "The bearings are logged. The signal keeps repeating."
+      "outcome": "方位被記錄下來。訊號還在重複。"
     }
   ],
   "priority": 5,
@@ -100,8 +100,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "Following the signal from {{settlement}}",
-    "text": "{{scout}} spread a map across the table and drew three lines. They crossed in the eastern hills, where no vault was supposed to be."
+    "headline": "從{{settlement}}出發追蹤訊號",
+    "text": "{{scout}}在桌上攤開地圖，畫了三條線。三條線交會在東邊的山丘，那裡本來不該有任何避難所。"
   },
   "version": 1,
   "status": "published",

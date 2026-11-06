@@ -1,9 +1,9 @@
 {
   "id": "grow-room-blight",
-  "title": "Grow-Room Blight",
+  "title": "種植室枯萎病",
   "scope": "settlement",
   "category": "resource",
-  "description": "A pathogen tears through monoculture grow racks.",
+  "description": "一種病原體在單一作物的種植架之間迅速蔓延。",
   "preconditions": [
     {
       "type": "world_tick",
@@ -39,7 +39,7 @@
   "choices": [
     {
       "id": "burn",
-      "label": "Burn the infected racks",
+      "label": "燒掉受感染的種植架",
       "tags": [
         "cautious"
       ],
@@ -55,11 +55,11 @@
           "delta": 3
         }
       ],
-      "outcome": "Smoke fills the corridors. The blight is stopped, at a price."
+      "outcome": "濃煙充滿了走廊。枯萎病被擋下來了，但代價不小。"
     },
     {
       "id": "analyse",
-      "label": "Analyse the pathogen",
+      "label": "分析病原體",
       "tags": [
         "science"
       ],
@@ -75,14 +75,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "scientist",
-          "text": "Identified the grow-room blight"
+          "text": "找出種植室枯萎病的病因"
         }
       ],
-      "outcome": "{{scientist}} isolates a fungal strain and keeps careful notes."
+      "outcome": "{{scientist}}分離出一種真菌，仔細做了記錄。"
     },
     {
       "id": "salvage",
-      "label": "Salvage what can be eaten",
+      "label": "搶救還能吃的部分",
       "tags": [
         "bold",
         "growth"
@@ -96,7 +96,7 @@
       ],
       "risk": {
         "chance": 0.3,
-        "description": "Some of the salvaged crop was infected; stomach sickness spreads.",
+        "description": "搶救下來的作物有一部分已經被感染，腸胃病開始蔓延。",
         "effects": [
           {
             "type": "CHANGE_SETTLEMENT_STAT",
@@ -105,7 +105,7 @@
           }
         ]
       },
-      "outcome": "Every edible leaf is stripped from the dying racks."
+      "outcome": "垂死的種植架上，每一片能吃的葉子都被摘了下來。"
     }
   ],
   "priority": 6,
@@ -116,8 +116,8 @@
   ],
   "importance": "notable",
   "narrative": {
-    "headline": "Blight in the grow-rooms of {{settlement}}",
-    "text": "White threads spread across the grow racks of {{settlement}} overnight."
+    "headline": "{{settlement}}種植室裡的枯萎病",
+    "text": "一夜之間，白色的菌絲爬滿了{{settlement}}的種植架。"
   },
   "version": 1,
   "status": "published",

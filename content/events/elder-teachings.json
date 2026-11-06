@@ -1,9 +1,9 @@
 {
   "id": "elder-teachings",
-  "title": "An Elder's Teachings",
+  "title": "長者的傳授",
   "scope": "character",
   "category": "social",
-  "description": "An elder who remembers the bunker's early years records what they know.",
+  "description": "一位還記得地堡早年的長者，把自己知道的事記錄下來。",
   "preconditions": [],
   "roles": [
     {
@@ -31,7 +31,7 @@
     {
       "type": "ADD_LIFE_EVENT",
       "role": "student",
-      "text": "Apprenticed to an elder"
+      "text": "拜長者為師"
     }
   ],
   "choices": [],
@@ -41,8 +41,8 @@
   "storylineIds": [],
   "importance": "minor",
   "narrative": {
-    "headline": "{{elder}} teaches {{student}}",
-    "text": "Every evening that winter, {{elder}} sat with {{student}} and dictated everything they remembered of the vault manuals."
+    "headline": "{{elder}}傳授{{student}}",
+    "text": "那年冬天的每個晚上，{{elder}}都和{{student}}坐在一起，把記得的地堡手冊內容一字一句念給他聽寫。"
   },
   "version": 1,
   "status": "published",

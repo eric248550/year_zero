@@ -82,6 +82,23 @@ export const decisions = sqliteTable(
   (t) => [uniqueIndex("decisions_run_tick").on(t.runId, t.tick)],
 );
 
+/**
+ * Player actions applied between ticks (joining, choosing, continuing after
+ * death...). Logged in order with the tick they happened at; replay applies
+ * them before stepping past that tick. Append-only.
+ */
+export const immediateActions = sqliteTable(
+  "immediate_actions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    runId: text("run_id").notNull().references(() => runs.id),
+    tick: integer("tick").notNull(),
+    action: json<unknown>("action").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("immediate_run_tick").on(t.runId, t.tick)],
+);
+
 export const tickMetrics = sqliteTable(
   "tick_metrics",
   {

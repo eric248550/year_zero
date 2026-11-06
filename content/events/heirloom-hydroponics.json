@@ -1,9 +1,9 @@
 {
   "id": "heirloom-hydroponics",
-  "title": "Heirloom Hydroponics",
+  "title": "傳家種水耕",
   "scope": "settlement",
   "category": "technology",
-  "description": "Scientists combine recovered seed with bunker grow-rack designs.",
+  "description": "科學家把找回來的種子，和地堡種植架的設計結合在一起。",
   "preconditions": [
     {
       "type": "flag",
@@ -27,7 +27,7 @@
   "choices": [
     {
       "id": "experiment",
-      "label": "Dedicate the lab to it",
+      "label": "整間實驗室都投入這件事",
       "tags": [
         "science",
         "growth"
@@ -43,14 +43,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "scientist",
-          "text": "Developed heirloom hydroponics"
+          "text": "研發出傳家種水耕法"
         }
       ],
-      "outcome": "{{scientist}} gets the heirloom strains to fruit under grow lamps. Hydroponics is reborn."
+      "outcome": "{{scientist}}讓傳家種在生長燈下結出了果實。水耕技術重生了。"
     },
     {
       "id": "wait",
-      "label": "Plant them outside instead",
+      "label": "改種在室外",
       "tags": [
         "cautious"
       ],
@@ -61,7 +61,7 @@
           "amount": 10
         }
       ],
-      "outcome": "The seed goes into ordinary soil and does well enough."
+      "outcome": "種子種進了普通的土裡，長得還算可以。"
     }
   ],
   "priority": 5,
@@ -73,8 +73,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "Heirloom seed under the lamps of {{settlement}}",
-    "text": "{{scientist}} spread the recovered seed across a lab bench and began cross-referencing it with the bunker's grow manuals."
+    "headline": "{{settlement}}燈下的傳家種",
+    "text": "{{scientist}}把找回來的種子攤在實驗桌上，開始一一比對地堡的種植手冊。"
   },
   "version": 1,
   "status": "published",

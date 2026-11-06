@@ -1,9 +1,9 @@
 {
   "id": "water-rationing-council",
-  "title": "The Water Council",
+  "title": "水務議會",
   "scope": "settlement",
   "category": "governance",
-  "description": "After contamination and shortage, residents demand a fair system for sharing water. A council is formed.",
+  "description": "經歷污染和短缺之後，居民要求一套公平的分水制度。議會因此成立。",
   "preconditions": [
     {
       "type": "flag",
@@ -20,7 +20,7 @@
     {
       "id": "speaker",
       "minAge": 30,
-      "description": "A respected elder who calls the first meeting"
+      "description": "召集第一次會議、受人敬重的長者"
     },
     {
       "id": "dissenter",
@@ -31,7 +31,7 @@
   "choices": [
     {
       "id": "elect",
-      "label": "Elect a water council",
+      "label": "選出水務議會",
       "tags": [
         "community",
         "openness"
@@ -48,21 +48,21 @@
         },
         {
           "type": "CREATE_HISTORICAL_EVENT",
-          "title": "First election on the surface",
-          "description": "For the first time since the collapse, survivors vote. The water council is chosen by show of hands.",
+          "title": "地表上的第一次選舉",
+          "description": "崩潰以來第一次，倖存者投票了。水務議會以舉手的方式選出。",
           "importance": "major"
         },
         {
           "type": "ADD_LIFE_EVENT",
           "role": "speaker",
-          "text": "Called the first water council"
+          "text": "召集了第一次水務議會"
         }
       ],
-      "outcome": "Hands are raised in the old mess hall. {{speaker}} is chosen to keep the water ledger."
+      "outcome": "舊餐廳裡，大家舉起了手。{{speaker}}被選為管理水帳的人。"
     },
     {
       "id": "appoint",
-      "label": "Let the engineers decide",
+      "label": "交給工程師決定",
       "tags": [
         "industry",
         "secrecy"
@@ -80,7 +80,7 @@
           "delta": -25
         }
       ],
-      "outcome": "The engineers take control of the valves. {{dissenter}} calls it theft."
+      "outcome": "工程師接管了水閥。{{dissenter}}說這是搶劫。"
     }
   ],
   "priority": 6,
@@ -92,8 +92,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "The Water Council of {{settlement}}",
-    "text": "After the sickness, {{speaker}} stood on a crate in the mess hall and asked who should decide how water is shared."
+    "headline": "{{settlement}}的水務議會",
+    "text": "疫病過後，{{speaker}}站上餐廳裡的一個木箱，問大家：分水的事，應該由誰來決定？"
   },
   "version": 1,
   "status": "published",
