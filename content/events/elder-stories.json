@@ -1,0 +1,78 @@
+{
+  "id": "elder-stories",
+  "title": "長者的故事",
+  "scope": "settlement",
+  "category": "social",
+  "description": "一位長者想說說崩潰以前的事。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true
+    },
+    {
+      "id": "elder",
+      "minAge": 60,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "listen",
+      "label": "坐下來聽",
+      "tags": [
+        "community",
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "elder",
+          "delta": 15
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "knowledge",
+          "delta": 3
+        }
+      ],
+      "outcome": "{{elder}}說到很晚。有些事，檔案裡從來沒有記載。"
+    },
+    {
+      "id": "leave",
+      "label": "改天吧",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "elder",
+          "delta": -3
+        }
+      ],
+      "outcome": "{{elder}}笑了笑，鬆開了手。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 2,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{elder}}想說故事",
+    "text": "{{elder}}拉住{{you}}的袖子：「坐一下吧，我跟你說說門還沒打開以前的事。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "bonds"
+  ]
+}

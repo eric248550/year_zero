@@ -1,20 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, HandHeart, UserPlus } from "lucide-react";
+import { Copy, UserPlus } from "lucide-react";
 import { useI18n } from "@/components/i18n";
 import { buttonClass } from "@/components/ui";
 import { useAct } from "./use-act";
-
-export function CareButton({ characterId }: { characterId: string }) {
-  const { t } = useI18n();
-  const { act, busy } = useAct();
-  return (
-    <button type="button" disabled={busy} onClick={() => void act({ type: "CARE_FOR", characterId })} className={buttonClass("secondary", "sm")}>
-      <HandHeart size={14} aria-hidden /> {t("play.people.careFor")}
-    </button>
-  );
-}
 
 function inviteCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

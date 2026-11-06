@@ -15,5 +15,7 @@ export function describeEffect(e: Effect): string {
     case "REVEAL_SECRET": return `Reveal secret: ${SECRET_BY_ID[e.secret]?.title ?? e.secret}`;
     case "ADD_LIFE_EVENT": return `Life event for ${e.role}: “${e.text}”`;
     case "CHARACTER_DEATH": return `${e.role} dies (${e.cause})`;
+    case "ADJUST_ATTRIBUTE": return `${e.role} ${e.attribute} ${e.delta >= 0 ? "+" : ""}${e.delta}`;
+    case "ADD_CARETAKER": return `${e.caretaker} starts looking after ${e.ward}`;
   }
 }

@@ -14,3 +14,5 @@ export { FOUNDING_MATERIALS } from "./systems/settlements";
 export { availableOrigins, successionCandidates, bondKind, playerCharacter, getPlayer, isReserved, PLAYERS, type OriginInfo, type SuccessionCandidate } from "./systems/players";
 export { playerUpkeep } from "./systems/players";
 export { TRAITS } from "./names";
+export { rollAttributes, healthMortality } from "./systems/attributes";
+export { YEAR_ACTION_MIN_AGE } from "./systems/year-actions";

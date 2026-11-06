@@ -1,5 +1,11 @@
-import type { Character, Rng, Role, WorldState } from "@genesis/schemas";
-import { characterAge } from "./queries";
+import type { Attributes, Character, Rng, Role, WorldState } from "@genesis/schemas";
+
+/** A child with no living parent and nobody living who looks after them. */
+export function isOrphan(state: WorldState, c: Character): boolean {
+  const alive = (id: string) => state.characters.some((x) => x.id === id && x.deathTick === null);
+  return !c.parentIds.some(alive) && !(c.caretakerIds ?? []).some(alive);
+}
+import { characterAge, relationshipKey } from "./queries";
 
 /** Living characters eligible for a role. Dead characters are NEVER eligible. */
 export function candidatesForRole(
@@ -16,6 +22,13 @@ export function candidatesForRole(
     const age = characterAge(state, c);
     if (role.minAge !== undefined && age < role.minAge) return false;
     if (role.maxAge !== undefined && age > role.maxAge) return false;
+    if (role.player && !c.controllerId) return false;
+    if (role.orphan && !isOrphan(state, c)) return false;
+    if (role.minAttributes) {
+      for (const [k, min] of Object.entries(role.minAttributes) as [keyof Attributes, number][]) {
+        if ((c.attributes?.[k] ?? 50) < min) return false;
+      }
+    }
     return true;
   });
 }
@@ -56,7 +69,10 @@ export function resolveRoles(
       if (role.optional) continue;
       return null;
     }
-    const pick = rng.pick(pool);
+    const anchorId = role.familiarWith ? assigned[role.familiarWith] : undefined;
+    const pick = anchorId
+      ? rng.weighted(pool, (c) => (1 + Math.abs(state.relationships[relationshipKey(anchorId, c.id)] ?? 0) / 10) ** 2)
+      : rng.pick(pool);
     assigned[role.id] = pick.id;
     used.add(pick.id);
   }

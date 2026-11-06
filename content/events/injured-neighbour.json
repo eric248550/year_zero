@@ -1,0 +1,105 @@
+{
+  "id": "injured-neighbour",
+  "title": "受傷的人",
+  "scope": "settlement",
+  "category": "social",
+  "description": "有人在廢墟裡受了傷，需要人照顧。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 14
+    },
+    {
+      "id": "hurt",
+      "minAge": 6,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "nurse",
+      "label": "親自照顧",
+      "tags": [
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "hurt",
+          "delta": 20
+        },
+        {
+          "type": "ADD_CARETAKER",
+          "caretaker": "you",
+          "ward": "hurt"
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "hurt",
+          "attribute": "health",
+          "delta": 8
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "knowledge",
+          "delta": 1
+        }
+      ],
+      "outcome": "{{you}}每天幫{{hurt}}換藥、陪著說話。傷口慢慢癒合了。"
+    },
+    {
+      "id": "medic",
+      "label": "交給醫護處理",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "hurt",
+          "delta": 5
+        }
+      ],
+      "outcome": "{{hurt}}被送到醫護那裡。{{you}}偶爾會去看一眼。"
+    },
+    {
+      "id": "busy",
+      "label": "忙自己的事",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "hurt",
+          "delta": -10
+        }
+      ],
+      "outcome": "{{hurt}}躺了好幾天，記得誰沒有來。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 2,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{hurt}}受傷了",
+    "text": "{{hurt}}在廢墟裡被鋼筋劃傷了腿，傷口開始發炎。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "bonds"
+  ]
+}

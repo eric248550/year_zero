@@ -154,7 +154,11 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       if (a.id === b.id) throw new EffectError("A character cannot have a relationship with themselves");
       const key = relationshipKey(a.id, b.id);
       const before = state.relationships[key] ?? 0;
-      const after = Math.max(-100, Math.min(100, before + effect.delta));
+      // Warm people make friends faster: positive changes scale with both sides' social skill.
+      const delta = state.attributesEnabled && effect.delta > 0 && a.attributes && b.attributes
+        ? Math.round(effect.delta * (0.6 + a.attributes.social / 250 + b.attributes.social / 250))
+        : effect.delta;
+      const after = Math.max(-100, Math.min(100, before + delta));
       state.relationships[key] = after;
       record(rec, `relationships.${key}`, `${fullName(a)} ↔ ${fullName(b)}`, before, after);
       return;
@@ -233,6 +237,25 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       c.lifeEvents.push({ tick: state.tick, text: say(state).diedEvent(effect.cause), historyId: ctx.historyId });
       state.stats.deaths += 1;
       record(rec, `characters.${c.id}.alive`, `${fullName(c)} alive`, true, false);
+      return;
+    }
+    case "ADJUST_ATTRIBUTE": {
+      const c = roleCharacter(state, effect.role, ctx);
+      if (!c || !c.attributes) return; // optional role unfilled, or a world without attributes
+      const before = c.attributes[effect.attribute];
+      const after = Math.max(0, Math.min(100, before + effect.delta));
+      c.attributes[effect.attribute] = after;
+      record(rec, `characters.${c.id}.attributes.${effect.attribute}`, `${fullName(c)} ${effect.attribute}`, before, after);
+      return;
+    }
+    case "ADD_CARETAKER": {
+      const carer = roleCharacter(state, effect.caretaker, ctx);
+      const ward = roleCharacter(state, effect.ward, ctx);
+      if (!carer || !ward) return;
+      if (carer.id === ward.id) throw new EffectError("A character cannot look after themselves");
+      if (ward.caretakerIds?.includes(carer.id)) return;
+      ward.caretakerIds = [...(ward.caretakerIds ?? []), carer.id];
+      record(rec, `characters.${ward.id}.caretakers`, `${fullName(carer)} looks after ${fullName(ward)}`, false, true);
       return;
     }
     default: {

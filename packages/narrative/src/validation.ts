@@ -208,8 +208,8 @@ function checkConditionRefs(conds: readonly Condition[], basePath: string, ctx: 
   });
 }
 
-function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath: string, errors: ValidationIssue[], warnings: ValidationIssue[]) {
-  const roleIds = new Set(def.roles.map((r) => r.id));
+function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath: string, errors: ValidationIssue[], warnings: ValidationIssue[], extraRoles: readonly string[] = []) {
+  const roleIds = new Set([...def.roles.map((r) => r.id), ...extraRoles]);
   const guaranteedTech = new Set(def.preconditions.filter((c) => c.type === "technology" && c.has).map((c) => (c as { tech: string }).tech));
   effects.forEach((e, i) => {
     const path = `${basePath}.${i}`;
@@ -230,6 +230,13 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         break;
       case "ADD_LIFE_EVENT":
         if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
+        break;
+      case "ADJUST_ATTRIBUTE":
+        if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
+        break;
+      case "ADD_CARETAKER":
+        if (!roleIds.has(e.caretaker)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.caretaker}"` });
+        if (!roleIds.has(e.ward)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.ward}"` });
         break;
       case "CHARACTER_DEATH":
         if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
@@ -288,6 +295,9 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
     if (r.minAge !== undefined && r.maxAge !== undefined && r.minAge > r.maxAge) {
       errors.push({ path: `roles.${i}`, code: "role.impossible", message: `minAge ${r.minAge} > maxAge ${r.maxAge}` });
     }
+    if (r.familiarWith !== undefined && !def.roles.slice(0, i).some((x) => x.id === r.familiarWith)) {
+      errors.push({ path: `roles.${i}.familiarWith`, code: "ref.role", message: `familiarWith must name an earlier role ("${r.familiarWith}")` });
+    }
     if (r.minAge !== undefined && r.minAge > 110) errors.push({ path: `roles.${i}.minAge`, code: "role.impossible", message: "No character lives that long" });
   });
   if (def.scope === "character" && !def.roles.some((r) => !r.optional)) {
@@ -317,8 +327,9 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
     if (ch.costs && Object.values(ch.costs).some((v) => (v ?? 0) > 0) && def.scope === "world") {
       errors.push({ path: `choices.${i}.costs`, code: "scope.mismatch", message: "World-scoped events cannot charge a settlement for a choice" });
     }
-    checkEffects(def, ch.effects, `choices.${i}.effects`, errors, warnings);
-    if (ch.risk) checkEffects(def, ch.risk.effects, `choices.${i}.risk.effects`, errors, warnings);
+    checkEffects(def, ch.effects, `choices.${i}.effects`, errors, warnings, ["actor"]);
+    if (ch.memberEffects) checkEffects(def, ch.memberEffects, `choices.${i}.memberEffects`, errors, warnings, ["actor"]);
+    if (ch.risk) checkEffects(def, ch.risk.effects, `choices.${i}.risk.effects`, errors, warnings, ["actor"]);
   });
   if (def.choices.length > 0 && def.choices.every((c) => (c.costs && Object.keys(c.costs).length > 0) || c.requires.length > 0 || c.requiresRoles.length > 0)) {
     warnings.push({ path: "choices", code: "choice.gated", message: "Every choice is gated by costs or requirements; the event may rarely be able to fire" });
@@ -330,7 +341,7 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
   });
 
   // Templates
-  const allowedPlaceholders = new Set(["settlement", "year", "world", "choice", ...[...roleIds].flatMap((r) => [r, `${r}.profession`])]);
+  const allowedPlaceholders = new Set(["settlement", "year", "world", "choice", ...[...roleIds, "actor"].flatMap((r) => [r, `${r}.profession`])]);
   const templates: [string, string][] = [["narrative.headline", def.narrative.headline], ["narrative.text", def.narrative.text]];
   def.choices.forEach((c, i) => {
     if (c.outcome) templates.push([`choices.${i}.outcome`, c.outcome]);

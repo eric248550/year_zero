@@ -1,0 +1,79 @@
+{
+  "id": "night-watch",
+  "title": "一起守夜",
+  "scope": "settlement",
+  "category": "social",
+  "description": "兩個人被排在同一班守夜，漫長的夜裡只能聊天或沉默。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 14
+    },
+    {
+      "id": "other",
+      "minAge": 14,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "talk",
+      "label": "聊起過去",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "other",
+          "delta": 15
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "social",
+          "delta": 1
+        }
+      ],
+      "outcome": "天快亮的時候，{{other}}說了一件從來沒告訴過別人的事。"
+    },
+    {
+      "id": "quiet",
+      "label": "各自沉默",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "other",
+          "delta": 4
+        }
+      ],
+      "outcome": "兩個人一整夜都沒說什麼，但換班時{{other}}朝你點了點頭。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 2,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "和{{other}}一起守夜",
+    "text": "{{you}}和{{other}}被排在同一班守夜。外面的風帶著灰，篝火只剩一點紅光。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "bonds"
+  ]
+}

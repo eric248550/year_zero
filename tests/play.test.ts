@@ -151,6 +151,16 @@ describe("real-time clock", () => {
     expect(advanceClock(db, run.id, t0 + 100 * 3_600_000, 60).stepped).toBe(10);
     expect(getRun(db, run.id).state.tick).toBe(11);
   });
+
+  it("accepts sub-minute years for local testing", () => {
+    const run = createRun(db, { name: "clock-fast", seed: 82 });
+    const t0 = Date.parse("2030-01-01T00:00:00Z");
+    advanceClock(db, run.id, t0, 0.5);
+    expect(advanceClock(db, run.id, t0 + 29_000, 0.5).stepped).toBe(0);
+    const s = advanceClock(db, run.id, t0 + 31_000, 0.5);
+    expect(s.stepped).toBe(1);
+    expect(s.nextTickAt).toBe(new Date(t0 + 60_000).toISOString());
+  });
 });
 
 describe("renaming", () => {
@@ -166,5 +176,42 @@ describe("renaming", () => {
     expect(applyImmediate(s, { type: "RENAME", playerId: "p", givenName: "若水", familyName: "陳" }).rejected).toMatch(/already/);
     expect(applyImmediate(s, { type: "RENAME", playerId: "p", givenName: "   ", familyName: "陳" }).rejected).toMatch(/Malformed/);
     expect(applyImmediate(s, { type: "RENAME", playerId: "nobody", givenName: "A", familyName: "" }).rejected).toBeTruthy();
+  });
+});
+
+describe("yearly actions", () => {
+  const ACTIONS = ["scavenge", "work", "study", "rest"] as const;
+
+  it("every action gives an immediate, recorded result, once per year", () => {
+    for (const action of ACTIONS) {
+      const s = applyImmediate(createWorld({ seed: 30 }), join_("p", { profession: "Scout" })).state;
+      const r = applyImmediate(s, { type: "YEAR_ACTION", playerId: "p", action });
+      expect(r.rejected, action).toBeNull();
+      expect(r.events).toHaveLength(1);
+      expect(r.state.players!.p!.yearAction).toMatchObject({ tick: 0, action, title: r.events[0]!.title });
+      expect(playerCharacter(r.state, "p")!.lifeEvents.at(-1)!.text).toBe(r.events[0]!.title);
+      expect(applyImmediate(r.state, { type: "YEAR_ACTION", playerId: "p", action: "rest" }).rejected).toMatch(/already/);
+    }
+  });
+
+  it("spending time with someone grows that bond", () => {
+    const s = applyImmediate(createWorld({ seed: 31 }), join_("p")).state;
+    const me = playerCharacter(s, "p")!;
+    const other = s.characters.find((c) => c.id !== me.id && c.homeId === me.homeId && c.deathTick === null)!;
+    const key = relationshipKey(me.id, other.id);
+    const r = applyImmediate(s, { type: "YEAR_ACTION", playerId: "p", action: "visit", characterId: other.id });
+    expect(r.rejected).toBeNull();
+    expect(r.state.relationships[key] ?? 0).toBeGreaterThan(s.relationships[key] ?? 0);
+    expect(applyImmediate(s, { type: "YEAR_ACTION", playerId: "p", action: "visit" }).rejected).toMatch(/Choose/);
+  });
+
+  it("opens again after the year turns, and replays exactly", () => {
+    const run = createRun(db, { name: "year-actions", seed: 32 });
+    applyPlayerAction(db, run.id, join_("p"));
+    applyPlayerAction(db, run.id, { type: "YEAR_ACTION", playerId: "p", action: "study" });
+    expect(() => applyPlayerAction(db, run.id, { type: "YEAR_ACTION", playerId: "p", action: "rest" })).toThrow(/already/);
+    stepRun(db, run.id, 1);
+    applyPlayerAction(db, run.id, { type: "YEAR_ACTION", playerId: "p", action: "rest" });
+    expect(verifyReplay(db, run.id).ok).toBe(true);
   });
 });

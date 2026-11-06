@@ -15,9 +15,11 @@ import { activeSettlements, characterAge, fullName, getCharacter, getSettlement,
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
+import { initAttributes } from "./attributes";
+import { applyYearAction, validateYearAction } from "./year-actions";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "YEAR_ACTION">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -224,6 +226,8 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (me.givenName === a.givenName && me.familyName === a.familyName) return "That is already your name";
       return null;
     }
+    case "YEAR_ACTION":
+      return validateYearAction(st, playerCharacter(st, a.playerId), a, player?.yearAction?.tick === st.tick);
     case "PROLOGUE": {
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
@@ -262,6 +266,7 @@ function newPerson(ctx: TickContext, home: Settlement, age: number, profession: 
     lifeEvents: [{ tick: st.tick, text: story, historyId: null }],
   };
   st.characters.push(c);
+  initAttributes(st, ctx.rng, c);
   return c;
 }
 
@@ -396,6 +401,7 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
         lifeEvents: [{ tick: st.tick, text: say(st).bornIn(home.name), historyId: null }],
       };
       st.characters.push(baby);
+      initAttributes(st, ctx.rng, baby);
       st.stats.births += 1;
       ctx.births += 1;
       for (const p of parents) p.lifeEvents.push({ tick: st.tick, text: say(st).childBorn(baby.givenName), historyId: null });
@@ -443,6 +449,11 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
     case "PROLOGUE":
       prologue(ctx, a);
       return;
+    case "YEAR_ACTION": {
+      const r = applyYearAction(ctx, playerCharacter(st, a.playerId)!, a);
+      getPlayer(st, a.playerId)!.yearAction = { tick: st.tick, action: a.action, ...r };
+      return;
+    }
     case "RENAME": {
       const me = playerCharacter(st, a.playerId)!;
       const before = fullName(me);
@@ -505,6 +516,12 @@ function prologue(ctx: TickContext, a: PlayerActionOf<"PROLOGUE">): void {
   // Each prologue scene introduces someone new.
   const met = Object.keys(st.relationships).filter((k) => k.split("|").includes(me.id)).map((k) => k.split("|").find((id) => id !== me.id)!);
   player.prologue = [...(player.prologue ?? []), a.step];
+  // Each first choice leaves a small mark on who you are.
+  const NUDGE: Record<string, [keyof NonNullable<Character["attributes"]>, number]> = {
+    surface: ["survival", 3], repair: ["knowledge", 3], share: ["social", 3], refuse: ["survival", 2], tell: ["social", 2], keep: ["knowledge", 2],
+  };
+  const nudge = NUDGE[a.choiceId];
+  if (me.attributes && nudge) me.attributes[nudge[0]] = Math.min(100, me.attributes[nudge[0]] + nudge[1]);
 
   const record = (title: string, text: string, other: Character | undefined, changes: ReturnType<typeof bond>[], minor = true) => {
     const e = ctx.system({

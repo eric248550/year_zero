@@ -1,0 +1,93 @@
+{
+  "id": "apprentice",
+  "title": "想拜師的年輕人",
+  "scope": "settlement",
+  "category": "social",
+  "description": "一個年輕人想跟有學問的人學東西。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 25,
+      "minAttributes": {
+        "knowledge": 55
+      }
+    },
+    {
+      "id": "youth",
+      "minAge": 12,
+      "maxAge": 17
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "teach",
+      "label": "收他為徒",
+      "tags": [
+        "science",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADD_CARETAKER",
+          "caretaker": "you",
+          "ward": "youth"
+        },
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "youth",
+          "delta": 20
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "youth",
+          "attribute": "knowledge",
+          "delta": 8
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "social",
+          "delta": 1
+        }
+      ],
+      "outcome": "從那天起，{{youth}}每天傍晚都來，把{{you}}說的每一句話記在本子上。"
+    },
+    {
+      "id": "decline",
+      "label": "沒空教",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "youth",
+          "delta": -5
+        }
+      ],
+      "outcome": "{{youth}}低著頭走了。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{youth}}想拜師",
+    "text": "{{youth}}跟了{{you}}好幾天，終於開口：「可以教我嗎？」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "bonds"
+  ]
+}

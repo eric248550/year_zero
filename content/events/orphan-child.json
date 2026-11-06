@@ -1,0 +1,82 @@
+{
+  "id": "orphan-child",
+  "title": "沒人照顧的孩子",
+  "scope": "settlement",
+  "category": "social",
+  "description": "一個失去父母、沒有人照顧的孩子。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 18
+    },
+    {
+      "id": "child",
+      "orphan": true,
+      "maxAge": 13
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "adopt",
+      "label": "收留這個孩子",
+      "tags": [
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADD_CARETAKER",
+          "caretaker": "you",
+          "ward": "child"
+        },
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "child",
+          "delta": 35
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "child",
+          "text": "被收留，有了新的家"
+        }
+      ],
+      "outcome": "那天晚上，{{child}}第一次睡在屋子裡，而不是門口。"
+    },
+    {
+      "id": "ask",
+      "label": "拜託別人照顧",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "child",
+          "delta": 5
+        }
+      ],
+      "outcome": "{{you}}到處問了一圈。{{child}}暫時被安排到公共宿舍。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{child}}沒有家了",
+    "text": "{{child}}的父母都不在了。這幾天，孩子一直睡在{{you}}家門口。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "bonds"
+  ]
+}

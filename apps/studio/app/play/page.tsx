@@ -1,12 +1,16 @@
-import { fullName, getCharacter } from "@genesis/narrative";
-import { availableOrigins, successionCandidates, TRAITS, PLAYERS } from "@genesis/simulation";
+import { fullName, getCharacter, relationshipKey } from "@genesis/narrative";
+import { availableOrigins, successionCandidates, TRAITS, PLAYERS, YEAR_ACTION_MIN_AGE } from "@genesis/simulation";
 import { queryHistory } from "@genesis/database";
-import { EmptyState, SectionTitle } from "@/components/ui";
+import { ATTRIBUTES, YEAR_ACTIONS } from "@genesis/schemas";
+import { EmptyState, ProgressBar, SectionTitle } from "@/components/ui";
+
+const ATTR_COLOR = { health: "bg-ok", social: "bg-signal", knowledge: "bg-knowledge", survival: "bg-materials" } as const;
 import { DecisionCard } from "@/components/play/decision-card";
 import { Onboarding, type InviteInfo } from "@/components/play/onboarding";
 import { Prologue } from "@/components/play/prologue";
 import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
+import { YearActionCard, type YearActionView } from "@/components/play/year-action";
 import { ageOf, decisionViews, loadPlay } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
@@ -69,10 +73,23 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
     );
   }
 
-  if ((player.prologue?.length ?? 0) < 3) return <Prologue done={player.prologue ?? []} nextTickAt={ctx.clock.nextTickAt} />;
+  if ((player.prologue?.length ?? 0) < 3) return <Prologue done={player.prologue ?? []} nextTickAt={ctx.clock.nextTickAt} minutes={ctx.clock.minutes} />;
 
   const home = state.settlements.find((s) => s.id === character.homeId);
   const decisions = decisionViews(ctx);
+  const age = ageOf(state, character);
+  const yearAction: YearActionView = {
+    done: player.yearAction?.tick === state.tick ? { title: player.yearAction.title, text: player.yearAction.text } : null,
+    options: YEAR_ACTIONS.map((id) => {
+      const reason = age < YEAR_ACTION_MIN_AGE[id] ? "age" : (id === "study" || id === "rest") && !character.attributes ? "attributes" : null;
+      return { id, minAge: YEAR_ACTION_MIN_AGE[id], available: reason === null, reason };
+    }),
+    people: state.characters
+      .filter((c) => c.deathTick === null && c.homeId === character.homeId && c.id !== character.id)
+      .map((c) => ({ id: c.id, name: fullName(c), bond: state.relationships[relationshipKey(character.id, c.id)] ?? 0 }))
+      .sort((a, b) => b.bond - a.bond)
+      .slice(0, 8),
+  };
   const story = [...character.lifeEvents].reverse().slice(0, 8);
   const news = home ? queryHistory(db(), ctx.runId, { settlementId: home.id, minImportance: "notable", order: "desc", limit: 4 }).items.filter((e) => e.tick >= state.tick - PLAYERS.inviteTtl) : [];
 
@@ -89,6 +106,19 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
           <RenameCharacter givenName={character.givenName} familyName={character.familyName} />
         </div>
       </section>
+      {character.attributes && (
+        <section className="card mt-3 grid grid-cols-2 gap-x-4 gap-y-3 p-4" aria-label={t("play.attr.title")}>
+          {ATTRIBUTES.map((k) => (
+            <div key={k} className="min-w-0 space-y-1" title={t(`play.attr.${k}.hint`)}>
+              <div className="flex justify-between text-xs"><span className="text-ink-2">{t(`play.attr.${k}`)}</span><span className="num">{character.attributes![k]}</span></div>
+              <ProgressBar value={character.attributes![k]} max={100} color={ATTR_COLOR[k]} />
+            </div>
+          ))}
+        </section>
+      )}
+
+      <SectionTitle>{t("play.year.title")}</SectionTitle>
+      <YearActionCard v={yearAction} />
 
       <SectionTitle>{t("play.decisions.title")}</SectionTitle>
       {decisions.length === 0 ? (
