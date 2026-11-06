@@ -6,6 +6,7 @@ import { ArrowRight, Lock } from "lucide-react";
 import { PROFESSIONS, type OriginId, type Profession } from "@genesis/schemas";
 import { useI18n } from "@/components/i18n";
 import { buttonClass } from "@/components/ui";
+import { NameFields } from "./name-fields";
 import { useAct } from "./use-act";
 
 export interface OriginOption {
@@ -35,6 +36,7 @@ export function Onboarding({ year, yearsOpen, origins, traits, invite }: {
   const [stage, setStage] = useState<"intro" | "who">("intro");
   const [playerName, setPlayerName] = useState("");
   const [givenName, setGivenName] = useState("");
+  const [familyName, setFamilyName] = useState("");
   const [profession, setProfession] = useState<Profession>("Scout");
   const [trait, setTrait] = useState<string>(traits[0] ?? "brave");
   const firstOpen = origins.find((o) => o.available)?.id ?? "haven_deep";
@@ -79,6 +81,7 @@ export function Onboarding({ year, yearsOpen, origins, traits, invite }: {
       ...base,
       origin,
       ...(givenName.trim() ? { givenName: givenName.trim() } : {}),
+      ...(familyName.trim() ? { familyName: familyName.trim() } : {}),
       profession,
       trait,
       ...(origin !== "haven_deep" && settlementId ? { settlementId } : {}),
@@ -102,10 +105,10 @@ export function Onboarding({ year, yearsOpen, origins, traits, invite }: {
 
       {!byInvite && (
         <>
-          <label className="block space-y-1.5">
-            <span className="label-xs">{t("play.who.name")}</span>
-            <input id="play-given-name" value={givenName} onChange={(e) => setGivenName(e.target.value)} maxLength={30} placeholder={t("play.who.namePlaceholder")} className="w-full rounded-xl border border-line-strong bg-surface-2 px-3 py-2.5 placeholder:text-ink-3" />
-          </label>
+          <fieldset className="space-y-1.5">
+            <legend className="sr-only">{t("play.who.name")}</legend>
+            <NameFields idPrefix="play" given={givenName} family={familyName} onGiven={setGivenName} onFamily={setFamilyName} placeholder={t("play.who.namePlaceholder")} />
+          </fieldset>
 
           {origins.length > 1 && (
             <fieldset className="space-y-2">

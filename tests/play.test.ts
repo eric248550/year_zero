@@ -152,3 +152,19 @@ describe("real-time clock", () => {
     expect(getRun(db, run.id).state.tick).toBe(11);
   });
 });
+
+describe("renaming", () => {
+  it("a player can rename their own character, and everyone sees it", () => {
+    let s = applyImmediate(createWorld({ seed: 4 }), join_("p", { familyName: "林", givenName: "曉晴" })).state;
+    const me = playerCharacter(s, "p")!;
+    expect(me.familyName + me.givenName).toBe("林曉晴");
+    const r = applyImmediate(s, { type: "RENAME", playerId: "p", givenName: "若水", familyName: "陳" });
+    expect(r.rejected).toBeNull();
+    s = r.state;
+    expect(playerCharacter(s, "p")).toMatchObject({ givenName: "若水", familyName: "陳" });
+    expect(r.events[0]!.title).toBe("林曉晴改名為陳若水");
+    expect(applyImmediate(s, { type: "RENAME", playerId: "p", givenName: "若水", familyName: "陳" }).rejected).toMatch(/already/);
+    expect(applyImmediate(s, { type: "RENAME", playerId: "p", givenName: "   ", familyName: "陳" }).rejected).toMatch(/Malformed/);
+    expect(applyImmediate(s, { type: "RENAME", playerId: "nobody", givenName: "A", familyName: "" }).rejected).toBeTruthy();
+  });
+});

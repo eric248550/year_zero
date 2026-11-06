@@ -57,7 +57,15 @@ export function hasTech(state: WorldState, tech: string): boolean {
   return state.technologies.includes(tech);
 }
 
-export function fullName(c: Character): string {
+const CJK = /[\u3400-\u9fff\uf900-\ufaff]/;
+
+/**
+ * Display name in the order its script expects: Chinese family-first with no
+ * space (林曉晴), otherwise given-first with a space (Ada Marsh).
+ */
+export function fullName(c: Pick<Character, "givenName" | "familyName">): string {
+  if (!c.familyName) return c.givenName;
+  if (CJK.test(c.familyName)) return `${c.familyName}${c.givenName}`;
   return `${c.givenName} ${c.familyName}`;
 }
 

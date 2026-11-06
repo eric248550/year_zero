@@ -13,7 +13,7 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { placeName, professionName, say } from "@genesis/narrative";
-import { FAMILY_NAMES, GIVEN_NAMES, TRAITS } from "./names";
+import { FAMILY_NAMES, GIVEN_NAMES, TRAITS, ZH_FAMILY_NAMES, ZH_GIVEN_NAMES } from "./names";
 
 export interface CreateWorldOptions {
   seed: number;
@@ -30,8 +30,10 @@ export function newCharacterId(state: WorldState): string {
   return id;
 }
 
-export function randomName(rng: Rng, family?: string): { givenName: string; familyName: string } {
-  return { givenName: rng.pick(GIVEN_NAMES), familyName: family ?? rng.pick(FAMILY_NAMES) };
+/** A default name in the world's language. Children keep their parent's family name. */
+export function randomName(rng: Rng, family?: string, locale?: WorldLocale): { givenName: string; familyName: string } {
+  const zh = locale === "zh-TW";
+  return { givenName: rng.pick(zh ? ZH_GIVEN_NAMES : GIVEN_NAMES), familyName: family ?? rng.pick(zh ? ZH_FAMILY_NAMES : FAMILY_NAMES) };
 }
 
 /**
@@ -110,7 +112,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     const age = rng.int(18, 58);
     const c: Character = {
       id: newCharacterId(state),
-      ...randomName(rng),
+      ...randomName(rng, undefined, locale),
       birthTick: -age,
       deathTick: null,
       causeOfDeath: null,
@@ -129,7 +131,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     const parent = rng.pick(adultsList.filter((a) => -a.birthTick - age >= 18));
     const c: Character = {
       id: newCharacterId(state),
-      ...randomName(rng, parent?.familyName),
+      ...randomName(rng, parent?.familyName, locale),
       birthTick: -age,
       deathTick: null,
       causeOfDeath: null,

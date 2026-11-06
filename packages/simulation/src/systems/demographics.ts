@@ -118,7 +118,7 @@ export function births(ctx: TickContext): void {
       const [a, b] = ctx.rng.shuffle(fertile).slice(0, 2) as [Character, Character];
       const child: Character = {
         id: newCharacterId(st),
-        ...randomName(ctx.rng, a.familyName),
+        ...randomName(ctx.rng, a.familyName, st.locale),
         birthTick: st.tick,
         deathTick: null,
         causeOfDeath: null,

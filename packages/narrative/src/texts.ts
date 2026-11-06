@@ -128,6 +128,7 @@ const EN = {
   tellTitle: (me: string) => `${me} speaks of a voice in the static`,
   tellText: () => "Most laugh it off. A few lean closer and ask what it said.",
   keptStatic: () => "Heard a voice in the radio static and told no one",
+  renamed: (before: string, after: string) => `${before} now goes by ${after}`,
 };
 
 const ZH: typeof EN = {
@@ -215,6 +216,7 @@ const ZH: typeof EN = {
   tellTitle: (me) => `${me}說起雜訊裡的聲音`,
   tellText: () => "大多數人笑笑就算了。有幾個人湊過來，問它說了什麼。",
   keptStatic: () => "聽見收音機雜訊裡的人聲，沒有告訴任何人",
+  renamed: (before, after) => `${before}改名為${after}`,
 };
 
 export type TextKey = keyof typeof EN;

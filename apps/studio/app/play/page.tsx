@@ -6,6 +6,7 @@ import { DecisionCard } from "@/components/play/decision-card";
 import { Onboarding, type InviteInfo } from "@/components/play/onboarding";
 import { Prologue } from "@/components/play/prologue";
 import { Succession } from "@/components/play/succession";
+import { RenameCharacter } from "@/components/play/rename";
 import { ageOf, decisionViews, loadPlay } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
@@ -78,13 +79,14 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
   return (
     <div>
       <section className="card flex items-center gap-4 p-4">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-signal/40 bg-signal/10 font-semibold text-signal">{character.givenName[0]}{character.familyName[0]}</span>
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-signal/40 bg-signal/10 font-semibold text-signal">{/[\u3400-\u9fff]/.test(character.familyName) ? character.familyName : `${character.givenName[0] ?? ""}${character.familyName[0] ?? ""}`}</span>
         <div className="min-w-0">
           <h1 className="truncate text-lg font-semibold">{fullName(character)}</h1>
           <p className="text-sm text-ink-2">
             {t("play.me.age", { age: ageOf(state, character) })} · {character.profession ? term.profession(character.profession) : t("play.me.child")} · {character.traits.map((x) => term.trait(x)).join(" · ")}
           </p>
           {home && <p className="text-xs text-ink-3">{t("play.me.home", { place: home.name })}</p>}
+          <RenameCharacter givenName={character.givenName} familyName={character.familyName} />
         </div>
       </section>
 

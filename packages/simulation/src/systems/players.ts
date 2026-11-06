@@ -17,7 +17,7 @@ import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -218,6 +218,12 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
     }
     case "LEAVE_WORLD":
       return player && player.status !== "left" ? null : "You are not in this world";
+    case "RENAME": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      if (me.givenName === a.givenName && me.familyName === a.familyName) return "That is already your name";
+      return null;
+    }
     case "PROLOGUE": {
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
@@ -239,13 +245,13 @@ function ensurePlayers(st: WorldState): Record<string, Player> {
   return (st.players ??= {});
 }
 
-function newPerson(ctx: TickContext, home: Settlement, age: number, profession: Character["profession"], givenName: string | undefined, story: string, trait?: string): Character {
+function newPerson(ctx: TickContext, home: Settlement, age: number, profession: Character["profession"], givenName: string | undefined, story: string, trait?: string, familyName?: string): Character {
   const st = ctx.state;
-  const name = randomName(ctx.rng);
+  const name = randomName(ctx.rng, undefined, st.locale);
   const c: Character = {
     id: newCharacterId(st),
     givenName: givenName?.trim() || name.givenName,
-    familyName: name.familyName,
+    familyName: familyName?.trim() || name.familyName,
     birthTick: st.tick - age,
     deathTick: null,
     causeOfDeath: null,
@@ -321,6 +327,7 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       if (origin === "haven_deep" && a.characterId) {
         const c = getCharacter(st, a.characterId)!;
         if (a.givenName?.trim()) c.givenName = a.givenName.trim();
+        if (a.familyName?.trim()) c.familyName = a.familyName.trim();
         takeControl(ctx, a.playerId, a.playerName, c, say(st).stepsForward(fullName(c)), say(st).takeover(fullName(c), a.playerName));
         return;
       }
@@ -329,19 +336,19 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       let title: string;
       switch (origin) {
         case "haven_deep":
-          c = newPerson(ctx, home, ctx.rng.int(18, 40), a.profession ?? null, a.givenName, say(st).lowerLevels(), a.trait);
+          c = newPerson(ctx, home, ctx.rng.int(18, 40), a.profession ?? null, a.givenName, say(st).lowerLevels(), a.trait, a.familyName);
           title = say(st).joinHaven(fullName(c));
           break;
         case "surface_born":
-          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 20), a.profession ?? null, a.givenName, say(st).grewUp(home.name), a.trait);
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 20), a.profession ?? null, a.givenName, say(st).grewUp(home.name), a.trait, a.familyName);
           title = say(st).joinSurface(fullName(c), home.name);
           break;
         case "wanderer":
-          c = newPerson(ctx, home, ctx.rng.int(18, 45), a.profession ?? null, a.givenName, say(st).survivedWastes(), a.trait);
+          c = newPerson(ctx, home, ctx.rng.int(18, 45), a.profession ?? null, a.givenName, say(st).survivedWastes(), a.trait, a.familyName);
           title = say(st).joinWanderer(fullName(c), home.name);
           break;
         case "vault12":
-          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 30), a.profession ?? null, a.givenName, say(st).walkedOutVault12(), a.trait);
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 30), a.profession ?? null, a.givenName, say(st).walkedOutVault12(), a.trait, a.familyName);
           title = say(st).joinVault12(fullName(c), home.name);
           break;
       }
@@ -375,7 +382,7 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       const home = ctx.rng.pick(activeSettlements(st));
       const adults = residents(st, home.id).filter((c) => characterAge(st, c) >= 18 && characterAge(st, c) <= 45);
       const parents = ctx.rng.shuffle(adults).slice(0, 2);
-      const name = randomName(ctx.rng, parents[0]?.familyName);
+      const name = randomName(ctx.rng, parents[0]?.familyName, st.locale);
       const baby: Character = {
         id: newCharacterId(st),
         ...name,
@@ -436,6 +443,25 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
     case "PROLOGUE":
       prologue(ctx, a);
       return;
+    case "RENAME": {
+      const me = playerCharacter(st, a.playerId)!;
+      const before = fullName(me);
+      me.givenName = a.givenName;
+      me.familyName = a.familyName;
+      const e = ctx.system({
+        category: "social",
+        importance: "minor",
+        title: say(st).renamed(before, fullName(me)),
+        text: say(st).renamed(before, fullName(me)),
+        scope: "character",
+        settlementIds: [me.homeId],
+        characterIds: [me.id],
+        changes: [{ path: `characters.${me.id}.name`, label: "Name", before, after: fullName(me) }],
+        summary: "Player action (logged for replay)",
+      });
+      me.lifeEvents.push({ tick: st.tick, text: e.title, historyId: e.id });
+      return;
+    }
     case "LEAVE_WORLD": {
       const player = getPlayer(st, a.playerId)!;
       const c = player.characterId ? getCharacter(st, player.characterId) : undefined;

@@ -31,3 +31,23 @@ describe("world language", () => {
     for (const e of b.events) expect(e.title).not.toMatch(CJK);
   });
 });
+
+describe("names", () => {
+  it("Chinese worlds use Chinese names, family name first", async () => {
+    const { fullName } = await import("@genesis/narrative");
+    const w = createWorld({ seed: 2 });
+    const c = w.characters[0]!;
+    expect(c.familyName).toMatch(CJK);
+    expect(fullName(c)).toBe(`${c.familyName}${c.givenName}`);
+    expect(fullName({ givenName: "Ada", familyName: "Marsh" })).toBe("Ada Marsh");
+    expect(fullName({ givenName: "林", familyName: "Calder" })).toBe("林 Calder");
+    expect(fullName({ givenName: "Nobody", familyName: "" })).toBe("Nobody");
+  });
+
+  it("children keep the family name", () => {
+    const r = runHeadless({ seed: 8, ticks: 25, events: [] });
+    const kid = r.final.characters.find((c) => c.parentIds.length > 0 && c.birthTick > 0)!;
+    const parent = r.final.characters.find((c) => c.id === kid.parentIds[0])!;
+    expect(kid.familyName).toBe(parent.familyName);
+  });
+});
