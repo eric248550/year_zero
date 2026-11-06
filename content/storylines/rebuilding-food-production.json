@@ -1,18 +1,51 @@
 {
   "id": "rebuilding-food-production",
-  "title": "Rebuilding Food Production",
-  "summary": "Bunker grow-rooms can feed a vault, not a civilization. The survivors must learn to farm a damaged surface: recovering seed, fighting blight, and surviving lean years. Success unlocks growth; failure means famine.",
-  "themes": ["agriculture", "risk", "knowledge"],
+  "title": "重建糧食生產",
+  "summary": "地堡的種植室養得活一座地堡，養不起一個文明。倖存者必須學會在受損的地表上耕種：找回種子、對抗枯萎病、熬過歉收的年頭。成功就能成長，失敗就是饑荒。",
+  "themes": [
+    "agriculture",
+    "risk",
+    "knowledge"
+  ],
   "beats": [
-    { "id": "blight", "title": "Blight", "description": "Monoculture grow-racks are fragile; a single pathogen can wipe out a harvest.", "eventIds": ["grow-room-blight"] },
-    { "id": "first-harvest", "title": "First surface harvest", "description": "A surface settlement brings in its first real harvest.", "eventIds": ["first-surface-harvest"] },
-    { "id": "seeds", "title": "The seed vault", "description": "Scouts find a pre-collapse seed bank; its contents could transform agriculture.", "eventIds": ["seed-vault-expedition", "heirloom-hydroponics"] },
-    { "id": "famine", "title": "The hungry years", "description": "If all else fails, famine forces desperate choices.", "eventIds": ["famine-council"] }
+    {
+      "id": "blight",
+      "title": "枯萎病",
+      "description": "單一作物的種植架很脆弱，一種病原體就能毀掉整季收成。",
+      "eventIds": [
+        "grow-room-blight"
+      ]
+    },
+    {
+      "id": "first-harvest",
+      "title": "第一次地表收成",
+      "description": "地表聚落迎來第一次真正的收成。",
+      "eventIds": [
+        "first-surface-harvest"
+      ]
+    },
+    {
+      "id": "seeds",
+      "title": "種子庫",
+      "description": "斥候找到崩潰前的種子銀行，裡面的東西可能徹底改變農業。",
+      "eventIds": [
+        "seed-vault-expedition",
+        "heirloom-hydroponics"
+      ]
+    },
+    {
+      "id": "famine",
+      "title": "飢餓的年頭",
+      "description": "如果其他方法都失敗，饑荒會逼出孤注一擲的選擇。",
+      "eventIds": [
+        "famine-council"
+      ]
+    }
   ],
   "possibleOutcomes": [
-    "Heirloom seeds and hydroponics end chronic hunger.",
-    "Surface farms make the settlements self-sufficient and the bunker becomes a museum.",
-    "Recurring famine keeps the population small and fearful."
+    "傳家種和水耕技術終結了長期的飢餓。",
+    "地表農場讓各聚落自給自足，地堡變成了博物館。",
+    "一再發生的饑荒讓人口一直很少，人心惶惶。"
   ],
   "status": "published"
 }

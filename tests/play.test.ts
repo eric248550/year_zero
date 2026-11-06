@@ -69,7 +69,7 @@ describe("immediate player actions", () => {
     s = applyImmediate(s, { type: "PROLOGUE", playerId: "p", step: "static", choiceId: "keep" }).state;
     expect(s.players!.p!.prologue).toEqual(["first_climb", "water", "static"]);
     expect(applyImmediate(s, { type: "PROLOGUE", playerId: "p", step: "static", choiceId: "tell" }).rejected).toBeTruthy();
-    expect(getCharacter(s, me.id)!.lifeEvents.at(-1)!.text).toMatch(/told no one/);
+    expect(getCharacter(s, me.id)!.lifeEvents.at(-1)!.text).toMatch(/沒有告訴任何人/);
   });
 });
 

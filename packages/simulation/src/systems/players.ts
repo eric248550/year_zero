@@ -1,6 +1,5 @@
 import {
   ADULT_AGE,
-  LOCATION_BY_ID,
   PROFESSIONS,
   PROLOGUE_ORDER,
   PROLOGUE_STEPS,
@@ -12,7 +11,7 @@ import {
   type Settlement,
   type WorldState,
 } from "@genesis/schemas";
-import { activeSettlements, characterAge, fullName, getCharacter, getSettlement, relationshipKey, residents } from "@genesis/narrative";
+import { activeSettlements, characterAge, fullName, getCharacter, getSettlement, isZh, relationshipKey, residents, say } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
@@ -301,7 +300,7 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
           delete st.invites![a.inviteCode];
           const key = relationshipKey(inviter.id, c.id);
           st.relationships[key] = Math.min(100, (st.relationships[key] ?? 0) + 10);
-          takeControl(ctx, a.playerId, a.playerName, c, `${fullName(c)} answers ${fullName(inviter)}'s call`, `A new player now lives the life of ${fullName(c)}, invited by ${fullName(inviter)}.`);
+          takeControl(ctx, a.playerId, a.playerName, c, say(st).answersCall(fullName(c), fullName(inviter)), say(st).answersText(fullName(c), fullName(inviter)));
         } else {
           invite.acceptedBy = a.playerId;
           const players = ensurePlayers(st);
@@ -322,7 +321,7 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       if (origin === "haven_deep" && a.characterId) {
         const c = getCharacter(st, a.characterId)!;
         if (a.givenName?.trim()) c.givenName = a.givenName.trim();
-        takeControl(ctx, a.playerId, a.playerName, c, `${fullName(c)} steps forward`, `${fullName(c)} of Haven Deep is now played by ${a.playerName}.`);
+        takeControl(ctx, a.playerId, a.playerName, c, say(st).stepsForward(fullName(c)), say(st).takeover(fullName(c), a.playerName));
         return;
       }
       const home = getSettlement(st, a.settlementId ?? ctx.rng.pick(info.settlementIds))!;
@@ -330,23 +329,23 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       let title: string;
       switch (origin) {
         case "haven_deep":
-          c = newPerson(ctx, home, ctx.rng.int(18, 40), a.profession ?? null, a.givenName, "Lived in the lower levels of Haven Deep", a.trait);
-          title = `${fullName(c)} climbs up from the lower levels of Haven Deep`;
+          c = newPerson(ctx, home, ctx.rng.int(18, 40), a.profession ?? null, a.givenName, say(st).lowerLevels(), a.trait);
+          title = say(st).joinHaven(fullName(c));
           break;
         case "surface_born":
-          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 20), a.profession ?? null, a.givenName, `Grew up under the open sky in ${home.name}`, a.trait);
-          title = `${fullName(c)} comes of age in ${home.name}`;
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 20), a.profession ?? null, a.givenName, say(st).grewUp(home.name), a.trait);
+          title = say(st).joinSurface(fullName(c), home.name);
           break;
         case "wanderer":
-          c = newPerson(ctx, home, ctx.rng.int(18, 45), a.profession ?? null, a.givenName, "Survived alone in the wastes", a.trait);
-          title = `A wanderer, ${fullName(c)}, arrives at ${home.name}`;
+          c = newPerson(ctx, home, ctx.rng.int(18, 45), a.profession ?? null, a.givenName, say(st).survivedWastes(), a.trait);
+          title = say(st).joinWanderer(fullName(c), home.name);
           break;
         case "vault12":
-          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 30), a.profession ?? null, a.givenName, `Walked out of Vault 12 (${LOCATION_BY_ID["vault_12"]?.name ?? "Vault 12"})`, a.trait);
-          title = `${fullName(c)}, a survivor of Vault 12, reaches ${home.name}`;
+          c = newPerson(ctx, home, ctx.rng.int(ADULT_AGE, 30), a.profession ?? null, a.givenName, say(st).walkedOutVault12(), a.trait);
+          title = say(st).joinVault12(fullName(c), home.name);
           break;
       }
-      takeControl(ctx, a.playerId, a.playerName, c, title, `${title}. Played by ${a.playerName}.`);
+      takeControl(ctx, a.playerId, a.playerName, c, title, say(st).playedBy(title, a.playerName));
       return;
     }
     case "CHOOSE": {
@@ -362,15 +361,15 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       if (a.mode === "character") {
         const c = getCharacter(st, a.characterId!)!;
         const kind = last ? bondKind(st, last, c) : null;
-        const tie = kind === "child" ? "child" : kind === "ward" ? "ward" : "companion";
-        takeControl(ctx, a.playerId, player.name, c, `${fullName(c)} carries on`, `${player.name}'s story continues through ${fullName(c)}${last ? `, ${tie} of ${fullName(last)}` : ""}.`);
+        const tie = say(st).tie(kind === "child" ? "child" : kind === "ward" ? "ward" : "companion");
+        takeControl(ctx, a.playerId, player.name, c, say(st).carriesOn(fullName(c)), say(st).carriesText(player.name, fullName(c), tie, last ? fullName(last) : undefined));
         return;
       }
       const [minAge, maxAge] = PLAYERS.rebirthAge;
       const pool = st.characters.filter((c) => isFree(st, c) && characterAge(st, c) >= minAge && characterAge(st, c) <= maxAge);
       if (pool.length > 0) {
         const c = ctx.rng.pick(pool);
-        takeControl(ctx, a.playerId, player.name, c, `A new life: ${fullName(c)}`, `${player.name} is reborn as ${fullName(c)}, a child of ${getSettlement(st, c.homeId)?.name ?? "the wastes"}.`);
+        takeControl(ctx, a.playerId, player.name, c, say(st).newLife(fullName(c)), say(st).rebornText(player.name, fullName(c), getSettlement(st, c.homeId)?.name ?? ""));
         return;
       }
       const home = ctx.rng.pick(activeSettlements(st));
@@ -387,13 +386,13 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
         homeId: home.id,
         parentIds: parents.map((p) => p.id),
         traits: [ctx.rng.pick(TRAITS)],
-        lifeEvents: [{ tick: st.tick, text: `Born in ${home.name}`, historyId: null }],
+        lifeEvents: [{ tick: st.tick, text: say(st).bornIn(home.name), historyId: null }],
       };
       st.characters.push(baby);
       st.stats.births += 1;
       ctx.births += 1;
-      for (const p of parents) p.lifeEvents.push({ tick: st.tick, text: `Child ${baby.givenName} born`, historyId: null });
-      takeControl(ctx, a.playerId, player.name, baby, `Birth of ${fullName(baby)}`, `${fullName(baby)} is born in ${home.name}${parents.length ? ` to ${parents.map(fullName).join(" and ")}` : ""}. ${player.name} begins a new life.`);
+      for (const p of parents) p.lifeEvents.push({ tick: st.tick, text: say(st).childBorn(baby.givenName), historyId: null });
+      takeControl(ctx, a.playerId, player.name, baby, say(st).birthTitle(fullName(baby)), say(st).babyText(fullName(baby), home.name, parents.map(fullName).join(isZh(st) ? "和" : " and "), player.name));
       return;
     }
     case "CARE_FOR": {
@@ -407,8 +406,8 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       const e = ctx.system({
         category: "social",
         importance: "minor",
-        title: adopt ? `${fullName(me)} takes in ${fullName(target)}` : `${fullName(me)} looks after ${fullName(target)}`,
-        text: adopt ? `${fullName(me)} takes ${fullName(target)} under their roof.` : `${fullName(me)} has begun caring for ${fullName(target)}.`,
+        title: adopt ? say(st).careAdoptTitle(fullName(me), fullName(target)) : say(st).careTitle(fullName(me), fullName(target)),
+        text: adopt ? say(st).careAdoptText(fullName(me), fullName(target)) : say(st).careText(fullName(me), fullName(target)),
         scope: "character",
         settlementIds: [me.homeId],
         characterIds: [me.id, target.id],
@@ -508,8 +507,8 @@ function prologue(ctx: TickContext, a: PlayerActionOf<"PROLOGUE">): void {
         changes.push({ path: `settlements.${home.id}.resources.water`, label: `${home.name} water`, before, after: home.resources.water });
       }
       record(
-        surface ? `${fullName(me)} climbs into daylight${partner ? ` with ${fullName(partner)}` : ""}` : `${fullName(me)} helps patch the reclaimers${partner ? ` with ${fullName(partner)}` : ""}`,
-        surface ? "The first sight of the open sky in a lifetime: ash-grey, enormous, and quiet." : "A cracked filter housing, two pairs of hands, and a little more clean water for everyone.",
+        surface ? say(st).climbTitle(fullName(me), partner && fullName(partner)) : say(st).repairTitle(fullName(me), partner && fullName(partner)),
+        surface ? say(st).climbText() : say(st).repairText(),
         partner,
         changes,
       );
@@ -519,8 +518,8 @@ function prologue(ctx: TickContext, a: PlayerActionOf<"PROLOGUE">): void {
       const share = a.choiceId === "share";
       const asker = companionFor(ctx, me, null, met);
       record(
-        share ? `${fullName(me)} shares water${asker ? ` with ${fullName(asker)}` : ""}` : `${fullName(me)} refuses${asker ? ` ${fullName(asker)}` : ""} a drink`,
-        share ? "Half a cup, given without being asked twice. It will be remembered." : "Rations are rations. It will be remembered too.",
+        share ? say(st).shareTitle(fullName(me), asker && fullName(asker)) : say(st).refuseTitle(fullName(me), asker && fullName(asker)),
+        share ? say(st).shareText() : say(st).refuseText(),
         asker,
         asker ? [bond(st, me, asker, share ? 25 : -15)] : [],
       );
@@ -529,9 +528,9 @@ function prologue(ctx: TickContext, a: PlayerActionOf<"PROLOGUE">): void {
     case "static": {
       const tell = a.choiceId === "tell";
       if (tell) {
-        record(`${fullName(me)} speaks of a voice in the static`, "Most laugh it off. A few lean closer and ask what it said.", undefined, [], false);
+        record(say(st).tellTitle(fullName(me)), say(st).tellText(), undefined, [], false);
       } else {
-        me.lifeEvents.push({ tick: st.tick, text: "Heard a voice in the radio static and told no one", historyId: null });
+        me.lifeEvents.push({ tick: st.tick, text: say(st).keptStatic(), historyId: null });
       }
       return;
     }
@@ -577,7 +576,7 @@ export function playerUpkeep(ctx: TickContext): void {
       : undefined;
     if (baby) {
       delete st.invites![code];
-      takeControl(ctx, waiting.id, waiting.name, baby, `${fullName(baby)} is born`, `${fullName(inviter!)}'s child ${fullName(baby)} is born, played by ${waiting.name}.`);
+      takeControl(ctx, waiting.id, waiting.name, baby, say(st).inviteBorn(fullName(baby)), say(st).inviteBornText(fullName(inviter!), fullName(baby), waiting.name));
     } else if (inviterGone) {
       delete st.invites![code];
       waiting.status = "left";

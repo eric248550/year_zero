@@ -90,8 +90,12 @@ The game itself, phone-first: open `http://localhost:3000/play` (or
   cookie, no accounts. Player actions apply immediately and are logged in
   `immediate_actions`, so runs still replay and verify exactly.
 
-Event and history text is authored content and stays in English; the app's
-own text is in English and Traditional Chinese.
+Game content is written in Traditional Chinese (台灣繁體中文): the events and
+storylines in `content/`, the World Bible, and the text the engine writes into
+history. New worlds are `locale: "zh-TW"`; pass `locale: "en"` to `createRun`
+for an English world. Worlds created before locales existed have no locale and
+stay English, so they still replay exactly. The app's own text is in English
+and Traditional Chinese.
 
 ## The Studio
 
@@ -185,10 +189,7 @@ Known limitations, stated plainly:
 - `ticksPerYear` exists in the state, but the economy and demography rates assume
   1 tick = 1 year.
 - Single-process SQLite; no authentication (out of scope for this internal tool).
-- **Translation covers the Studio UI only.** Messages live in
-  `apps/studio/lib/i18n/messages/` (a missing Chinese key is a type error) and
-  catalog terms (resources, professions, technologies, policies, statuses…) in
-  `apps/studio/lib/i18n/terms.ts`. Authored narrative content (event
-  definitions, storylines, generated history text, condition/effect
-  descriptions), API error messages and proper nouns (place and character
-  names) stay in English.
+- **Language.** Game content and engine-written history are Traditional
+  Chinese in new worlds; the Studio UI is English or Chinese. Engine validation
+  messages (why an action was rejected) are still English, and character names
+  are romanized.

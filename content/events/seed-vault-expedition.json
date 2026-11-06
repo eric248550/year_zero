@@ -1,9 +1,9 @@
 {
   "id": "seed-vault-expedition",
-  "title": "The Seed Vault",
+  "title": "種子庫",
   "scope": "settlement",
   "category": "exploration",
-  "description": "Scouts reach the Seed Vault Ruins and attempt to recover viable seed.",
+  "description": "斥候抵達種子庫遺址，試著找回還能發芽的種子。",
   "preconditions": [
     {
       "type": "location",
@@ -32,7 +32,7 @@
   "choices": [
     {
       "id": "careful",
-      "label": "Recover seed carefully",
+      "label": "小心地取回種子",
       "tags": [
         "cautious",
         "science"
@@ -54,14 +54,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "scout",
-          "text": "Recovered heirloom seed from the Seed Vault"
+          "text": "從種子庫取回了傳家種"
         }
       ],
-      "outcome": "Packet by packet, {{scout}} brings back seed sealed in 2070."
+      "outcome": "一包接一包，{{scout}}帶回了 2070 年封存的種子。"
     },
     {
       "id": "rush",
-      "label": "Grab everything and run",
+      "label": "全部搬走就跑",
       "tags": [
         "bold",
         "growth"
@@ -79,16 +79,16 @@
       ],
       "risk": {
         "chance": 0.25,
-        "description": "The cold-room roof gives way. {{scout}} is crushed.",
+        "description": "冷藏室的屋頂塌了下來，{{scout}}被壓在底下。",
         "effects": [
           {
             "type": "CHARACTER_DEATH",
             "role": "scout",
-            "cause": "crushed in the Seed Vault collapse"
+            "cause": "在種子庫坍塌時被壓死"
           }
         ]
       },
-      "outcome": "Crates are dragged out of the unstable cold rooms."
+      "outcome": "一箱箱種子被從搖搖欲墜的冷藏室裡拖了出來。"
     }
   ],
   "priority": 6,
@@ -100,8 +100,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "Into the Seed Vault",
-    "text": "{{scout}} led a team from {{settlement}} into the half-buried cold rooms of the Seed Vault Ruins."
+    "headline": "走進種子庫",
+    "text": "{{scout}}帶著{{settlement}}的一支隊伍，走進種子庫遺址半埋在地下的冷藏室。"
   },
   "version": 1,
   "status": "published",

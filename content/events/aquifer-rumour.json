@@ -1,9 +1,9 @@
 {
   "id": "aquifer-rumour",
-  "title": "Rumour of Clean Water",
+  "title": "乾淨水源的傳聞",
   "scope": "settlement",
   "category": "exploration",
-  "description": "An old municipal map suggests a clean aquifer beneath a drained reservoir.",
+  "description": "一張舊市政地圖顯示，乾涸的水庫底下有一層乾淨的含水層。",
   "preconditions": [
     {
       "type": "location",
@@ -30,7 +30,7 @@
   "choices": [
     {
       "id": "expedition",
-      "label": "Send an expedition",
+      "label": "派遠征隊去找",
       "tags": [
         "bold",
         "growth"
@@ -46,25 +46,25 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "scout",
-          "text": "Found the Old Reservoir's clean aquifer"
+          "text": "找到舊水庫底下的乾淨含水層"
         }
       ],
       "risk": {
         "chance": 0.15,
-        "description": "{{scout}} is caught in a dust storm on the return and never comes home.",
+        "description": "{{scout}}在回程時遇上沙塵暴，再也沒有回來。",
         "effects": [
           {
             "type": "CHARACTER_DEATH",
             "role": "scout",
-            "cause": "lost in a dust storm returning from the Old Reservoir"
+            "cause": "從舊水庫回程時迷失在沙塵暴中"
           }
         ]
       },
-      "outcome": "{{scout}} follows the map to the Old Reservoir. Beneath the cracked basin, water runs clear."
+      "outcome": "{{scout}}照著地圖走到舊水庫。龜裂的庫底下方，水依然清澈。"
     },
     {
       "id": "ignore",
-      "label": "Not worth the risk",
+      "label": "不值得冒這個險",
       "tags": [
         "cautious"
       ],
@@ -75,7 +75,7 @@
           "amount": 3
         }
       ],
-      "outcome": "The map is filed away in the archive."
+      "outcome": "地圖被收進了檔案室。"
     }
   ],
   "priority": 5,
@@ -87,8 +87,8 @@
   ],
   "importance": "notable",
   "narrative": {
-    "headline": "A map to clean water",
-    "text": "Sorting salvaged paper, {{scout}} found a municipal water map marking an aquifer under the Old Reservoir."
+    "headline": "一張通往乾淨水源的地圖",
+    "text": "{{scout}}在整理撿回來的紙張時，找到一張市政供水圖，上面標著舊水庫底下有一層含水層。"
   },
   "version": 1,
   "status": "published",

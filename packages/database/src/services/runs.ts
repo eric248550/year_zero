@@ -8,6 +8,7 @@ import {
   type HistoricalEvent,
   type PlayerAction,
   type PolicyId,
+  type WorldLocale,
   type WorldState,
 } from "@genesis/schemas";
 import { checkEligibility, currentYear, population } from "@genesis/narrative";
@@ -187,11 +188,13 @@ export interface CreateRunInput {
   policy?: PolicyId;
   content?: ContentBundle;
   activate?: boolean;
+  /** Language of engine-written text. Default zh-TW. */
+  locale?: WorldLocale;
 }
 
 export function createRun(db: Db, input: CreateRunInput): RunSummary {
   const content = input.content ?? currentPublishedBundle(db);
-  const state = createWorld({ seed: input.seed, policy: input.policy ?? "balanced" });
+  const state = createWorld({ seed: input.seed, policy: input.policy ?? "balanced", locale: input.locale });
   const id = runId();
   const at = nowIso();
   db.transaction((tx) => {

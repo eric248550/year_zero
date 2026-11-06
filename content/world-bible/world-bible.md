@@ -1,88 +1,89 @@
-# Genesis — Year Zero: World Bible
+# 《元年》世界觀設定（World Bible）
 
-> Canon reference for designers and for the AI event generator. The simulation
-> engine is the authority on world *state*; this document is the authority on
-> world *tone and lore*. Anything not written here is undecided — not forbidden.
+> 給設計者和 AI 事件產生器的正典參考。世界的「狀態」以模擬引擎為準；世界的
+> 「語氣與設定」以這份文件為準。這裡沒寫到的事情代表尚未決定，不代表禁止。
+>
+> 所有給玩家看的文字一律使用台灣繁體中文與全形標點。id、旗標、標籤與
+> `{{佔位符}}` 維持英文原樣。
 
-## 1. The Collapse (2089)
+## 1. 崩潰（2089 年）
 
-In 2089 a coordinated stratospheric climate intervention failed. Within months,
-monsoon systems stalled, crop belts failed, and cascading failures in power,
-logistics and communications brought down every government in the region.
-Survivors know the *effects* of the collapse; almost none know the *cause*.
+2089 年，一項多國聯合的平流層氣候干預計畫失敗了。短短幾個月內，季風系統
+停擺、糧食產區接連歉收，電力、物流與通訊連鎖崩壞，這個地區的每一個政府都
+倒了。倖存者知道崩潰帶來的「後果」，但幾乎沒有人知道它的「原因」。
 
-**Hidden truth (secret `project_halcyon`):** the intervention was *Project
-Halcyon*, an aerosol-cooling programme rushed into deployment and concealed by
-the governments that launched it. This must only become public through play.
+**隱藏真相（祕密 `project_halcyon`）：** 那項干預就是**海爾西恩計畫**，一個
+倉促上線的氣溶膠降溫計畫，並被發起它的各國政府刻意掩蓋。這個真相只能在
+遊戲過程中被揭露。
 
-## 2. Haven Deep (Vault 7)
+## 2. 深港地堡（第七號避難所）
 
-A sealed bunker beneath the old Calder dam. It held ~200 people at the collapse;
-four decades of closed-loop life have whittled that to about twenty. In **2131
-(tick 0)** the survivors open the blast door for good.
+位於舊卡爾德水壩下方的密封地堡。崩潰時約有 200 人住在這裡；四十多年的封閉
+生活之後，只剩下大約二十人。**2131 年（tick 0）**，倖存者永久打開了防爆門。
 
-- Reclaimers keep water flowing, but they were built for a sealed vault.
-- Grow rooms produce monotonous, fragile crops.
-- The archive holds fragments of modern science without the industry to use it.
+- 濾水機還能讓水流動，但它們是為密封的地堡設計的。
+- 種植室的收成單調又脆弱。
+- 檔案室保存著現代科學的片段，卻沒有能使用它們的工業。
 
-**Hidden truth (secret `founders_pact`):** Haven Deep's founders were Halcyon
-engineers who built the vault knowing the programme might fail.
+**隱藏真相（祕密 `founders_pact`）：** 深港地堡的創建者都是海爾西恩計畫的
+工程師。他們早就知道計畫可能失敗，才建造了這座地堡。
 
-## 3. The Surface
+## 3. 地表
 
-Habitable but scarred: ash soils, poisoned seeps, dust storms, ruined towns.
+可以住人，但滿目瘡痍：灰燼土壤、有毒的滲水、沙塵暴、毀壞的城鎮。
 
-| Location | Known at start | Notes |
+| 地點 | 開局已知 | 說明 |
 | --- | --- | --- |
-| Ashford Crossing | yes | Bridge town on a slow river; fertile floodplain. Settleable. |
-| Cinder Flats | yes | Burnt logistics park; rich in scrap. Settleable. |
-| Old Reservoir | no | Drained basin over a clean aquifer. Settleable. |
-| Greenhollow | no | Sheltered valley with feral orchards. Settleable. |
-| Seed Vault Ruins | no | Agricultural research station; may hold viable seed. |
-| Signal Tower | no | Relay mast on Harrow Ridge. |
-| Vault 12 | hidden | A bunker absent from every Haven Deep map. Only narrative events can reveal it. |
+| 灰淺渡口（Ashford Crossing） | 是 | 緩流河畔的橋鎮，有肥沃的氾濫平原。可建立聚落。 |
+| 燼原（Cinder Flats） | 是 | 燒毀的物流園區，廢料豐富。可建立聚落。 |
+| 舊水庫（Old Reservoir） | 否 | 乾涸的水庫，底下有乾淨的含水層。可建立聚落。 |
+| 青谷（Greenhollow） | 否 | 隱蔽的山谷，有野生果園。可建立聚落。 |
+| 種子庫遺址（Seed Vault Ruins） | 否 | 農業研究站，可能還保存著能發芽的種子。 |
+| 訊號塔（Signal Tower） | 否 | 哈洛山脊上的中繼塔。 |
+| 第十二號避難所（Vault 12） | 隱藏 | 一座不在任何深港地堡地圖上的地堡。只有劇情事件能揭露它。 |
 
-**Hidden truth (secret `vault12_fate`):** Vault 12 sealed itself during a fever
-outbreak; its residents chose quarantine over spreading the disease.
+**隱藏真相（祕密 `vault12_fate`）：** 第十二號避難所在一場熱病爆發時自我封閉；
+居民選擇隔離，而不是把疫病傳出去。
 
-## 4. People and Professions
+## 4. 人與職業
 
-- **Scientists** keep and rebuild knowledge.
-- **Engineers** salvage, build and maintain.
-- **Medics** keep people alive without industrial medicine.
-- **Scouts** walk the surface, forage, and find what was lost.
+- **科學家**：保存並重建知識。
+- **工程師**：拆解回收、建造、維修。
+- **醫護**：在沒有現代醫療的世界裡讓人活下去。
+- **斥候**：走在地表上，覓食，找回失落的東西。
 
-Children take a profession at 16. Elders (65+) work at half capacity but carry
-memory. Survivors are pragmatic, scarred, and suspicious of grand projects.
+孩子在 16 歲選擇職業。長者（65 歲以上）只有一半的工作能力，但保有記憶。
+倖存者務實、帶著傷痕，並且對宏大的計畫抱持懷疑。
 
-## 5. Tone
+## 5. 語氣
 
-Hopeful but not naïve. Rebuilding is slow and costly. Every gain has a price;
-every crisis can be survived — or not. Avoid zombies, mutants, magic, and
-superweapons. The danger is scarcity, sickness, weather, ruins and each other.
+懷抱希望，但不天真。重建緩慢而且代價高昂。每一次收穫都有代價；每一場危機
+都可能撐過去，也可能撐不過去。不要寫殭屍、變種人、魔法或超級武器。真正的
+危險是匱乏、疾病、天氣、廢墟，以及彼此。
 
-## 6. Technology Ladder
+## 6. 科技階梯
 
-Water Purification · Salvage Tooling · Field Medicine · Hydroponics → Irrigation
-(Hydroponics + Purification) · Shortwave Radio (Salvage) · Civic Charter (pop ≥ 30)
-· Antibiotics (Medicine + Purification) · Solar Power (Salvage) → Power Grid
-(Solar + Charter) · Crop Genetics (Irrigation + Antibiotics).
+淨水技術 · 回收工具 · 野戰醫療 · 水耕栽培 → 灌溉網路（水耕栽培 + 淨水技術）
+· 短波無線電（回收工具）· 公民憲章（人口 ≥ 30）· 抗生素（野戰醫療 + 淨水技術）
+· 太陽能（回收工具）→ 電力網（太陽能 + 公民憲章）· 作物遺傳學（灌溉網路 + 抗生素）。
 
-Events must never assume a technology that has not been unlocked. Use a
-`technology` precondition to gate them.
+事件絕對不能假設一項尚未解鎖的科技已經存在。請用 `technology` 前置條件來
+限制它們。
 
-## 7. Rules for Event Authors (human or AI)
+## 7. 事件作者規則（人類或 AI）
 
-1. Events describe *possibilities*. They fire only when preconditions hold.
-2. State changes happen **only** through the typed effects (ADJUST_RESOURCE,
-   CHANGE_RELATIONSHIP, DISCOVER_LOCATION, UNLOCK_TECHNOLOGY,
-   CHANGE_SETTLEMENT_STAT, ADD_WORLD_FLAG, REMOVE_WORLD_FLAG,
-   CREATE_HISTORICAL_EVENT, REVEAL_SECRET, ADD_LIFE_EVENT, CHARACTER_DEATH).
-3. Secrets are revealed with `REVEAL_SECRET`, never by writing flags.
-4. Dead characters cannot take part. Roles are filled from living residents.
-5. History is append-only. Nothing can rewrite what already happened.
-6. Keep resource swings proportional: a settlement of 20 consumes ~20 food and
-   ~20 water per year.
-7. Prefer choices with real trade-offs, tagged with the values they express
-   (`cautious`, `bold`, `growth`, `science`, `community`, `industry`,
-   `secrecy`, `openness`) so simulated councils can choose in character.
+1. 事件描述的是「可能性」。只有在前置條件成立時才會觸發。
+2. 世界狀態**只能**透過型別化的效果改變（ADJUST_RESOURCE、
+   CHANGE_RELATIONSHIP、DISCOVER_LOCATION、UNLOCK_TECHNOLOGY、
+   CHANGE_SETTLEMENT_STAT、ADD_WORLD_FLAG、REMOVE_WORLD_FLAG、
+   CREATE_HISTORICAL_EVENT、REVEAL_SECRET、ADD_LIFE_EVENT、CHARACTER_DEATH）。
+3. 祕密只能用 `REVEAL_SECRET` 揭露，絕不能靠寫入旗標。
+4. 死去的角色不能參與事件。角色由活著的居民擔任。
+5. 歷史只能追加。沒有任何東西能改寫已經發生的事。
+6. 資源變動要合乎比例：20 人的聚落每年大約消耗 20 份食物和 20 份水。
+7. 盡量讓選項有真正的取捨，並標上它所代表的價值（`cautious`、`bold`、
+   `growth`、`science`、`community`、`industry`、`secrecy`、`openness`），
+   讓模擬出來的角色能依照個性做選擇。
+8. 這是多人遊戲：每個參與者各自做決定。需要每個人分別決定的事件（例如要不要
+   一起去探索），請使用 `participation: "everyone"`，並把個人結果放在
+   `memberEffects`（角色 `actor` 代表做這個選擇的人）。

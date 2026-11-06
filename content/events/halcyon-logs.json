@@ -1,9 +1,9 @@
 {
   "id": "halcyon-logs",
-  "title": "The Halcyon Logs",
+  "title": "海爾西恩日誌",
   "scope": "settlement",
   "category": "mystery",
-  "description": "Vault 12's archive contains records of Project Halcyon \u2014 the intervention that began the collapse.",
+  "description": "第十二號避難所的檔案裡，有海爾西恩計畫的紀錄——正是那場干預引發了崩潰。",
   "preconditions": [
     {
       "type": "secret",
@@ -37,7 +37,7 @@
   "choices": [
     {
       "id": "share",
-      "label": "Share the truth with everyone",
+      "label": "把真相告訴所有人",
       "tags": [
         "openness",
         "community"
@@ -58,11 +58,11 @@
           "target": "all_settlements"
         }
       ],
-      "outcome": "{{scientist}} reads the logs aloud in every settlement. The old world did this to itself."
+      "outcome": "{{scientist}}在每個聚落把日誌大聲念出來。舊世界是自己毀了自己。"
     },
     {
       "id": "conceal",
-      "label": "Keep it among the archivists",
+      "label": "只讓檔案管理員知道",
       "tags": [
         "secrecy",
         "science"
@@ -79,10 +79,10 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "scientist",
-          "text": "Swore to keep the Halcyon logs secret"
+          "text": "發誓保守海爾西恩日誌的祕密"
         }
       ],
-      "outcome": "The archive is locked. Only a few know why the sky went wrong."
+      "outcome": "檔案室被鎖上了。只有少數人知道天空為什麼會出錯。"
     }
   ],
   "priority": 6,
@@ -94,8 +94,8 @@
   ],
   "importance": "critical",
   "narrative": {
-    "headline": "The Halcyon logs",
-    "text": "Among Vault 12's records, {{scientist}} found a sealed drive labelled HALCYON \u2014 MITIGATION REVIEW, 2088."
+    "headline": "海爾西恩日誌",
+    "text": "在第十二號避難所的紀錄裡，{{scientist}}找到一個密封的硬碟，標籤寫著：海爾西恩——減緩措施檢討，2088。"
   },
   "version": 1,
   "status": "published",

@@ -16,6 +16,7 @@ import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharact
 import { candidatesForRole, resolveRoles, rolesSatisfiable } from "./roles";
 import { renderTemplate } from "./template";
 import { DECISION_WINDOW_TICKS, decidersFor, isPlayerControlled, participantsFor } from "./decisions";
+import { isZh, listNames, say, templateValues } from "./texts";
 
 /* ------------------------------------------------------------------ */
 /* Eligibility                                                         */
@@ -207,23 +208,12 @@ export function executeEvent(
     }
 
     // Template values use pre-event names; dead participants still have names.
-    const values: Record<string, string> = {
-      settlement: settlement?.name ?? "the settlements",
-      year: String(currentYear(state)),
-      world: state.worldName,
-    };
-    for (const [role, id] of Object.entries(roles)) {
-      const c = getCharacter(state, id);
-      if (c) {
-        values[role] = fullName(c);
-        values[`${role}.profession`] = c.profession ?? "youth";
-      }
-    }
+    const values = templateValues(state, settlement, roles);
     if (chosen) values.choice = chosen.choice.label;
 
     const parts = [renderTemplate(def.narrative.text, values)];
     if (chosen) {
-      parts.push(`Decision: ${chosen.choice.label}.${chosen.choice.outcome ? ` ${renderTemplate(chosen.choice.outcome, values)}` : ""}`);
+      parts.push(`${say(state).decision(chosen.choice.label)}${chosen.choice.outcome ? `${isZh(state) ? "" : " "}${renderTemplate(chosen.choice.outcome, values)}` : ""}`);
       if (riskTriggered && chosen.choice.risk) parts.push(renderTemplate(chosen.choice.risk.description, values));
     }
 
@@ -306,18 +296,7 @@ function openDecision(
     };
     applyEffects(draft, def.effects, ctx, rec);
 
-    const values: Record<string, string> = {
-      settlement: settlement?.name ?? "the settlements",
-      year: String(currentYear(state)),
-      world: state.worldName,
-    };
-    for (const [role, id] of Object.entries(roles)) {
-      const c = getCharacter(state, id);
-      if (c) {
-        values[role] = fullName(c);
-        values[`${role}.profession`] = c.profession ?? "youth";
-      }
-    }
+    const values = templateValues(state, settlement, roles);
     const players = deciders.map((id) => getCharacter(state, id)).filter((c) => c?.controllerId).map((c) => fullName(c!));
     const resolveTick = draft.tick + DECISION_WINDOW_TICKS;
     const event: HistoricalEvent = {
@@ -333,7 +312,7 @@ function openDecision(
       title: renderTemplate(def.narrative.headline, values),
       text: [
         renderTemplate(def.narrative.text, values),
-        `Each participant decides for themselves (${players.join(", ")}${deciders.length > players.length ? ` and ${deciders.length - players.length} others` : ""}). Decisions are due by year ${draft.startYear + resolveTick}.`,
+        say(state).eachDecides(listNames(state, players), deciders.length - players.length, draft.startYear + resolveTick),
       ].join("\n\n"),
       settlementIds: settlementId ? [settlementId] : [],
       characterIds: [...new Set([...Object.values(roles), ...deciders.filter((id) => getCharacter(state, id)?.controllerId)])],

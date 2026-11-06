@@ -1,9 +1,9 @@
 {
   "id": "first-surface-harvest",
-  "title": "First Surface Harvest",
+  "title": "第一次地表收成",
   "scope": "settlement",
   "category": "resource",
-  "description": "A surface settlement brings in its first real harvest from the open ground.",
+  "description": "地表聚落在露天的土地上迎來第一次真正的收成。",
   "preconditions": [
     {
       "type": "settlement_kind",
@@ -39,7 +39,7 @@
     {
       "type": "ADD_LIFE_EVENT",
       "role": "farmer",
-      "text": "Brought in the first surface harvest"
+      "text": "收成了第一批地表作物"
     }
   ],
   "choices": [],
@@ -52,8 +52,8 @@
   ],
   "importance": "major",
   "narrative": {
-    "headline": "The first surface harvest at {{settlement}}",
-    "text": "In {{year}}, {{farmer}} carried the first basket of open-air grain into {{settlement}}. People wept."
+    "headline": "{{settlement}}的第一次地表收成",
+    "text": "{{year}} 年，{{farmer}}把第一籃露天種出來的穀子扛進{{settlement}}。有人哭了。"
   },
   "version": 1,
   "status": "published",

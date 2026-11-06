@@ -15,7 +15,7 @@ const { created, updated } = importSeedContent(db, content);
 console.log(`✓ Event definitions: ${created} created, ${updated} updated (${content.events.length} in content/events)`);
 console.log(`✓ Storylines: ${content.storylines.length}`);
 if (listRuns(db).length === 0) {
-  const run = createRun(db, { name: "Year Zero — First Light", seed: 2131, policy: "balanced" });
+  const run = createRun(db, { name: "元年：第一道光", seed: 2131, policy: "balanced" });
   console.log(`✓ Created demo run ${run.id} (seed ${run.seed})`);
 } else {
   console.log("• Runs already exist; no demo run created");

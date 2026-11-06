@@ -1,9 +1,9 @@
 {
   "id": "reclaimer-filter-failure",
-  "title": "Reclaimer Filter Failure",
+  "title": "濾水機故障",
   "scope": "settlement",
   "category": "resource",
-  "description": "The bunker's water reclaimer filters, built for a sealed population, crack under surface grit and rising demand.",
+  "description": "地堡的回收濾水機是為密封的人口設計的，抵不住地表的砂礫和越來越大的用水量，開始破裂。",
   "preconditions": [
     {
       "type": "technology",
@@ -26,7 +26,7 @@
       "id": "engineer",
       "profession": "Engineer",
       "minAge": 16,
-      "description": "The engineer on watch"
+      "description": "值班的工程師"
     }
   ],
   "effects": [
@@ -39,7 +39,7 @@
   "choices": [
     {
       "id": "jury_rig",
-      "label": "Jury-rig the filters",
+      "label": "臨時拼湊修好濾芯",
       "tags": [
         "industry",
         "cautious"
@@ -60,14 +60,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "engineer",
-          "text": "Kept the reclaimers running with scrap and stubbornness"
+          "text": "靠廢料和一股倔強讓濾水機繼續運轉"
         }
       ],
-      "outcome": "{{engineer}} rebuilds the filter beds from scrap. They will not last forever."
+      "outcome": "{{engineer}}用廢料重建了濾床。撐不了一輩子，但先頂著。"
     },
     {
       "id": "ration",
-      "label": "Ration water",
+      "label": "限量配水",
       "tags": [
         "cautious",
         "community"
@@ -83,11 +83,11 @@
           "flag": "water.rationing"
         }
       ],
-      "outcome": "Cups are counted. Tempers shorten."
+      "outcome": "每一杯水都要算。大家的脾氣越來越差。"
     },
     {
       "id": "study",
-      "label": "Study the failure",
+      "label": "研究故障原因",
       "tags": [
         "science"
       ],
@@ -103,7 +103,7 @@
           "delta": -4
         }
       ],
-      "outcome": "The failed membranes are taken apart; the lessons are expensive."
+      "outcome": "壞掉的濾膜被拆開研究；這些教訓代價很高。"
     }
   ],
   "priority": 7,
@@ -115,8 +115,8 @@
   ],
   "importance": "notable",
   "narrative": {
-    "headline": "Reclaimer filters fail in {{settlement}}",
-    "text": "In {{year}}, the water reclaimers in {{settlement}} began to cough up grey sludge. {{engineer}} was the first to see the cracked filter housings."
+    "headline": "{{settlement}}的濾水機故障了",
+    "text": "{{year}} 年，{{settlement}}的回收濾水機開始吐出灰色的污泥。{{engineer}}第一個發現濾槽外殼裂開了。"
   },
   "version": 1,
   "status": "published",

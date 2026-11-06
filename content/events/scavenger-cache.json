@@ -1,9 +1,9 @@
 {
   "id": "scavenger-cache",
-  "title": "Scavenger Cache",
+  "title": "拾荒者的寶藏",
   "scope": "settlement",
   "category": "exploration",
-  "description": "Scouts uncover a sealed pre-collapse supply cache.",
+  "description": "斥候發現了一處崩潰前封存的物資庫。",
   "preconditions": [
     {
       "type": "world_tick",
@@ -27,7 +27,7 @@
     {
       "type": "ADD_LIFE_EVENT",
       "role": "scout",
-      "text": "Found a sealed supply cache"
+      "text": "找到一處封存的物資庫"
     }
   ],
   "choices": [],
@@ -37,8 +37,8 @@
   "storylineIds": [],
   "importance": "minor",
   "narrative": {
-    "headline": "{{scout}} finds a supply cache",
-    "text": "Under a collapsed overpass near {{settlement}}, {{scout}} found a pallet of sealed tool crates."
+    "headline": "{{scout}}找到一處物資庫",
+    "text": "在{{settlement}}附近一座倒塌的高架橋下，{{scout}}找到一整棧板密封的工具箱。"
   },
   "version": 1,
   "status": "published",

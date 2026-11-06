@@ -9,6 +9,7 @@ import {
   RESOURCES,
   SECRETS,
   TECHNOLOGIES,
+  ZH_CATALOG,
 } from "@genesis/schemas";
 import type { GenerationContext } from "./types";
 
@@ -46,6 +47,9 @@ export function buildSystemPrompt(ctx: GenerationContext): string {
     "- Keep resource swings proportional: a settlement of ~20 people uses ~20 food and ~20 water per year.",
     "- Give 2-3 choices with genuine trade-offs, tagged with values from choiceTags.",
     "- Use a new kebab-case id that is not in existingEventIds. Set status to \"draft\".",
+    "- Write every player-facing string (title, description, narrative headline/text, choice labels/descriptions/outcomes, risk descriptions, life-event texts, causes of death, historical event titles/descriptions) in Traditional Chinese as used in Taiwan, with full-width punctuation. Keep ids, flags, tags and {{placeholders}} exactly as they are.",
+    "- Use these Chinese names for places, secrets and professions:",
+    JSON.stringify({ locations: ZH_CATALOG.locationName, secrets: ZH_CATALOG.secretTitle, professions: ZH_CATALOG.profession }),
     "",
     "## Catalog",
     JSON.stringify(catalog, null, 1),

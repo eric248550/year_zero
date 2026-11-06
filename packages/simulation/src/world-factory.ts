@@ -9,12 +9,16 @@ import {
   type Character,
   type PolicyId,
   type Profession,
+  type WorldLocale,
   type WorldState,
 } from "@genesis/schemas";
+import { placeName, professionName, say } from "@genesis/narrative";
 import { FAMILY_NAMES, GIVEN_NAMES, TRAITS } from "./names";
 
 export interface CreateWorldOptions {
   seed: number;
+  /** Language of engine-generated text. Default zh-TW; "en" for English worlds. */
+  locale?: WorldLocale;
   policy?: PolicyId;
   worldName?: string;
   survivors?: number;
@@ -38,8 +42,11 @@ export function createWorld(options: CreateWorldOptions): WorldState {
   const rng = new Rng(seedToState(options.seed));
   const survivors = options.survivors ?? 20;
 
+  const locale: WorldLocale = options.locale ?? "zh-TW";
+  const t = say({ locale });
   const state: WorldState = {
     schemaVersion: 1,
+    locale,
     rulesVersion: RULES_VERSION,
     worldName: options.worldName ?? "Year Zero",
     seed: options.seed,
@@ -52,7 +59,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     settlements: [
       {
         id: "s-haven",
-        name: "Haven Deep",
+        name: placeName({ locale }, "haven_deep"),
         locationId: "haven_deep",
         kind: "bunker",
         status: "active",
@@ -111,9 +118,9 @@ export function createWorld(options: CreateWorldOptions): WorldState {
       homeId: "s-haven",
       parentIds: [],
       traits: [rng.pick(TRAITS)],
-      lifeEvents: [{ tick: -age, text: "Born in Haven Deep (Vault 7)", historyId: null }],
+      lifeEvents: [{ tick: -age, text: t.bornHaven(), historyId: null }],
     };
-    c.lifeEvents.push({ tick: 0, text: `Among the survivors who opened the Haven Deep blast door, working as a ${c.profession}`, historyId: null });
+    c.lifeEvents.push({ tick: 0, text: t.openedDoor(professionName({ locale }, c.profession)), historyId: null });
     adultsList.push(c);
     state.characters.push(c);
   }
@@ -130,7 +137,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
       homeId: "s-haven",
       parentIds: parent ? [parent.id] : [],
       traits: [rng.pick(TRAITS)],
-      lifeEvents: [{ tick: -age, text: "Born in Haven Deep (Vault 7)", historyId: null }],
+      lifeEvents: [{ tick: -age, text: t.bornHaven(), historyId: null }],
     };
     state.characters.push(c);
   }

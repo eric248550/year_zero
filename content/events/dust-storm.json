@@ -1,9 +1,9 @@
 {
   "id": "dust-storm",
-  "title": "Dust Storm",
+  "title": "沙塵暴",
   "scope": "world",
   "category": "environment",
-  "description": "A wall of toxic dust rolls across the region.",
+  "description": "一道有毒的沙塵之牆橫掃整片區域。",
   "preconditions": [
     {
       "type": "world_tick",
@@ -39,8 +39,8 @@
   "storylineIds": [],
   "importance": "notable",
   "narrative": {
-    "headline": "A dust storm darkens the sky",
-    "text": "In {{year}} the sky turned ochre at noon. For nine days nobody went outside."
+    "headline": "沙塵暴遮蔽了天空",
+    "text": "{{year}} 年的某天中午，天空變成了赭黃色。整整九天，沒有人敢出門。"
   },
   "version": 1,
   "status": "published",

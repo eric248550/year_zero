@@ -9,3 +9,4 @@ export * from "./decisions";
 export * from "./validation";
 export { makeContentBundle } from "./bundle";
 export * from "./describe";
+export * from "./texts";

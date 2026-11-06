@@ -123,8 +123,13 @@ export const InviteSchema = z.object({
 });
 export type Invite = z.infer<typeof InviteSchema>;
 
+export const WORLD_LOCALES = ["en", "zh-TW"] as const;
+export type WorldLocale = (typeof WORLD_LOCALES)[number];
+
 export const WorldStateSchema = z.object({
   schemaVersion: z.literal(1),
+  /** Language of engine-generated text. Absent = English (worlds created before locales existed). */
+  locale: z.enum(WORLD_LOCALES).optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),

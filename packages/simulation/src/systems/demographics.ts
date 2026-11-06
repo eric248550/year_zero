@@ -3,6 +3,7 @@ import { characterAge, fullName, hasTech, residents } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
+import { professionName, say } from "@genesis/narrative";
 
 export const DEMOGRAPHY = {
   birthChancePerPair: 0.16,
@@ -51,19 +52,19 @@ export function mortality(ctx: TickContext): void {
       let causeIds: string[] = [];
       const pick = ctx.rng.next() * p;
       if (pick < thirst) {
-        cause = "dehydration during the water shortage";
+        cause = say(st).causeDehydration();
         if (s.shortageOrigin.water) causeIds = [s.shortageOrigin.water];
       } else if (pick < thirst + starvation) {
-        cause = "starvation during the famine";
+        cause = say(st).causeStarvation();
         if (s.shortageOrigin.food) causeIds = [s.shortageOrigin.food];
       } else if (pick < thirst + starvation + accident) {
-        cause = "lost in the wastes while scouting";
+        cause = say(st).causeLost();
       } else if (age >= 65) {
-        cause = "old age";
+        cause = say(st).causeOldAge();
       } else if (age < 5) {
-        cause = "childhood illness";
+        cause = say(st).causeChildhood();
       } else {
-        cause = ctx.rng.pick(["fever", "infected wound", "a collapse in the ruins", "illness"]);
+        cause = ctx.rng.pick(say(st).causesOther());
       }
       killCharacter(ctx, c, s, cause, causeIds);
     }
@@ -80,15 +81,15 @@ export function killCharacter(ctx: TickContext, c: Character, s: Settlement, cau
   const e = ctx.system({
     category: "demographic",
     importance: notable ? "notable" : "minor",
-    title: `Death of ${fullName(c)}`,
-    text: `${fullName(c)}${c.profession ? `, ${c.profession.toLowerCase()}` : ""} of ${s.name}, died at age ${age} of ${cause}.`,
+    title: say(ctx.state).deathTitle(fullName(c)),
+    text: say(ctx.state).deathText(fullName(c), c.profession ? professionName(ctx.state, c.profession) : null, s.name, age, cause),
     scope: "character",
     settlementIds: [s.id],
     characterIds: [c.id],
     causeIds,
     changes: [{ path: `characters.${c.id}.alive`, label: `${fullName(c)} alive`, before: true, after: false }],
   });
-  c.lifeEvents.push({ tick: ctx.state.tick, text: `Died at ${age}: ${cause}`, historyId: e.id });
+  c.lifeEvents.push({ tick: ctx.state.tick, text: say(ctx.state).diedLife(age, cause), historyId: e.id });
 }
 
 function crowdingFactor(pop: number, capacity: number): number {
@@ -133,15 +134,15 @@ export function births(ctx: TickContext): void {
       const e = ctx.system({
         category: "demographic",
         importance: "minor",
-        title: `Birth of ${fullName(child)}`,
-        text: `${fullName(child)} was born in ${s.name} to ${fullName(a)} and ${fullName(b)}.`,
+        title: say(st).birthTitle(fullName(child)),
+        text: say(st).birthText(fullName(child), s.name, fullName(a), fullName(b)),
         scope: "character",
         settlementIds: [s.id],
         characterIds: [child.id, a.id, b.id],
       });
-      child.lifeEvents.push({ tick: st.tick, text: `Born in ${s.name}`, historyId: e.id });
-      a.lifeEvents.push({ tick: st.tick, text: `Child ${child.givenName} born`, historyId: e.id });
-      b.lifeEvents.push({ tick: st.tick, text: `Child ${child.givenName} born`, historyId: e.id });
+      child.lifeEvents.push({ tick: st.tick, text: say(st).bornIn(s.name), historyId: e.id });
+      a.lifeEvents.push({ tick: st.tick, text: say(st).childBorn(child.givenName), historyId: e.id });
+      b.lifeEvents.push({ tick: st.tick, text: say(st).childBorn(child.givenName), historyId: e.id });
     }
   }
 }
@@ -168,6 +169,6 @@ export function comingOfAge(ctx: TickContext): void {
     const s = st.settlements.find((x) => x.id === c.homeId);
     if (!s) continue;
     c.profession = chooseProfession(ctx, s);
-    c.lifeEvents.push({ tick: st.tick, text: `Came of age and began training as a ${c.profession}`, historyId: null });
+    c.lifeEvents.push({ tick: st.tick, text: say(st).cameOfAge(professionName(st, c.profession)), historyId: null });
   }
 }

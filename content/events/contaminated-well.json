@@ -1,9 +1,9 @@
 {
   "id": "contaminated-well",
-  "title": "Contaminated Well",
+  "title": "受污染的井",
   "scope": "settlement",
   "category": "health",
-  "description": "Desperate for water, residents draw from an unsafe source. A wave of sickness follows.",
+  "description": "居民急著找水，開始從不安全的水源取水。接著，一波疾病爆發。",
   "preconditions": [
     {
       "type": "resource",
@@ -45,7 +45,7 @@
   "choices": [
     {
       "id": "quarantine",
-      "label": "Quarantine the sick",
+      "label": "隔離病人",
       "tags": [
         "cautious",
         "science"
@@ -62,14 +62,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "medic",
-          "text": "Ran the quarantine ward during the well sickness"
+          "text": "在井水疫病期間主持隔離病房"
         }
       ],
-      "outcome": "{{medic}} sets up a quarantine ward. Most of the sick recover."
+      "outcome": "{{medic}}設立了隔離病房。大多數病人都康復了。"
     },
     {
       "id": "boil",
-      "label": "Boil everything",
+      "label": "所有水都煮沸",
       "tags": [
         "cautious",
         "industry"
@@ -89,11 +89,11 @@
           "amount": 4
         }
       ],
-      "outcome": "Fires burn day and night; scrap wood disappears fast."
+      "outcome": "火日夜不停地燒，廢木料很快就用光了。"
     },
     {
       "id": "pray",
-      "label": "Carry on and hope",
+      "label": "照常過日子，祈禱就好",
       "tags": [
         "bold"
       ],
@@ -106,16 +106,16 @@
       ],
       "risk": {
         "chance": 0.35,
-        "description": "{{victim}} does not survive the fever.",
+        "description": "{{victim}}沒能撐過這場熱病。",
         "effects": [
           {
             "type": "CHARACTER_DEATH",
             "role": "victim",
-            "cause": "fever from contaminated water"
+            "cause": "喝了受污染的水而發燒"
           }
         ]
       },
-      "outcome": "The survivors keep drinking and wait for the fever to pass."
+      "outcome": "倖存者繼續喝那口井的水，等著熱病自己退去。"
     }
   ],
   "priority": 8,
@@ -126,8 +126,8 @@
   ],
   "importance": "notable",
   "narrative": {
-    "headline": "Sickness from the well in {{settlement}}",
-    "text": "With water running short, people in {{settlement}} began drawing from a seep in the old service tunnels. Within days {{victim}} and others were burning with fever."
+    "headline": "{{settlement}}的井水疫病",
+    "text": "水快不夠用了，{{settlement}}的人開始從舊維修隧道裡的滲水處取水。幾天之內，{{victim}}和其他人都發起了高燒。"
   },
   "version": 1,
   "status": "published",

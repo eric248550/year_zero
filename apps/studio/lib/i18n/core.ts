@@ -83,7 +83,7 @@ export function createI18n(locale: Locale) {
     techDescription: (id: string) => pick(ZH_TERMS.techDescription, id, TECH_BY_ID[id]?.description ?? ""),
     techEffect: (id: string) => pick(ZH_TERMS.techEffect, id, TECH_BY_ID[id]?.effect ?? ""),
     /** Place names are proper nouns and stay as written; descriptions are translated. */
-    locationName: (id: string) => LOCATION_BY_ID[id]?.name ?? id,
+    locationName: (id: string) => (zh ? pick(ZH_TERMS.locationName, id, LOCATION_BY_ID[id]?.name ?? id) : LOCATION_BY_ID[id]?.name ?? id),
     locationDescription: (id: string) => pick(ZH_TERMS.locationDescription, id, LOCATION_BY_ID[id]?.description ?? ""),
     secretTitle: (id: string) => pick(ZH_TERMS.secretTitle, id, SECRET_BY_ID[id]?.title ?? id),
     secretRevelation: (id: string) => pick(ZH_TERMS.secretRevelation, id, SECRET_BY_ID[id]?.revelation ?? ""),

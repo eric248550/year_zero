@@ -1,9 +1,9 @@
 {
   "id": "fever-season",
-  "title": "Fever Season",
+  "title": "熱病季",
   "scope": "settlement",
   "category": "health",
-  "description": "A seasonal fever spreads in crowded quarters.",
+  "description": "季節性的熱病在擁擠的住處裡蔓延。",
   "preconditions": [
     {
       "type": "population",
@@ -44,7 +44,7 @@
   "choices": [
     {
       "id": "treat",
-      "label": "Treat with what we have",
+      "label": "用手邊有的東西治療",
       "tags": [
         "community",
         "science"
@@ -61,14 +61,14 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "medic",
-          "text": "Nursed the sick through fever season"
+          "text": "在熱病季照顧病人"
         }
       ],
-      "outcome": "{{medic}} works without sleep for a week."
+      "outcome": "{{medic}}整整一個星期沒有闔眼。"
     },
     {
       "id": "isolate",
-      "label": "Isolate the sick",
+      "label": "把病人隔離起來",
       "tags": [
         "cautious"
       ],
@@ -81,16 +81,16 @@
       ],
       "risk": {
         "chance": 0.3,
-        "description": "{{patient}} dies alone in the isolation ward.",
+        "description": "{{patient}}孤零零地死在隔離區裡。",
         "effects": [
           {
             "type": "CHARACTER_DEATH",
             "role": "patient",
-            "cause": "fever"
+            "cause": "熱病"
           }
         ]
       },
-      "outcome": "The sick are walled off in the east tunnels."
+      "outcome": "病人被封在東側隧道裡。"
     }
   ],
   "priority": 6,
@@ -99,8 +99,8 @@
   "storylineIds": [],
   "importance": "notable",
   "narrative": {
-    "headline": "Fever season in {{settlement}}",
-    "text": "It started with {{patient}}: a cough, then the shakes."
+    "headline": "{{settlement}}的熱病季",
+    "text": "一開始是{{patient}}：先是咳嗽，接著開始發抖。"
   },
   "version": 1,
   "status": "published",
