@@ -29,6 +29,8 @@ export const SettlementSchema = z.object({
   shortage: z.object({ food: z.number().int().min(0), water: z.number().int().min(0) }),
   /** History id of the event that opened the current shortage (causal link for deaths). */
   shortageOrigin: z.object({ food: z.string().nullable(), water: z.string().nullable() }),
+  /** An outpost: the settlement that founded it keeps it supplied until it can stand on its own. */
+  supportedBy: z.string().nullable().optional(),
 });
 export type Settlement = z.infer<typeof SettlementSchema>;
 

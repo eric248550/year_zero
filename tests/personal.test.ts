@@ -37,7 +37,8 @@ describe("personal events", () => {
     const b = playerCharacter(start, "b")!.id;
     const { state, fired } = run(start, 20);
     for (const id of [a, b]) {
-      const mine = fired.filter((f) => f.characterIds.includes(id));
+      // Scenes this player leads (they may also turn up in others' scenes).
+      const mine = fired.filter((f) => f.characterIds[0] === id);
       if (getCharacter(state, id)!.deathTick === null) expect(mine.length).toBeGreaterThanOrEqual(12);
       // Per-player cooldowns: the same scene never repeats within its cooldown.
       for (const f of mine) {

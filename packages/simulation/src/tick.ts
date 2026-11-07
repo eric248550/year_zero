@@ -1,4 +1,5 @@
 import { PlayerActionSchema, Rng, type EventDefinition, type HistoricalEvent, type PlayerAction, type WorldState } from "@genesis/schemas";
+import { supplyOutposts, wanderers } from "./systems/continuity";
 import { choiceAvailability, resolvePendingDecisions, runNarrativePhase, runPersonalPhase, type EventRejection } from "@genesis/narrative";
 import { TickContext } from "./context";
 import { computeMetrics, type TickMetrics } from "./metrics";
@@ -70,6 +71,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
 
   councilDecisions(ctx);
   produce(ctx);
+  supplyOutposts(ctx);
   consume(ctx);
   wellbeing(ctx);
   attributeDrift(ctx);
@@ -96,6 +98,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   ctx.deaths += countDeaths(personal.events);
 
   abandonment(ctx);
+  wanderers(ctx);
   milestones(ctx);
   playerUpkeep(ctx);
 

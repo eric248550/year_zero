@@ -61,7 +61,7 @@ describe("persistence", () => {
   it("verifies replay of a persisted run with developer decisions and reconstructs past states", () => {
     const run = createRun(db, { seed: 11 });
     stepRun(db, run.id, 5);
-    queueAction(db, run.id, { type: "SET_RESEARCH_FOCUS", tech: "field_medicine" });
+    queueAction(db, run.id, { type: "SET_RESEARCH_FOCUS", tech: "solar_power" });
     stepRun(db, run.id, 20);
     queueAction(db, run.id, { type: "SET_POLICY", policy: "cautious" });
     stepRun(db, run.id, 12);

@@ -38,7 +38,7 @@ export const CIV_STAGES: readonly CivStage[] = [
       { id: "tools", check: { kind: "tech", tech: "salvage_tools" } },
       { id: "medicine", check: { kind: "tech", tech: "field_medicine" } },
       { id: "school", check: { kind: "flag", flag: "culture.school" } },
-      { id: "people", check: { kind: "population", min: 25 } },
+      { id: "people", check: { kind: "population", min: 140 } },
     ],
   },
   {
@@ -56,7 +56,7 @@ export const CIV_STAGES: readonly CivStage[] = [
       { id: "assembly", check: { kind: "flag", flag: "governance.assembly" } },
       { id: "charter", check: { kind: "tech", tech: "civic_charter" } },
       { id: "antibiotics", check: { kind: "tech", tech: "antibiotics" } },
-      { id: "people", check: { kind: "population", min: 50 } },
+      { id: "people", check: { kind: "population", min: 200 } },
     ],
   },
   {
@@ -65,7 +65,7 @@ export const CIV_STAGES: readonly CivStage[] = [
       { id: "light", check: { kind: "flag", flag: "power.first_light" } },
       { id: "grid", check: { kind: "tech", tech: "power_grid" } },
       { id: "genetics", check: { kind: "tech", tech: "crop_genetics" } },
-      { id: "people", check: { kind: "population", min: 80 } },
+      { id: "people", check: { kind: "population", min: 280 } },
     ],
   },
 ];

@@ -6,8 +6,8 @@ import { resourceName, say } from "@genesis/narrative";
 
 /** Tunable economic constants. Changing these changes RULES_VERSION semantics. */
 export const ECONOMY = {
-  foodPerLabor: 1.3,
-  waterPerLabor: 1.15,
+  foodPerLabor: 1.0,
+  waterPerLabor: 0.96,
   forageFoodPerScout: 0.6,
   materialsPerEngineer: 2.2,
   materialsPerLabor: 0.25,

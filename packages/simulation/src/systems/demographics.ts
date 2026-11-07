@@ -7,7 +7,7 @@ import { healthMortality, initAttributes } from "./attributes";
 import { professionName, say } from "@genesis/narrative";
 
 export const DEMOGRAPHY = {
-  birthChancePerPair: 0.16,
+  birthChancePerPair: 0.11,
   fertileMin: 18,
   fertileMax: 45,
 } as const;
@@ -93,10 +93,17 @@ export function killCharacter(ctx: TickContext, c: Character, s: Settlement, cau
   c.lifeEvents.push({ tick: ctx.state.tick, text: say(ctx.state).diedLife(age, cause), historyId: e.id });
 }
 
-function crowdingFactor(pop: number, capacity: number): number {
-  if (pop >= capacity) return 0.08;
-  if (pop / capacity > 0.85) return 0.5;
-  return 1;
+/** Housing: families stop growing when there is nowhere to live. */
+function housingFactor(pop: number, capacity: number): number {
+  const r = pop / Math.max(1, capacity);
+  return r >= 1 ? 0.1 : r > 0.9 ? 0.4 : r > 0.75 ? 0.8 : 1;
+}
+
+/** Food and water margin: years of stock per person, or a shortage. */
+function marginFactor(s: Settlement, people: number): number {
+  if (s.shortage.food > 0 || s.shortage.water > 0) return 0.15;
+  const years = Math.min(s.resources.food, s.resources.water) / Math.max(1, people);
+  return years < 0.5 ? 0.4 : years < 1 ? 0.7 : years < 2 ? 1 : 1.15;
 }
 
 export function births(ctx: TickContext): void {
@@ -111,8 +118,9 @@ export function births(ctx: TickContext): void {
     const pairs = Math.floor(fertile.length / 2);
     if (pairs === 0) continue;
     const morale = Math.min(1.2, Math.max(0.4, s.morale / 65));
-    const food = s.shortage.food > 0 || s.shortage.water > 0 ? 0.2 : 1;
-    const p = DEMOGRAPHY.birthChancePerPair * morale * food * crowdingFactor(people.length, s.capacity);
+    // Someone to deliver the baby: medics (and field medicine) make families more willing to try.
+    const care = people.some((c) => c.profession === "Medic") ? (hasTech(st, "field_medicine") ? 1.1 : 1) : 0.8;
+    const p = DEMOGRAPHY.birthChancePerPair * morale * care * marginFactor(s, people.length) * housingFactor(people.length, s.capacity);
 
     for (let i = 0; i < pairs; i++) {
       if (!ctx.rng.chance(p)) continue;

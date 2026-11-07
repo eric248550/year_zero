@@ -207,7 +207,7 @@ event with chance 0.85 and a second with chance 0.25, picked from the events
 that fit them, using each event's `chance` as its relative weight. Cooldowns
 and `maxOccurrences` count per player (`player.personal`), and nobody gets
 more than two open decisions at once. In the same worlds, world events cast
-players `PLAYER_ROLE_WEIGHT` (4) times as often as NPCs. With the current
+players `PLAYER_ROLE_WEIGHT` (10) times as often as NPCs. With the current
 content a player meets about one personal event a year, and goes at most two
 years without one. Older worlds skip both rules, so their replays are unchanged.
 
@@ -220,7 +220,7 @@ and replay passes it too.
 
 And `sharedScenes`: a personal event is decided only by the player it is
 about (the `player: true` role); other players cast in it are weighted
-`PLAYER_ROLE_WEIGHT` times higher in `familiarWith` picks and see it in their
+`PLAYER_ROLE_WEIGHT` (10) times higher in `familiarWith` picks and see it in their
 "new" inbox (`inboxFor` in `apps/studio/lib/play.ts`). Players can meet up to
 three personal events a year (chances 0.9 / 0.6 / 0.3); the app shows each at
 a fixed point 5–65% through the year and refreshes every 15 seconds. With

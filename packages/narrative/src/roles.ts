@@ -54,7 +54,7 @@ export function rolesSatisfiable(state: WorldState, roles: readonly Role[], sett
 }
 
 /** Players are this many times likelier to be cast in a world event than an NPC. */
-export const PLAYER_ROLE_WEIGHT = 4;
+export const PLAYER_ROLE_WEIGHT = 10;
 
 /** Fill roles with distinct living characters, randomly but deterministically. Returns null if impossible. */
 export function resolveRoles(

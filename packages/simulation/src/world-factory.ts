@@ -39,11 +39,11 @@ export function randomName(rng: Rng, family?: string, locale?: WorldLocale): { g
 
 /**
  * Create the seeded starting world: Haven Deep bunker, two known surface sites,
- * hidden locations to discover, and ~20 survivors. Fully deterministic per seed.
+ * hidden locations to discover, and ~120 survivors of every age. Fully deterministic per seed.
  */
 export function createWorld(options: CreateWorldOptions): WorldState {
   const rng = new Rng(seedToState(options.seed));
-  const survivors = options.survivors ?? 20;
+  const survivors = options.survivors ?? 120;
 
   const locale: WorldLocale = options.locale ?? "zh-TW";
   const t = say({ locale });
@@ -71,12 +71,12 @@ export function createWorld(options: CreateWorldOptions): WorldState {
         level: 2,
         morale: rng.int(50, 62),
         health: rng.int(64, 74),
-        capacity: 32,
+        capacity: 170,
         resources: {
-          food: rng.int(60, 80),
-          water: rng.int(60, 80),
-          materials: rng.int(40, 55),
-          knowledge: rng.int(15, 25),
+          food: rng.int(200, 240),
+          water: rng.int(200, 240),
+          materials: rng.int(110, 140),
+          knowledge: rng.int(30, 45),
         },
         shortage: { food: 0, water: 0 },
         shortageOrigin: { food: null, water: null },
@@ -101,7 +101,9 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     stats: { births: 0, deaths: 0, peakPopulation: 0 },
   };
 
-  const children = Math.max(0, Math.round(survivors * 0.1));
+  // A bunker that has lived sealed for 40 years: about a fifth children, a tenth elders.
+  const children = Math.max(0, Math.round(survivors * 0.2));
+  const elders = Math.round(survivors * 0.1);
   const adults = survivors - children;
   // Guarantee every profession is represented, then fill randomly.
   const professions: Profession[] = [...PROFESSIONS];
@@ -110,7 +112,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
 
   const adultsList: Character[] = [];
   for (let i = 0; i < adults; i++) {
-    const age = rng.int(18, 58);
+    const age = i < elders ? rng.int(65, 82) : rng.int(18, 60);
     const c: Character = {
       id: newCharacterId(state),
       ...randomName(rng, undefined, locale),

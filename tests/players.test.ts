@@ -216,7 +216,7 @@ describe("death and succession", () => {
 
   it("caring for someone makes them a succession candidate", () => {
     const w = createWorld({ seed: 10 });
-    const [me, orphan] = w.characters;
+    const [me, orphan] = w.characters.filter((c) => characterAge(w, c) >= 20 && characterAge(w, c) <= 45);
     const s = step(w, [join("p", { characterId: me!.id })]).state;
     const r = step(s, [{ type: "CARE_FOR", playerId: "p", characterId: orphan!.id }]);
     expect(getCharacter(r.state, orphan!.id)!.caretakerIds).toEqual([me!.id]);
@@ -230,7 +230,7 @@ describe("death and succession", () => {
 describe("inviting friends", () => {
   it("a friend can join as your ward through an invite code", () => {
     const w = createWorld({ seed: 11 });
-    const [me, ward] = w.characters;
+    const [me, ward] = w.characters.filter((c) => characterAge(w, c) >= 20 && characterAge(w, c) <= 45);
     let s = step(w, [join("p", { characterId: me!.id })]).state;
     s = step(s, [{ type: "CARE_FOR", playerId: "p", characterId: ward!.id }]).state;
     s = step(s, [{ type: "INVITE", playerId: "p", code: "WARD-01", characterId: ward!.id }]).state;
@@ -265,7 +265,7 @@ describe("inviting friends", () => {
 
   it("unused invites expire", () => {
     const w = createWorld({ seed: 13 });
-    const [me, ward] = w.characters;
+    const [me, ward] = w.characters.filter((c) => characterAge(w, c) >= 20 && characterAge(w, c) <= 45);
     let s = step(w, [join("p", { characterId: me!.id })]).state;
     s = step(s, [{ type: "CARE_FOR", playerId: "p", characterId: ward!.id }]).state;
     s = step(s, [{ type: "INVITE", playerId: "p", code: "LATE-01", characterId: ward!.id }]).state;
@@ -320,10 +320,10 @@ describe("attributes and bonds", () => {
       w = step(w, [], [orphanEvent]).state;
       d = w.pendingDecisions?.find((x) => x.definitionId === "orphan-child");
     }
-    expect(d?.roles.child).toBe(orphan.id);
+    const child = d!.roles.child!;
     const done = applyImmediate(w, { type: "CHOOSE", playerId: "p", decisionId: d!.id, choiceId: "adopt" }, [orphanEvent]);
-    expect(getCharacter(done.state, orphan.id)!.caretakerIds).toContain(adult.id);
-    expect(done.state.relationships[relationshipKey(adult.id, orphan.id)]).toBeGreaterThan(20);
+    expect(getCharacter(done.state, child)!.caretakerIds).toContain(adult.id);
+    expect(done.state.relationships[relationshipKey(adult.id, child)]).toBeGreaterThan(20);
   });
 
   it("personal scenes only ever fall on players", () => {

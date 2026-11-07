@@ -58,7 +58,8 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
     level: 1,
     morale: round2(Math.min(100, from.morale + 5)),
     health: from.health,
-    capacity: 18 + (hasTech(st, "power_grid") ? 10 : 0),
+    capacity: 40 + (hasTech(st, "power_grid") ? 10 : 0),
+    supportedBy: from.id,
     resources: transfer,
     shortage: { food: 0, water: 0 },
     shortageOrigin: { food: null, water: null },
@@ -114,7 +115,7 @@ export function abandonment(ctx: TickContext): void {
   }
 }
 
-const POPULATION_MILESTONES = [30, 50, 75, 100, 150, 200, 300, 500];
+const POPULATION_MILESTONES = [200, 300, 500, 800, 1200] as const;
 
 export function milestones(ctx: TickContext): void {
   const st = ctx.state;

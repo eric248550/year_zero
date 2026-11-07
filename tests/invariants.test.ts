@@ -32,7 +32,7 @@ describe("simulation stress test across seeds", () => {
     const r = runHeadless({ seed: 1, ticks: 5, events: [] });
     const bad = structuredClone(r.final);
     bad.settlements[0]!.resources.food = -5;
-    bad.technologies.push("irrigation");
+    bad.technologies.push("crop_genetics");
     expect(checkInvariants(bad).length).toBeGreaterThanOrEqual(2);
   });
 });
