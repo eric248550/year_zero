@@ -1,0 +1,92 @@
+{
+  "id": "peace-feast",
+  "title": "和解宴",
+  "scope": "settlement",
+  "category": "social",
+  "description": "有人提議請鄰近聚落的人來吃一頓飯，把話說開。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "tension",
+      "op": ">=",
+      "value": 30
+    },
+    {
+      "type": "tension",
+      "op": "<=",
+      "value": 80
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 8
+    }
+  ],
+  "roles": [
+    {
+      "id": "host",
+      "minAge": 25
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "host",
+      "label": "辦一場宴席",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "costs": {
+        "food": 10
+      },
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -25
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 4
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "host",
+          "text": "辦了一場和鄰近聚落的和解宴"
+        }
+      ],
+      "outcome": "兩邊的人坐在同一張長桌旁。一開始沒人說話，後來有人唱起了地堡裡的老歌。"
+    },
+    {
+      "id": "wait",
+      "label": "現在還不是時候",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "宴席沒辦成。{{host}}把邀請函收回了抽屜。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.12,
+  "cooldown": 8,
+  "storylineIds": [
+    "rift"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "請{{rival}}吃一頓飯",
+    "text": "{{host}}提議：與其一直互相提防，不如請{{rival}}的人來吃一頓飯，把話說開。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "conflict"
+  ]
+}

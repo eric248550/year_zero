@@ -86,3 +86,23 @@ export function allocateHistoryId(state: WorldState): string {
 export function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+export function tensionKey(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+export function tensionBetween(state: WorldState, a: string, b: string): number {
+  return state.tensions?.[tensionKey(a, b)] ?? 0;
+}
+
+/** The other active settlement this one is most at odds with (ties: lowest id). */
+export function rivalOf(state: WorldState, s: Settlement): Settlement | null {
+  let best: Settlement | null = null;
+  let bestT = -1;
+  for (const o of activeSettlements(state)) {
+    if (o.id === s.id) continue;
+    const t = tensionBetween(state, s.id, o.id);
+    if (t > bestT || (t === bestT && best && o.id < best.id)) { best = o; bestT = t; }
+  }
+  return best;
+}

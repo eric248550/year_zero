@@ -10,17 +10,17 @@ export const ECONOMY = {
   foodPerFarmer: 1.5,
   waterPerLabor: 1.3,
   forageFoodPerScout: 0.6,
-  materialsPerEngineer: 1.5,
-  materialsPerLabor: 0.25,
+  materialsPerEngineer: 1.1,
+  materialsPerLabor: 0.15,
   knowledgePerScientist: 2.0,
   knowledgePerLabor: 0.1,
   bunkerWaterReclaimer: 5,
   adultNeed: 1,
   childNeed: 0.6,
-  foodSpoilage: 0.08,
-  waterLoss: 0.05,
+  foodSpoilage: 0.15,
+  waterLoss: 0.1,
   materialsUpkeepPerResident: 0.12,
-  materialsUpkeepPerLevel: 0.8,
+  materialsUpkeepPerLevel: 2,
 } as const;
 
 export interface Workforce {
@@ -61,12 +61,11 @@ function multipliers(ctx: TickContext, s: Settlement) {
   const t = (id: string) => hasTech(ctx.state, id);
   const grid = (t("power_grid") ? 1.1 : 1) * (t("machining") ? 1.1 : 1);
   let food = s.kind === "bunker" ? 0.95 : 1.05;
-  if (features.includes("fertile")) food *= 1.25;
-  if (t("hydroponics")) food *= 1.25;
-  if (t("irrigation") && s.kind !== "bunker") food *= 1.3;
-  if (t("crop_genetics")) food *= 1.2;
-  if (t("mass_farming")) food *= 1.2;
-  food *= grid;
+  if (features.includes("fertile")) food *= 1.15;
+  if (t("hydroponics")) food *= 1.2;
+  if (t("irrigation") && s.kind !== "bunker") food *= 1.25;
+  if (t("crop_genetics")) food *= 1.15;
+  if (t("mass_farming")) food *= 1.15;
   if (ctx.state.flags["food.heirloom_seeds"]) food *= 1.1;
   let water = 1;
   if (t("water_purification")) water *= 1.3;
@@ -101,7 +100,7 @@ export function produce(ctx: TickContext): void {
     const m = multipliers(ctx, s);
     const efficiency = (0.6 + 0.4 * (s.health / 100)) * (0.75 + 0.35 * (s.morale / 100));
     // One shared "season" roll per settlement per tick: drought years hit food and water together.
-    const season = Math.min(1.3, Math.max(0.65, ctx.rng.gaussian(1, 0.12)));
+    const season = Math.min(1.3, Math.max(0.55, ctx.rng.gaussian(1, 0.16)));
     const out: Record<ResourceId, number> = {
       food: ((w.labor * ECONOMY.foodPerLabor + w.farmers * ECONOMY.foodPerFarmer) * m.food * season + w.scouts * ECONOMY.forageFoodPerScout) * efficiency,
       water: (w.labor * ECONOMY.waterPerLabor * m.water * season) * efficiency + (s.kind === "bunker" ? ECONOMY.bunkerWaterReclaimer : 0),
@@ -183,6 +182,9 @@ export function wellbeing(ctx: TickContext): void {
     if (crowded) morale -= 15;
     if (st.flags["society.truth_known"]) morale -= 4;
     if (st.flags["governance.ration_council"]) morale += 3;
+    if (st.flags["society.closed_gates"]) morale += 2;
+    if (st.flags["society.bunker_first"] && s.kind === "bunker") morale += 4;
+    if (st.flags["society.surface_first"] && s.kind === "bunker") morale -= 3;
 
     let health = 58 + Math.min(20, w.medics * 4);
     if (hasTech(st, "field_medicine")) health += 8;

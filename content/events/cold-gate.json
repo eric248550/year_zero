@@ -1,0 +1,110 @@
+{
+  "id": "cold-gate",
+  "title": "擋在門外",
+  "scope": "settlement",
+  "category": "social",
+  "description": "鄰近聚落的商隊來了，卻沒有人去開門。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "tension",
+      "op": ">=",
+      "value": 40
+    }
+  ],
+  "roles": [
+    {
+      "id": "gatekeeper",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "open",
+      "label": "開門做生意",
+      "tags": [
+        "openness",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -10
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 4
+        }
+      ],
+      "outcome": "大門拉開了。交易很冷淡，但至少做成了。"
+    },
+    {
+      "id": "refuse",
+      "label": "讓他們走",
+      "tags": [
+        "cautious",
+        "secrecy"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": 8
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 1
+        }
+      ],
+      "outcome": "{{gatekeeper}}隔著門說今天不做生意。商隊在門外站了很久才離開。"
+    },
+    {
+      "id": "toll",
+      "label": "開門，但要抽成",
+      "tags": [
+        "industry",
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": 3
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 5
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 5
+        }
+      ],
+      "outcome": "{{rival}}的人付了過路費，臉色很難看。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.18,
+  "cooldown": 6,
+  "storylineIds": [
+    "rift"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{rival}}的商隊停在門外",
+    "text": "{{rival}}的商隊停在{{settlement}}門外。守門的{{gatekeeper}}回頭看著大家，等一句話。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "conflict"
+  ]
+}

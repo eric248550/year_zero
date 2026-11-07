@@ -55,6 +55,13 @@ rejectedEvents, metrics }`. Phases:
    work on it, joined players (`JOIN_PROJECT`, once) add more, knowledge is spent
    per unit of work, and setbacks/breakthroughs roll. Six branches × four tiers in
    `catalog.ts` (`BRANCHES`, `BRANCH_INFO`, `TECHNOLOGIES`).
+   Conflict (`systems/conflict.ts`): pairwise settlement tension (`state.tensions`,
+   0–100) drifts each year (`friction`: outpost burden, inequality, crowding,
+   bunker vs surface; fades with radio, trade routes, the charter). ≥50 the
+   council refuses aid; ≥60 the poorer side may raid (`raids`). Crowded or
+   unhappy settlements of 40+ can split (`schisms`). Content reads it through the
+   `tension` condition, changes it with `CHANGE_TENSION`, and names the other side
+   `{{rival}}` (the settlement it is most at odds with).
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

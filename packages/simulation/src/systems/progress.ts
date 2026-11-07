@@ -20,7 +20,7 @@ export function currentResearchTarget(ctx: TickContext): TechnologyInfo | null {
 }
 
 export function developmentCost(s: Settlement, workshop = false): number {
-  return Math.round((40 * s.level + 20) * (workshop ? 0.75 : 1));
+  return Math.round((60 * s.level + 40) * (workshop ? 0.75 : 1));
 }
 
 export function development(ctx: TickContext): void {

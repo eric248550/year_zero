@@ -48,6 +48,8 @@ export const ConditionSchema = z.discriminatedUnion("type", [
     withinTicks: z.number().int().positive().optional(),
   }).strict(),
   z.object({ type: z.literal("shortage"), resource: z.enum(["food", "water"]), active: z.boolean() }).strict(),
+  /** Tension between the target settlement and its rival (the settlement it is most at odds with). Fails when there is no other settlement. */
+  z.object({ type: z.literal("tension"), op: ComparisonOpSchema, value: z.number() }).strict(),
 ]);
 export type Condition = z.infer<typeof ConditionSchema>;
 export type ConditionInput = z.input<typeof ConditionSchema>;
@@ -98,6 +100,7 @@ export const EFFECT_TYPES = [
   "CHARACTER_DEATH",
   "ADJUST_ATTRIBUTE",
   "ADD_CARETAKER",
+  "CHANGE_TENSION",
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -137,6 +140,8 @@ export const EffectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ADJUST_ATTRIBUTE"), role: z.string(), attribute: z.enum(ATTRIBUTES), delta: z.number().int().min(-50).max(50) }).strict(),
   /** `caretaker` now looks after `ward` (adoption, nursing, apprenticeship). */
   z.object({ type: z.literal("ADD_CARETAKER"), caretaker: z.string(), ward: z.string() }).strict(),
+  /** Change tension between the target settlement and its rival ({{rival}}). */
+  z.object({ type: z.literal("CHANGE_TENSION"), delta: z.number().int().min(-50).max(50) }).strict(),
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
 export type EffectInput = z.input<typeof EffectSchema>;

@@ -94,6 +94,10 @@ The game itself, phone-first: open `http://localhost:3000/play` (or
   scientist, scout). Join one once and you add to it every year, most in your
   own profession; or start one and lead it. Setbacks and breakthroughs happen,
   and the people who built it are named when it is done.
+- **Conflict.** Settlements carry tension with each other (shown on This year).
+  Neglect, inequality and crowding raise it; trade and law lower it. Bitter
+  neighbours refuse aid and raid; crowded towns split. Branching storylines
+  (the rift, the two camps) let everyone decide how it goes.
 - **People.** Family, people you care for, bonds (grown through events); invite a
   friend as your child, ward, close friend, or next child (`/play?invite=CODE`).
 - **Death.** Continue as a child, ward or close friend, or be reborn at random.

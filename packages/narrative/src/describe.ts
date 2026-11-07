@@ -17,5 +17,6 @@ export function describeEffect(e: Effect): string {
     case "CHARACTER_DEATH": return `${e.role} dies (${e.cause})`;
     case "ADJUST_ATTRIBUTE": return `${e.role} ${e.attribute} ${e.delta >= 0 ? "+" : ""}${e.delta}`;
     case "ADD_CARETAKER": return `${e.caretaker} starts looking after ${e.ward}`;
+    case "CHANGE_TENSION": return `Tension with rival ${e.delta >= 0 ? "+" : ""}${e.delta}`;
   }
 }

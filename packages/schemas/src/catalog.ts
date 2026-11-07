@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-0.4.0";
+export const RULES_VERSION = "rules-0.5.0";
 
 export const START_YEAR = 2131;
 

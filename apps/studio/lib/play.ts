@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
-import { characterAge, fullName, getCharacter, population, relationshipKey, renderTemplate } from "@genesis/narrative";
+import { characterAge, fullName, getCharacter, population, relationshipKey, renderTemplate, rivalOf, tensionBetween } from "@genesis/narrative";
 import { BRANCH_INFO, TECH_BY_ID } from "@genesis/schemas";
 import { activeProjects, projectBlocker, startableTechs, workEstimate } from "@genesis/simulation";
 import type { ProjectsView } from "@/components/play/projects";
@@ -146,7 +146,7 @@ export function decisionViews(ctx: PlayContext): DecisionView[] {
     .map((p) => {
       const def = ctx.events.find((e) => e.id === p.definitionId);
       const settlement = p.settlementId ? state.settlements.find((s) => s.id === p.settlementId) : undefined;
-      const values: Record<string, string> = { settlement: settlement?.name ?? "the settlements", year: String(state.startYear + p.firedTick), world: state.worldName };
+      const values: Record<string, string> = { settlement: settlement?.name ?? "the settlements", rival: (settlement && rivalOf(state, settlement)?.name) || "", year: String(state.startYear + p.firedTick), world: state.worldName };
       for (const [role, id] of Object.entries(p.roles)) {
         const c = getCharacter(state, id);
         if (c) {
@@ -264,4 +264,20 @@ export function projectsFor(state: WorldState, c: Character, term: Term): Projec
     })).sort((a, b) => Number(b.fits) - Number(a.fits)),
     materials: Math.floor(home?.resources.materials ?? 0),
   };
+}
+
+export type RelationLevel = "warm" | "calm" | "tense" | "hostile";
+
+/** How the character's home gets on with every other settlement, worst first. */
+export function neighboursOf(state: WorldState, c: Character): { name: string; tension: number; level: RelationLevel }[] {
+  const home = state.settlements.find((s) => s.id === c.homeId);
+  if (!home) return [];
+  return state.settlements
+    .filter((s) => s.status === "active" && s.id !== home.id)
+    .map((s) => {
+      const tension = Math.round(tensionBetween(state, home.id, s.id));
+      const level: RelationLevel = tension >= 60 ? "hostile" : tension >= 35 ? "tense" : tension >= 10 ? "calm" : "warm";
+      return { name: s.name, tension, level };
+    })
+    .sort((a, b) => b.tension - a.tension);
 }

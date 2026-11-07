@@ -1,0 +1,111 @@
+{
+  "id": "two-camps",
+  "title": "地堡派與地表派",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "地堡裡的人開始分成兩派：留在地底，還是走上地表。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "settlement_kind",
+      "kind": "bunker"
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 8
+    },
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 40
+    },
+    {
+      "type": "flag",
+      "flag": "society.surface_first",
+      "present": false
+    },
+    {
+      "type": "flag",
+      "flag": "society.bunker_first",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "elder",
+      "minAge": 50,
+      "optional": true
+    },
+    {
+      "id": "youth",
+      "minAge": 16,
+      "maxAge": 30,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "surface",
+      "label": "未來在地表",
+      "tags": [
+        "growth",
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "society.surface_first"
+        },
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -5
+        }
+      ],
+      "outcome": "大家決定把力氣放在地表：更多人會被送上去開墾。地堡裡的燈，一盞一盞熄了。"
+    },
+    {
+      "id": "bunker",
+      "label": "地堡才是家",
+      "tags": [
+        "cautious",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "society.bunker_first"
+        },
+        {
+          "type": "CHANGE_TENSION",
+          "delta": 10
+        }
+      ],
+      "outcome": "大家決定守住地堡。地表的人聽說之後，覺得自己被拋下了。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.35,
+  "cooldown": 3,
+  "storylineIds": [
+    "two-camps"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "留在地底，還是走上地表",
+    "text": "{{elder}}說，地堡養活了我們四十年。{{youth}}說，天空就在頭頂，為什麼還要躲？這件事每個人都得表態。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "conflict"
+  ],
+  "participation": "everyone",
+  "maxOccurrences": 1
+}

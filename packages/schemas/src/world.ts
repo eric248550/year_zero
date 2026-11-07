@@ -211,5 +211,7 @@ export const WorldStateSchema = z.object({
   pendingDecisions: z.array(PendingDecisionSchema).optional(),
   invites: z.record(z.string(), InviteSchema).optional(),
   projects: z.array(ProjectSchema).optional(),
+  /** Tension between two settlements, keyed "idA|idB" (sorted), 0 (at peace) to 100 (open hostility). */
+  tensions: z.record(z.string(), z.number()).optional(),
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;

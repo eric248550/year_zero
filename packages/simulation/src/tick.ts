@@ -8,6 +8,7 @@ import { consume, produce, wellbeing } from "./systems/economy";
 import { births, comingOfAge, mortality } from "./systems/demographics";
 import { development, exploration } from "./systems/progress";
 import { councilProjects, projects } from "./systems/projects";
+import { friction, raids, schisms } from "./systems/conflict";
 import { abandonment, milestones } from "./systems/settlements";
 import { playerUpkeep } from "./systems/players";
 import { attributeDrift } from "./systems/attributes";
@@ -75,6 +76,8 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   supplyOutposts(ctx);
   consume(ctx);
   wellbeing(ctx);
+  friction(ctx);
+  raids(ctx);
   attributeDrift(ctx);
   mortality(ctx);
   births(ctx);
@@ -83,6 +86,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   projects(ctx);
   development(ctx);
   exploration(ctx);
+  schisms(ctx);
 
   const narrative = runNarrativePhase(ctx.state, input.events, rng, {
     maxEventsPerTick: MAX_EVENTS_PER_TICK,

@@ -15,7 +15,7 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { EffectError, InsufficientResourcesError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, relationshipKey, round2 } from "./queries";
+import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
 import { say } from "./texts";
 
 /** Collects every transition made inside a transaction. */
@@ -127,6 +127,18 @@ export function discoverLocation(state: WorldState, locationId: string, rec: Cha
   return true;
 }
 
+/** Shift tension between two settlements, clamped to 0–100. Shared with the conflict rules. */
+export function changeTension(state: WorldState, a: string, b: string, delta: number, rec?: ChangeRecorder): number {
+  const key = tensionKey(a, b);
+  const before = state.tensions?.[key] ?? 0;
+  const after = Math.round(Math.min(100, Math.max(0, before + delta)) * 100) / 100;
+  if (after === before) return after;
+  state.tensions ??= {};
+  state.tensions[key] = after;
+  if (rec) record(rec, `tensions.${key}`, `Tension ${key}`, before, after);
+  return after;
+}
+
 /**
  * Apply one typed effect to a draft world state. Unknown effect types are
  * rejected — content (including AI drafts) cannot run arbitrary code.
@@ -145,6 +157,13 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
         s[effect.stat] = after;
         record(rec, `settlements.${s.id}.${effect.stat}`, `${s.name} ${effect.stat}`, before, after);
       }
+      return;
+    }
+    case "CHANGE_TENSION": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const rival = rivalOf(state, s!);
+      if (!rival) return;
+      changeTension(state, s!.id, rival.id, effect.delta, rec);
       return;
     }
     case "CHANGE_RELATIONSHIP": {

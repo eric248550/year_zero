@@ -1,0 +1,125 @@
+{
+  "id": "water-quarrel",
+  "title": "爭水",
+  "scope": "settlement",
+  "category": "social",
+  "description": "兩個聚落的人在共用的水源邊起了衝突。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "tension",
+      "op": ">=",
+      "value": 15
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 4
+    }
+  ],
+  "roles": [
+    {
+      "id": "speaker",
+      "minAge": 16
+    },
+    {
+      "id": "negotiator",
+      "minAge": 20,
+      "optional": true,
+      "minAttributes": {
+        "social": 55
+      }
+    }
+  ],
+  "effects": [
+    {
+      "type": "CHANGE_TENSION",
+      "delta": 5
+    }
+  ],
+  "choices": [
+    {
+      "id": "share",
+      "label": "讓他們先取水",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -12
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "water",
+          "amount": -6
+        }
+      ],
+      "outcome": "{{settlement}}的人退了一步。{{rival}}的人裝滿了水桶，走的時候點了點頭。"
+    },
+    {
+      "id": "hold",
+      "label": "守住水源",
+      "tags": [
+        "bold",
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": 10
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 2
+        }
+      ],
+      "outcome": "{{speaker}}帶人站在水源前面，誰也不讓。{{rival}}的人空著桶回去了，臨走前撂下了狠話。"
+    },
+    {
+      "id": "talk",
+      "label": "坐下來談怎麼輪流取水",
+      "tags": [
+        "community"
+      ],
+      "requiresRoles": [
+        "negotiator"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -18
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "negotiator",
+          "text": "談妥了和鄰近聚落輪流取水的規矩"
+        }
+      ],
+      "outcome": "{{negotiator}}和{{rival}}的人在石頭上畫出了一張輪值表。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.15,
+  "cooldown": 6,
+  "storylineIds": [
+    "rift"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "水源邊的爭執",
+    "text": "{{rival}}的人一早就來到共用的水源邊。{{speaker}}趕到時，兩邊已經推擠了起來。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "conflict"
+  ]
+}

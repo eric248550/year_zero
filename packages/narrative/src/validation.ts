@@ -158,6 +158,9 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
         bool.set(k, c.active);
         break;
       }
+      case "tension":
+        key = "tension"; label = "tension"; domain = { lo: 0, loInc: true, hi: 100, hiInc: true };
+        break;
       case "event_occurred":
         break;
     }
@@ -184,7 +187,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 
   if (scope === "world") {
     conds.forEach((c, i) => {
-      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage"
+      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension"
         || ((c.type === "resource" || c.type === "population") && c.scope === "target");
       if (settlementOnly) {
         errors.push({ path: `${basePath}.${i}`, code: "scope.mismatch", message: `World-scoped events have no target settlement; use scope "world" on this condition or change the event scope` });
@@ -233,6 +236,9 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         break;
       case "ADJUST_ATTRIBUTE":
         if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
+        break;
+      case "CHANGE_TENSION":
+        if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Tension needs a target settlement; world-scoped events cannot change it" });
         break;
       case "ADD_CARETAKER":
         if (!roleIds.has(e.caretaker)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.caretaker}"` });
@@ -341,7 +347,7 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
   });
 
   // Templates
-  const allowedPlaceholders = new Set(["settlement", "year", "world", "choice", ...[...roleIds, "actor"].flatMap((r) => [r, `${r}.profession`])]);
+  const allowedPlaceholders = new Set(["settlement", "rival", "year", "world", "choice", ...[...roleIds, "actor"].flatMap((r) => [r, `${r}.profession`])]);
   const templates: [string, string][] = [["narrative.headline", def.narrative.headline], ["narrative.text", def.narrative.text]];
   def.choices.forEach((c, i) => {
     if (c.outcome) templates.push([`choices.${i}.outcome`, c.outcome]);

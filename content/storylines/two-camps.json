@@ -1,0 +1,35 @@
+{
+  "id": "two-camps",
+  "title": "兩種活法",
+  "summary": "地堡派與地表派、開門派與關門派。人們要決定這個新世界該怎麼活：守住熟悉的，還是走向未知的。每個選擇都會改變往後的人口、士氣和鄰居之間的關係。",
+  "themes": [
+    "faction",
+    "identity",
+    "openness"
+  ],
+  "beats": [
+    {
+      "id": "camps",
+      "title": "地堡派與地表派",
+      "description": "留在地底，還是走上地表？",
+      "eventIds": [
+        "two-camps"
+      ]
+    },
+    {
+      "id": "gates",
+      "title": "開門還是關門",
+      "description": "荒野來的陌生人，收還是不收？",
+      "eventIds": [
+        "open-or-closed"
+      ]
+    }
+  ],
+  "possibleOutcomes": [
+    "地表派勝出：地堡漸漸空了，新的聚落一個接一個建起來。",
+    "地堡派勝出：地堡安穩，地表的人覺得被拋下。",
+    "大門敞開：人越來越多，問題也越來越多。",
+    "大門緊閉：聚落安穩而封閉。"
+  ],
+  "status": "published"
+}

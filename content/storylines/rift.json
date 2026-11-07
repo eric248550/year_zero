@@ -1,0 +1,50 @@
+{
+  "id": "rift",
+  "title": "裂痕",
+  "summary": "聚落多了，就會有遠近親疏。爭水、拒絕援助、搶糧、報復——也可能有一場和解宴。聚落可以互相扶持，也可以互相毀掉。",
+  "themes": [
+    "conflict",
+    "trust",
+    "survival"
+  ],
+  "beats": [
+    {
+      "id": "quarrel",
+      "title": "爭水",
+      "description": "兩邊的人第一次在水源邊推擠。",
+      "eventIds": [
+        "water-quarrel"
+      ]
+    },
+    {
+      "id": "gate",
+      "title": "擋在門外",
+      "description": "商隊被擋在門外，生意做不成。",
+      "eventIds": [
+        "cold-gate"
+      ]
+    },
+    {
+      "id": "revenge",
+      "title": "要不要報復",
+      "description": "仇越結越深，有人想動手。",
+      "eventIds": [
+        "revenge-talk"
+      ]
+    },
+    {
+      "id": "peace",
+      "title": "和解宴",
+      "description": "一頓飯，也許能把話說開。",
+      "eventIds": [
+        "peace-feast"
+      ]
+    }
+  ],
+  "possibleOutcomes": [
+    "兩個聚落吵吵鬧鬧，最後學會了共用水源和道路。",
+    "積怨越來越深，搶糧和報復成了常態。",
+    "一場和解宴之後，兩邊的孩子開始互相通婚。"
+  ],
+  "status": "published"
+}

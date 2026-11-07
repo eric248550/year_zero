@@ -2,6 +2,7 @@ import { LOCATION_BY_ID, PLAYER_ACTION_TYPES, POLICY_INFO, PlayerActionSchema, T
 import { activeSettlements, characterAge, fullName, getSettlement, newRecorder, population, professionName, residents, resourceName, round2, say, spendResources } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { attemptExploration } from "./progress";
+import { aidAllowed } from "./conflict";
 import { foundSettlement, foundingBlocker } from "./settlements";
 import { applyPlayerAction, validatePlayerAction, type IndividualAction } from "./players";
 
@@ -137,7 +138,9 @@ export function councilDecisions(ctx: TickContext): void {
   const pioneers = st.tick >= 3 && !activeSettlements(st).some((x) => x.kind === "settlement");
   for (const s of activeSettlements(st)) {
     const pop = population(st, s.id);
-    if (pop < s.capacity * policy.foundingPressure && !pioneers) continue;
+    // Factions: a surface-first world sends people out sooner, a bunker-first one later.
+    const pressure = policy.foundingPressure + (st.flags["society.surface_first"] ? -0.1 : 0) + (st.flags["society.bunker_first"] ? 0.1 : 0);
+    if (pop < s.capacity * pressure && !pioneers) continue;
     const sites = st.locations
       .filter((l) => l.discovered && !l.settlementId && LOCATION_BY_ID[l.id]!.settleable)
       .sort((a, b) => LOCATION_BY_ID[a.id]!.distance - LOCATION_BY_ID[b.id]!.distance || (a.id < b.id ? -1 : 1));
@@ -163,6 +166,7 @@ export function councilDecisions(ctx: TickContext): void {
       if (!donor) continue;
       const surplus = donor.resources[r] - population(st, donor.id) * (st.technologies.includes("trade_routes") ? 1 : 1.5);
       if (surplus < 5) continue;
+      if (!aidAllowed(ctx, donor, needy, r)) continue;
       const amount = round2(Math.min(surplus * 0.5, population(st, needy.id) * 1.5));
       const rec = newRecorder();
       spendResources(donor, { [r]: amount }, rec);

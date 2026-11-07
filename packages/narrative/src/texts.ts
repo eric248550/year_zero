@@ -1,5 +1,5 @@
 import { BRANCH_INFO, LOCATION_BY_ID, TECH_BY_ID, ZH_CATALOG, type BranchId, type Profession, type ResourceId, type Settlement, type WorldState } from "@genesis/schemas";
-import { currentYear, fullName, getCharacter } from "./queries";
+import { currentYear, fullName, getCharacter, rivalOf } from "./queries";
 
 /**
  * Text the engine writes into history and life stories, in the world's
@@ -139,6 +139,18 @@ const EN = {
   tellText: () => "Most laugh it off. A few lean closer and ask what it said.",
   keptStatic: () => "Heard a voice in the radio static and told no one",
   renamed: (before: string, after: string) => `${before} now goes by ${after}`,
+  raidTitle: (raider: string, victim: string) => `${raider} raids ${victim}`,
+  raidText: (leader: string, raider: string, victim: string, n: number, r: string) => `Out of patience, people from ${raider} led by ${leader} broke into ${victim}'s stores and carried off ${n} ${r}.`,
+  raidLife: (victim: string) => `Led a raid on ${victim}`,
+  causeRaid: () => "killed in a raid",
+  aidRefusedTitle: (donor: string, needy: string) => `${donor} refuses to help ${needy}`,
+  aidRefusedText: (donor: string, needy: string, r: string) => `${needy} is running out of ${r}. ${donor} has enough to spare, but after everything between them, its council says no.`,
+  schismTitle: (s: string) => `${s} splits`,
+  schismCrowded: () => "there was no room left to live",
+  schismUnhappy: () => "too many had stopped believing in the council",
+  schismText: (leader: string, s: string, n: number, why: string) => `In ${s}, ${why}. ${leader} and ${n} others packed what they could carry and walked out to build somewhere of their own.`,
+  schismMoveText: (leader: string, s: string, n: number, dest: string, why: string) => `In ${s}, ${why}. ${leader} led ${n} people away to ${dest}.`,
+  schismLife: (s: string) => `Left ${s} after the split`,
   projectStartTitle: (lead: string, tech: string) => `${lead} starts work on ${tech}`,
   projectStartCouncil: (lead: string, tech: string, place: string) => `The council asks ${lead} to lead work on ${tech} in ${place}. Anyone who can help is welcome.`,
   projectStartPlayer: (lead: string, tech: string, place: string) => `${lead} calls on ${place} to build ${tech} together.`,
@@ -249,6 +261,18 @@ const ZH: typeof EN = {
   tellText: () => "大多數人笑笑就算了。有幾個人湊過來，問它說了什麼。",
   keptStatic: () => "聽見收音機雜訊裡的人聲，沒有告訴任何人",
   renamed: (before, after) => `${before}改名為${after}`,
+  raidTitle: (raider, victim) => `${raider}搶了${victim}`,
+  raidText: (leader, raider, victim, n, r) => `忍無可忍的${raider}居民，在${leader}帶頭下闖進${victim}的倉庫，搬走了 ${n} 份${r}。`,
+  raidLife: (victim) => `帶頭搶了${victim}`,
+  causeRaid: () => "死於一場搶糧",
+  aidRefusedTitle: (donor, needy) => `${donor}拒絕援助${needy}`,
+  aidRefusedText: (donor, needy, r) => `${needy}的${r}快見底了。${donor}明明有餘，但兩邊積怨太深，議會一口回絕。`,
+  schismTitle: (s) => `${s}分裂了`,
+  schismCrowded: () => "擠到再也住不下",
+  schismUnhappy: () => "太多人已經不再相信議會",
+  schismText: (leader, s, n, why) => `${s}${why}。${leader}和另外 ${n} 個人帶著搬得動的東西出走，要去建一個自己的地方。`,
+  schismMoveText: (leader, s, n, dest, why) => `${s}${why}。${leader}帶著 ${n} 個人離開，投奔${dest}。`,
+  schismLife: (s) => `在分裂後離開了${s}`,
   projectStartTitle: (lead, tech) => `${lead}發起「${tech}」`,
   projectStartCouncil: (lead, tech, place) => `議會請${lead}在${place}帶頭推動「${tech}」。願意幫忙的人都可以加入。`,
   projectStartPlayer: (lead, tech, place) => `${lead}號召${place}的人一起做「${tech}」。`,
@@ -278,6 +302,7 @@ export function say(state: Pick<WorldState, "locale">): typeof EN {
 export function templateValues(state: WorldState, settlement: Settlement | null, roles: Record<string, string>): Record<string, string> {
   const values: Record<string, string> = {
     settlement: settlement?.name ?? say(state).allSettlements(),
+    rival: (settlement && rivalOf(state, settlement)?.name) || say(state).allSettlements(),
     year: String(currentYear(state)),
     world: state.worldName,
   };

@@ -1,0 +1,99 @@
+{
+  "id": "open-or-closed",
+  "title": "開門還是關門",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "又有陌生人從荒野走來。有人說誰來都收，有人說先看清楚再說。",
+  "preconditions": [
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 60,
+      "scope": "world"
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 12
+    },
+    {
+      "type": "flag",
+      "flag": "society.open_gates",
+      "present": false
+    },
+    {
+      "type": "flag",
+      "flag": "society.closed_gates",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "guard",
+      "minAge": 16,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "open",
+      "label": "誰來都收",
+      "tags": [
+        "openness",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "society.open_gates"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -2
+        }
+      ],
+      "outcome": "大門敞開了。往後，會有更多從荒野來的人留下，也會有更多張嘴要餵。"
+    },
+    {
+      "id": "closed",
+      "label": "關上大門",
+      "tags": [
+        "cautious",
+        "secrecy"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "society.closed_gates"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 2
+        }
+      ],
+      "outcome": "大門關上了。裡面的人覺得安心，門外的人只能繼續走。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.3,
+  "cooldown": 3,
+  "storylineIds": [
+    "two-camps"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "荒野來的陌生人",
+    "text": "一群陌生人站在{{settlement}}的門外，又瘦又髒。{{guard}}問大家：以後這種人，收還是不收？"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "conflict"
+  ],
+  "participation": "everyone",
+  "maxOccurrences": 1
+}

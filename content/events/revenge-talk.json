@@ -1,0 +1,115 @@
+{
+  "id": "revenge-talk",
+  "title": "要不要報復",
+  "scope": "settlement",
+  "category": "social",
+  "description": "和鄰近聚落的仇越結越深，年輕人吵著要報復。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "tension",
+      "op": ">=",
+      "value": 60
+    }
+  ],
+  "roles": [
+    {
+      "id": "hothead",
+      "minAge": 16,
+      "maxAge": 35
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "retaliate",
+      "label": "去把東西搶回來",
+      "tags": [
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": 15
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 10
+        }
+      ],
+      "risk": {
+        "chance": 0.3,
+        "description": "{{hothead}}在混亂中沒能回來。",
+        "effects": [
+          {
+            "type": "CHARACTER_DEATH",
+            "role": "hothead",
+            "cause": "死於和鄰近聚落的衝突"
+          }
+        ]
+      },
+      "outcome": "一群人在夜裡出發，天亮前扛著糧食回來。兩邊的仇更深了。"
+    },
+    {
+      "id": "restrain",
+      "label": "把怒氣壓下來",
+      "tags": [
+        "cautious",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -5
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -4
+        }
+      ],
+      "outcome": "大家沒有出手。有人覺得窩囊，有人鬆了一口氣。"
+    },
+    {
+      "id": "envoy",
+      "label": "派人帶著糧食去談和",
+      "tags": [
+        "openness",
+        "community"
+      ],
+      "costs": {
+        "food": 8
+      },
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -20
+        }
+      ],
+      "outcome": "使者帶著糧食走進{{rival}}。回來時，帶回了一句「我們也累了」。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.3,
+  "cooldown": 5,
+  "storylineIds": [
+    "rift"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{settlement}}要不要報復",
+    "text": "{{hothead}}在大家面前拍桌：「{{rival}}欺人太甚，我們還要忍到什麼時候？」每個人都得表態。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "conflict"
+  ],
+  "participation": "everyone"
+}

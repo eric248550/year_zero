@@ -8,7 +8,7 @@ import {
   type Settlement,
   type WorldState,
 } from "@genesis/schemas";
-import { activeSettlements, population, round2, totalResource } from "./queries";
+import { activeSettlements, population, rivalOf, round2, tensionBetween, totalResource } from "./queries";
 
 export function compare(actual: number, op: ComparisonOp, expected: number): boolean {
   switch (op) {
@@ -50,6 +50,8 @@ export function describeCondition(c: Condition): string {
       return `Event "${c.event}" has ${c.occurred ? "" : "not "}occurred${c.withinTicks ? ` within ${c.withinTicks} ticks` : ""}`;
     case "shortage":
       return `Settlement ${c.resource} shortage is ${c.active ? "active" : "not active"}`;
+    case "tension":
+      return `Tension with rival settlement ${c.op} ${c.value}`;
   }
 }
 
@@ -126,6 +128,12 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
       if (!s) return result(null, false);
       const active = s.shortage[c.resource] > 0;
       return result(s.shortage[c.resource], active === c.active);
+    }
+    case "tension": {
+      const rival = s ? rivalOf(state, s) : null;
+      if (!s || !rival) return result(null, false);
+      const t = tensionBetween(state, s.id, rival.id);
+      return result(t, compare(t, c.op, c.value));
     }
   }
 }

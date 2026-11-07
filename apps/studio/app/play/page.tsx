@@ -11,7 +11,7 @@ import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
 import { Projects } from "@/components/play/projects";
 import { redirect } from "next/navigation";
-import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, projectsFor } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -78,6 +78,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
 
   const home = state.settlements.find((s) => s.id === character.homeId);
   const decisions = decisionViews(ctx);
+  const neighbours = neighboursOf(state, character);
   const story = [...character.lifeEvents].reverse().slice(0, 8);
   const news = home ? queryHistory(db(), ctx.runId, { settlementId: home.id, minImportance: "notable", order: "desc", limit: 4 }).items.filter((e) => e.tick >= state.tick - PLAYERS.inviteTtl) : [];
 
@@ -120,6 +121,23 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
             </li>
           ))}
         </ol>
+      )}
+
+      {neighbours.length > 0 && (
+        <>
+          <SectionTitle>{t("play.rel.title")}</SectionTitle>
+          <p className="-mt-1 mb-2 text-xs text-ink-3">{t("play.rel.hint")}</p>
+          <ul className="card divide-y divide-line">
+            {neighbours.map((n) => (
+              <li key={n.name} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                <span className="min-w-0 truncate">{n.name}</span>
+                <span className={n.level === "hostile" ? "text-danger" : n.level === "tense" ? "text-warn" : n.level === "warm" ? "text-ok" : "text-ink-2"}>
+                  {t(`play.rel.${n.level}`)} <span className="num text-xs text-ink-3">{n.tension}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {home && (

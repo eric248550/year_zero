@@ -1,9 +1,12 @@
 import { ADULT_AGE, LOCATION_BY_ID, PROFESSIONS, type Character, type Settlement } from "@genesis/schemas";
-import { activeSettlements, characterAge, getSettlement, hasTech, placeName, population, residents, round2, say } from "@genesis/narrative";
+import { activeSettlements, changeTension, characterAge, getSettlement, hasTech, placeName, population, residents, round2, say } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { initAttributes } from "./attributes";
+
+/** Tension a supplied outpost adds with its founder each year (see conflict.ts). */
+const CONFLICT_OUTPOST_BURDEN = 2;
 
 export const CONTINUITY = {
   /** An outpost is kept stocked to this many years of food and water per person. */
@@ -55,6 +58,8 @@ export function supplyOutposts(ctx: TickContext): void {
       const give = round2(Math.max(0, Math.min(want, spare)));
       if (give <= 0) continue;
       parent.resources[r] = round2(parent.resources[r] - give);
+      // Feeding someone else's town year after year breeds resentment.
+      changeTension(st, parent.id, s.id, CONFLICT_OUTPOST_BURDEN);
       s.resources[r] = round2(s.resources[r] + give);
     }
   }
@@ -88,7 +93,8 @@ function wanderer(ctx: TickContext, home: Settlement): Character {
 export function wanderers(ctx: TickContext): void {
   const st = ctx.state;
   const pop = population(st);
-  if (!ctx.rng.chance(CONTINUITY.wandererChance(pop))) return;
+  const gates = st.flags["society.open_gates"] ? 1.6 : st.flags["society.closed_gates"] ? 0.4 : 1;
+  if (!ctx.rng.chance(Math.min(0.9, CONTINUITY.wandererChance(pop) * gates))) return;
   const n = ctx.rng.int(3, 8);
   let home = [...activeSettlements(st)].sort((a, b) => b.capacity - population(st, b.id) - (a.capacity - population(st, a.id)) || (a.id < b.id ? -1 : 1))[0];
   let refugees = false;
