@@ -10,7 +10,8 @@ import { Onboarding, type InviteInfo } from "@/components/play/onboarding";
 import { Prologue } from "@/components/play/prologue";
 import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
-import { ageOf, decisionViews, loadPlay } from "@/lib/play";
+import { redirect } from "next/navigation";
+import { ageOf, decisionViews, listWorlds, loadPlay } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function YearPage({ searchParams }: { searchParams: Promise<{ invite?: string }> }) {
   const { t, term } = await getI18n();
   const ctx = await loadPlay();
+  if (!ctx && listWorlds(null).length > 0) redirect("/play/worlds");
   if (!ctx) return <div className="pt-10"><EmptyState title={t("play.noWorld.title")}>{t("play.noWorld.body")}</EmptyState></div>;
   const { state, player, character } = ctx;
   const year = state.startYear + state.tick;

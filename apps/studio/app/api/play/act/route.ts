@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getActiveRunId } from "@genesis/database";
 import { fullName, getCharacter } from "@genesis/narrative";
 import { db, handle, readJson } from "@/lib/server";
-import { PLAYER_COOKIE, actAs, currentPlayerId, newPlayerId } from "@/lib/play";
+import { PLAYER_COOKIE, actAs, currentPlayerId, currentWorldId, newPlayerId } from "@/lib/play";
 
 /**
  * POST { action } — apply a player action to the live world immediately.
@@ -16,9 +15,9 @@ export async function POST(req: Request) {
   if (!playerId && joining) playerId = newPlayerId();
   if (!playerId) return NextResponse.json({ error: "Join the world first" }, { status: 401 });
 
+  const runId = await currentWorldId();
   const res = await handle(() => {
-    const runId = getActiveRunId(db());
-    if (!runId) throw new RangeError("No world is running yet");
+    if (!runId) throw new RangeError("Choose a world first");
     const r = actAs(runId, playerId!, action);
     // Names of everyone involved, so the client can show results without another request.
     const names: Record<string, string> = {};

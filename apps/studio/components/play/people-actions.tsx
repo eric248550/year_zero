@@ -26,7 +26,7 @@ export function InviteButton({ characterId, label }: { characterId?: string; lab
   );
 }
 
-export function CopyLink({ code }: { code: string }) {
+export function CopyLink({ code, worldId }: { code: string; worldId: string }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function CopyLink({ code }: { code: string }) {
         type="button"
         className={buttonClass("ghost", "sm")}
         onClick={() => {
-          const link = `${window.location.origin}/play?invite=${code}`;
+          const link = `${window.location.origin}/play/enter?world=${encodeURIComponent(worldId)}&invite=${code}`;
           setUrl(link);
           navigator.clipboard?.writeText(link).then(() => setCopied(true), () => setCopied(false));
         }}

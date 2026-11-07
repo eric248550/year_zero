@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PeoplePage() {
   const { t, term } = await getI18n();
-  const { state, character: me, player } = await requirePlaying();
+  const { state, character: me, player, runId } = await requirePlaying();
   const byId = (id: string) => state.characters.find((c) => c.id === id);
   const bond = (c: Character) => state.relationships[relationshipKey(me.id, c.id)] ?? 0;
 
@@ -100,7 +100,7 @@ export default async function PeoplePage() {
                 <li key={inv.code} className="space-y-1">
                   <div className="text-sm font-medium">{target ? t("play.people.inviteFor", { name: fullName(target) }) : t("play.people.inviteNextChild")}</div>
                   <div className="num text-xs text-ink-3">{inv.code} · {inv.acceptedBy ? t("play.people.accepted") : t("play.people.expires", { year: state.startYear + inv.expiresTick })}</div>
-                  {!inv.acceptedBy && <CopyLink code={inv.code} />}
+                  {!inv.acceptedBy && <CopyLink code={inv.code} worldId={runId} />}
                 </li>
               );
             })}

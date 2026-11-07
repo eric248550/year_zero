@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { advanceClock, applyPlayerAction, getActiveRunId, getRun, getRunContent, type ClockStatus } from "@genesis/database";
+import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
 import { characterAge, fullName, getCharacter, renderTemplate } from "@genesis/narrative";
 import type { DecisionView } from "@/components/play/decision-card";
@@ -23,8 +23,56 @@ export function newPlayerId(): string {
   return `p_${Array.from(bytes, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 20)}`;
 }
 
+/** Which world (server) this browser is playing in. Separate worlds, one player id. */
+export const WORLD_COOKIE = "yz-world";
+
+export interface WorldInfo {
+  id: string;
+  name: string;
+  year: number;
+  /** Years since the bunker opened. */
+  tick: number;
+  players: number;
+  population: number;
+  /** This player's character in that world, if they have joined it. */
+  me: { status: Player["status"]; name: string | null } | null;
+}
+
+/** Worlds open for play: every active run. Newest first. */
+export function listWorlds(playerId: string | null): WorldInfo[] {
+  const d = db();
+  return listRuns(d)
+    .filter((r) => r.status === "active")
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .map((r) => {
+      const { state } = getRun(d, r.id);
+      const players = Object.values(state.players ?? {}).filter((p) => p.status !== "left");
+      const mine = playerId ? state.players?.[playerId] : undefined;
+      const c = mine?.characterId ? getCharacter(state, mine.characterId) : undefined;
+      return {
+        id: r.id,
+        name: r.name,
+        year: r.year,
+        tick: r.currentTick,
+        players: players.length,
+        population: r.population,
+        me: mine && mine.status !== "left" ? { status: mine.status, name: c ? fullName(c) : null } : null,
+      };
+    });
+}
+
+/** The chosen world, if it is still open; with only one world open, that one. */
+export async function currentWorldId(): Promise<string | null> {
+  const v = (await cookies()).get(WORLD_COOKIE)?.value;
+  const open = listRuns(db()).filter((r) => r.status === "active");
+  if (v && open.some((w) => w.id === v)) return v;
+  return open.length === 1 ? open[0]!.id : null;
+}
+
 export interface PlayContext {
   runId: string;
+  /** The world's server name, e.g. "元年 · 封測". */
+  worldName: string;
   state: WorldState;
   events: readonly EventDefinition[];
   clock: ClockStatus;
@@ -36,14 +84,14 @@ export interface PlayContext {
 /** Load the live world for the player app, advancing the real-time clock first. Once per request. */
 export const loadPlay = cache(async (): Promise<PlayContext | null> => {
   const d = db();
-  const runId = getActiveRunId(d);
+  const runId = await currentWorldId();
   if (!runId) return null;
   const clock = advanceClock(d, runId);
-  const { state } = getRun(d, runId);
+  const { state, summary } = getRun(d, runId);
   const playerId = await currentPlayerId();
   const player = playerId ? state.players?.[playerId] ?? null : null;
   const character = player?.characterId ? getCharacter(state, player.characterId) ?? null : null;
-  return { runId, state, events: getRunContent(d, runId).events, clock, playerId, player, character };
+  return { runId, worldName: summary.name, state, events: getRunContent(d, runId).events, clock, playerId, player, character };
 });
 
 /** Pending decisions this character takes part in, ready to render. */

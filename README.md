@@ -73,6 +73,10 @@ fallback enabled via `fallbacks: "default"`); remove those two fields in
 The game itself, phone-first: open `http://localhost:3000/play` (or
 `pnpm dev:lan` and the LAN address on a phone). Players join the **active run**.
 
+- **Worlds.** `/play/worlds` lists every active run as a separate server
+  (each starts at Year Zero with its own clock and players); the choice is
+  kept in the `yz-world` cookie, and one player id can live in several worlds.
+  Invite links (`/play/enter?world=ID&invite=CODE`) open the right world.
 - **Joining.** In year 0 everyone comes out of Haven Deep; surface-born,
   wanderer and Vault 12 origins unlock as the world develops. A three-step
   prologue gives instant results and introduces two people.
