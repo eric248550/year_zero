@@ -1,0 +1,93 @@
+{
+  "id": "road-building",
+  "title": "修一條路",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "商隊走的那條路坑坑洞洞，每次都有人受傷。",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "trade.caravan",
+      "present": true
+    },
+    {
+      "type": "resource",
+      "resource": "materials",
+      "op": ">=",
+      "value": 25,
+      "scope": "target"
+    },
+    {
+      "type": "flag",
+      "flag": "trade.road",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "builder",
+      "profession": "Engineer",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "build",
+      "label": "修路",
+      "tags": [
+        "growth",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "trade.road"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 6
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "capacity",
+          "delta": 5,
+          "target": "settlement"
+        }
+      ],
+      "outcome": "{{builder}}帶著大家填平坑洞、架起木橋。之後，商隊一個月就能來回一次。",
+      "description": "花 20 份物資",
+      "costs": {
+        "materials": 20
+      }
+    },
+    {
+      "id": "wait",
+      "label": "等以後再說",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "路還是那條路。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.3,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "roads-between"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{builder}}想修一條路",
+    "text": "{{builder}}攤開一張手畫的地圖：「從這裡到那裡，只要填平這三段，就不用再繞過那片沼澤。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "rebuild"
+  ]
+}

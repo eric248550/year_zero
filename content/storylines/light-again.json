@@ -1,0 +1,42 @@
+{
+  "id": "light-again",
+  "title": "重新點亮",
+  "summary": "地堡的燈靠老舊的發電機撐著，地表的夜晚一片漆黑。從廢墟裡拆回太陽能板、讓聚落在夜裡亮起來、再把燈連成一張電網——光，是文明回來的第一個信號。",
+  "themes": [
+    "energy",
+    "hope",
+    "engineering"
+  ],
+  "beats": [
+    {
+      "id": "panels",
+      "title": "屋頂上的太陽能板",
+      "description": "有人在廢墟裡找到還能用的太陽能板。",
+      "eventIds": [
+        "salvage-panels"
+      ]
+    },
+    {
+      "id": "first-light",
+      "title": "第一個有燈的夜晚",
+      "description": "太陽能讓整個聚落在夜裡亮了起來。",
+      "eventIds": [
+        "first-light"
+      ]
+    },
+    {
+      "id": "grid",
+      "title": "電網",
+      "description": "燈連成了網，也帶來新的風險。",
+      "eventIds": [
+        "grid-surge"
+      ]
+    }
+  ],
+  "possibleOutcomes": [
+    "電網連起了每個聚落，夜裡的燈光從遠方就看得見。",
+    "太陽能板只夠種植室使用，夜晚依舊漆黑。",
+    "一次突波燒毀了一切，人們再也不敢依賴電力。"
+  ],
+  "status": "published"
+}

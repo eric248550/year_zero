@@ -1,0 +1,103 @@
+{
+  "id": "first-caravan",
+  "title": "第一支商隊",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "聚落之間第一次組織商隊交換物資。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "flag",
+      "flag": "trade.caravan",
+      "present": false
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 5
+    }
+  ],
+  "roles": [],
+  "effects": [
+    {
+      "type": "ADD_WORLD_FLAG",
+      "flag": "trade.caravan"
+    }
+  ],
+  "choices": [
+    {
+      "id": "go",
+      "label": "跟商隊出發",
+      "tags": [
+        "bold",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 6
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 6
+        }
+      ],
+      "outcome": "商隊帶著工具出發，帶著種子和食物回來。",
+      "memberEffects": [
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "actor",
+          "attribute": "survival",
+          "delta": 2
+        }
+      ],
+      "description": "帶回物資，路上有風險",
+      "risk": {
+        "chance": 0.12,
+        "description": "路上，{{actor}}被一隻野狗咬傷了。",
+        "effects": [
+          {
+            "type": "ADJUST_ATTRIBUTE",
+            "role": "actor",
+            "attribute": "health",
+            "delta": -10
+          }
+        ]
+      }
+    },
+    {
+      "id": "stay",
+      "label": "留在家裡",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "留下的人守著聚落，等商隊的消息。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.4,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "roads-between"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{settlement}}的第一支商隊",
+    "text": "有人提議：與其各自挨餓，不如把多的東西拿去和別的聚落換。{{settlement}}要組第一支商隊，誰要一起去？"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "participation": "everyone",
+  "tags": [
+    "rebuild"
+  ]
+}

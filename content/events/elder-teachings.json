@@ -38,7 +38,9 @@
   "priority": 2,
   "chance": 0.12,
   "cooldown": 8,
-  "storylineIds": [],
+  "storylineIds": [
+    "first-school"
+  ],
   "importance": "minor",
   "narrative": {
     "headline": "{{elder}}傳授{{student}}",

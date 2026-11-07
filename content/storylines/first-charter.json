@@ -1,0 +1,42 @@
+{
+  "id": "first-charter",
+  "title": "第一部憲章",
+  "summary": "人少的時候，幾個人說了算就夠了。人多了，分配、處罰和冒險都需要規矩。居民大會、庫存糾紛、第一部寫下來的憲章——人們要決定，這個新世界用什麼方式一起生活。",
+  "themes": [
+    "governance",
+    "justice",
+    "voice"
+  ],
+  "beats": [
+    {
+      "id": "assembly",
+      "title": "誰來定規矩",
+      "description": "要讓大家投票，還是交給長者？",
+      "eventIds": [
+        "who-makes-rules"
+      ]
+    },
+    {
+      "id": "dispute",
+      "title": "庫存糾紛",
+      "description": "沒有規矩的時候，爭執只能靠拳頭。",
+      "eventIds": [
+        "settlement-dispute"
+      ]
+    },
+    {
+      "id": "charter",
+      "title": "簽署憲章",
+      "description": "第一部寫下來的公約，等著每個人簽名。",
+      "eventIds": [
+        "charter-signing"
+      ]
+    }
+  ],
+  "possibleOutcomes": [
+    "居民大會和憲章成了新世界的基礎，每個人都有發言權。",
+    "權力集中在少數長者手中，穩定但沉默。",
+    "規矩始終沒有立起來，爭執一次比一次激烈。"
+  ],
+  "status": "published"
+}

@@ -73,6 +73,10 @@ fallback enabled via `fallbacks: "default"`); remove those two fields in
 The game itself, phone-first: open `http://localhost:3000/play` (or
 `pnpm dev:lan` and the LAN address on a phone). Players join the **active run**.
 
+- **Civilization.** The world's main line is rebuilding civilization: five
+  stages (survive, take root, connect, order, renewal) of milestones read from
+  the world (`packages/simulation/src/civilization.ts`), shown on This year,
+  World and the Studio home. See section 0 of the World Bible.
 - **Worlds.** `/play/worlds` lists every active run as a separate server
   (each starts at Year Zero with its own clock and players); the choice is
   kept in the `yz-world` cookie, and one player id can live in several worlds.

@@ -69,7 +69,9 @@
   "priority": 4,
   "chance": 0.2,
   "cooldown": 8,
-  "storylineIds": [],
+  "storylineIds": [
+    "light-again"
+  ],
   "importance": "notable",
   "narrative": {
     "headline": "{{settlement}}的電網突波",

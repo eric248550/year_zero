@@ -1,0 +1,95 @@
+{
+  "id": "radio-contact",
+  "title": "無線電裡的人聲",
+  "scope": "settlement",
+  "category": "social",
+  "description": "短波無線電第一次接通了另一個聚落。",
+  "preconditions": [
+    {
+      "type": "technology",
+      "tech": "radio",
+      "has": true
+    },
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "flag",
+      "flag": "trade.radio",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "operator",
+      "minAge": 14
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "schedule",
+      "label": "每天傍晚固定通話",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "trade.radio"
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 8
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 5
+        }
+      ],
+      "outcome": "從那天起，每天傍晚六點，兩邊的人都會擠在收音機旁邊。"
+    },
+    {
+      "id": "emergency",
+      "label": "只在緊急時使用",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "trade.radio"
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 3
+        }
+      ],
+      "outcome": "無線電被收進櫃子裡，電池留給真正需要的時候。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.5,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "roads-between"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{operator}}聽見了另一個聚落",
+    "text": "雜訊之中，{{operator}}聽見一個熟悉的聲音：「這裡是……聽得到嗎？」那是另一個聚落的人。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "rebuild"
+  ]
+}

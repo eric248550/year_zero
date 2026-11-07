@@ -1,0 +1,102 @@
+{
+  "id": "unschooled-children",
+  "title": "沒上過學的孩子",
+  "scope": "settlement",
+  "category": "social",
+  "description": "聚落裡的孩子越來越多，卻沒有人教他們讀寫。",
+  "preconditions": [
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 20,
+      "scope": "target"
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 3
+    },
+    {
+      "type": "flag",
+      "flag": "culture.school",
+      "present": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "child",
+      "maxAge": 12,
+      "minAge": 6
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "school",
+      "label": "開一間學校",
+      "tags": [
+        "science",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "culture.school"
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 8
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 5
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "child",
+          "text": "成了第一批學生"
+        }
+      ],
+      "outcome": "大家把舊倉庫清出來，擺上撿來的桌椅。第一堂課，{{child}}坐在最前面。",
+      "description": "花 10 份物資整理教室",
+      "costs": {
+        "materials": 10
+      }
+    },
+    {
+      "id": "work",
+      "label": "讓孩子跟著大人做事",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 4
+        }
+      ],
+      "outcome": "孩子們學會了怎麼種菜、怎麼修水管。只是，沒有人學會讀字。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.4,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "first-school"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{child}}問：「字要怎麼念？」",
+    "text": "{{child}}撿到一本破舊的圖畫書，翻來翻去，卻看不懂上面的字。{{settlement}}裡像這樣的孩子，已經有十幾個了。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "rebuild"
+  ]
+}

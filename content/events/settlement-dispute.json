@@ -84,7 +84,9 @@
   "priority": 3,
   "chance": 0.12,
   "cooldown": 5,
-  "storylineIds": [],
+  "storylineIds": [
+    "first-charter"
+  ],
   "importance": "minor",
   "narrative": {
     "headline": "{{settlement}}的爭吵",

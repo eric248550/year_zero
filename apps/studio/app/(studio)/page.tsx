@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { BookOpen, Radio } from "lucide-react";
 import { currentYear, population } from "@genesis/narrative";
-import { worldStatus } from "@genesis/simulation";
+import { civilization, worldStatus } from "@genesis/simulation";
+import { CivilizationCard } from "@/components/civ/civilization";
 import { queryHistory } from "@genesis/database";
 import { EmptyState, LinkButton, Pill, SectionTitle, StatusDot, statusTone } from "@/components/ui";
 import { EventRow } from "@/components/domain";
@@ -73,6 +74,8 @@ export default async function StoryPage() {
 
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
+          <CivilizationCard civ={civilization(state)} t={t} />
+
           <div>
             <SectionTitle>{t("story.lines")}</SectionTitle>
             <p className="-mt-1 mb-3 text-xs text-ink-3">{t("story.linesHint")}</p>

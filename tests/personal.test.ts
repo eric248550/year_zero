@@ -119,3 +119,16 @@ describe("shared scenes", () => {
     expect(crossed).toBeGreaterThan(3);
   });
 });
+
+describe("civilization", () => {
+  it("advances through its stages as the world rebuilds", async () => {
+    const { civilization } = await import("@genesis/simulation");
+    let s = createWorld({ seed: 4 });
+    const start = civilization(s);
+    expect(start.stage).toBe(0);
+    for (let i = 0; i < 60; i++) s = stepWorld(s, { events, actions: [] }).state;
+    const later = civilization(s);
+    expect(later.done).toBeGreaterThan(start.done);
+    expect(later.stage).toBeGreaterThanOrEqual(1);
+  });
+});

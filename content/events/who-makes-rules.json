@@ -1,0 +1,87 @@
+{
+  "id": "who-makes-rules",
+  "title": "誰來定規矩",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "聚落大了，事情不能再靠幾個人說了算。",
+  "preconditions": [
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 25,
+      "scope": "target"
+    },
+    {
+      "type": "flag",
+      "flag": "governance.assembly",
+      "present": false
+    }
+  ],
+  "roles": [],
+  "effects": [
+    {
+      "type": "ADD_WORLD_FLAG",
+      "flag": "governance.assembly"
+    }
+  ],
+  "choices": [
+    {
+      "id": "assembly",
+      "label": "成立居民大會，大家投票",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 6
+        }
+      ],
+      "outcome": "第一次居民大會，有人吵到拍桌，但最後每個人都舉了手。",
+      "memberEffects": [
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "actor",
+          "attribute": "social",
+          "delta": 1
+        }
+      ]
+    },
+    {
+      "id": "elders",
+      "label": "交給長者決定",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 1
+        }
+      ],
+      "outcome": "長者們點了點頭。有些年輕人不太服氣。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.4,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "first-charter"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{settlement}}要決定誰來定規矩",
+    "text": "分配糧食、處罰偷竊、決定誰去冒險——這些事一直是幾個人私下說了算。最近，越來越多人不滿。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "participation": "everyone",
+  "tags": [
+    "rebuild"
+  ]
+}

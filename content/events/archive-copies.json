@@ -1,0 +1,92 @@
+{
+  "id": "archive-copies",
+  "title": "抄寫檔案",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "地堡檔案室只有一份，一場火就可能全部燒光。",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "culture.school",
+      "present": true
+    },
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    }
+  ],
+  "roles": [
+    {
+      "id": "scholar",
+      "minAge": 16,
+      "minAttributes": {
+        "knowledge": 50
+      }
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "copy",
+      "label": "抄成很多份，分給每個聚落",
+      "tags": [
+        "openness",
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 15
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 4
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 5,
+          "target": "all_settlements"
+        }
+      ],
+      "outcome": "一年後，每個聚落都有了自己的書架。{{scholar}}的字跡出現在每一本抄本上。"
+    },
+    {
+      "id": "keep",
+      "label": "只留在地堡，好好保管",
+      "tags": [
+        "secrecy",
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 5
+        }
+      ],
+      "outcome": "檔案被鎖進更深的櫃子裡。安全，但只有少數人讀得到。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.3,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "first-school"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{scholar}}開始抄寫檔案",
+    "text": "{{scholar}}在燈下翻著地堡唯一的一套百科全書，自言自語：「如果這些燒掉了，我們就真的什麼都不剩了。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "rebuild"
+  ]
+}

@@ -1,6 +1,7 @@
 import { Lock, Unlock } from "lucide-react";
 import { population, residents } from "@genesis/narrative";
-import { availableOrigins } from "@genesis/simulation";
+import { availableOrigins, civilization } from "@genesis/simulation";
+import { CivilizationCard } from "@/components/civ/civilization";
 import { queryHistory } from "@genesis/database";
 import { SectionTitle } from "@/components/ui";
 import { requirePlaying } from "@/components/play/guard";
@@ -18,6 +19,8 @@ export default async function WorldPage() {
     <div>
       <h1 className="text-xl font-semibold tracking-tight">{state.worldName}</h1>
       <p className="text-sm text-ink-3">{t("play.yearN", { year: state.startYear + state.tick })} · {t("play.world.population", { n: population(state) })} · {t("play.world.players", { n: players })}</p>
+
+      <div className="mt-4"><CivilizationCard civ={civilization(state)} t={t} /></div>
 
       <SectionTitle>{t("play.world.settlements")}</SectionTitle>
       <ul className="card divide-y divide-line">

@@ -1,0 +1,96 @@
+{
+  "id": "teach-class",
+  "title": "代一堂課",
+  "scope": "settlement",
+  "category": "social",
+  "description": "學校缺老師，有人請你去教一堂課。",
+  "preconditions": [
+    {
+      "type": "flag",
+      "flag": "culture.school",
+      "present": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 18,
+      "minAttributes": {
+        "knowledge": 45
+      }
+    },
+    {
+      "id": "kid",
+      "minAge": 6,
+      "maxAge": 14,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "teach",
+      "label": "去上課",
+      "tags": [
+        "science",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "kid",
+          "delta": 8
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "social",
+          "delta": 2
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "kid",
+          "attribute": "knowledge",
+          "delta": 2
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 3
+        }
+      ],
+      "outcome": "{{you}}在黑板上畫了一張水循環的圖。{{kid}}舉手問了好多問題。"
+    },
+    {
+      "id": "decline",
+      "label": "我不會教",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "老師嘆了口氣，自己多上了一堂課。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.3,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "first-school"
+  ],
+  "importance": "minor",
+  "narrative": {
+    "headline": "學校請{{you}}代一堂課",
+    "text": "老師病倒了。{{kid}}跑來找{{you}}：「你懂很多，可以來教我們嗎？」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "rebuild"
+  ]
+}

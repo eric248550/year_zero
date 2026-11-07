@@ -1,0 +1,42 @@
+{
+  "id": "first-school",
+  "title": "第一所學校",
+  "summary": "倖存的第一代人還記得舊世界的知識，但他們的孩子連字都不認得。開一間學校、把檔案抄成很多份、讓長者把記憶傳下去——知識沒有傳下去，文明就只能活一代。",
+  "themes": [
+    "knowledge",
+    "children",
+    "memory"
+  ],
+  "beats": [
+    {
+      "id": "school",
+      "title": "沒上過學的孩子",
+      "description": "孩子越來越多，卻沒有人教他們讀寫。",
+      "eventIds": [
+        "unschooled-children"
+      ]
+    },
+    {
+      "id": "copies",
+      "title": "抄寫檔案",
+      "description": "唯一的一份檔案太脆弱，要不要抄成很多份？",
+      "eventIds": [
+        "archive-copies"
+      ]
+    },
+    {
+      "id": "memory",
+      "title": "長者的傳授",
+      "description": "長者把崩潰前的記憶說給下一代聽。",
+      "eventIds": [
+        "elder-teachings"
+      ]
+    }
+  ],
+  "possibleOutcomes": [
+    "每個聚落都有自己的學校和書架，新一代讀得懂舊世界。",
+    "知識只留在少數人手裡，成了權力。",
+    "孩子們學會了生存，卻忘了舊世界曾經存在過。"
+  ],
+  "status": "published"
+}

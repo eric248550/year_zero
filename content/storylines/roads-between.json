@@ -1,0 +1,42 @@
+{
+  "id": "roads-between",
+  "title": "聚落之間的路",
+  "summary": "各自活著的聚落，一場歉收就可能滅亡。用無線電互相聯絡、組商隊交換物資、修一條真正的路——連在一起，才撐得過壞年頭。",
+  "themes": [
+    "trade",
+    "connection",
+    "trust"
+  ],
+  "beats": [
+    {
+      "id": "radio",
+      "title": "無線電裡的人聲",
+      "description": "短波無線電接通了另一個聚落。",
+      "eventIds": [
+        "radio-contact"
+      ]
+    },
+    {
+      "id": "caravan",
+      "title": "第一支商隊",
+      "description": "聚落之間第一次交換物資。",
+      "eventIds": [
+        "first-caravan"
+      ]
+    },
+    {
+      "id": "road",
+      "title": "修一條路",
+      "description": "把危險的小徑修成真正的路。",
+      "eventIds": [
+        "road-building"
+      ]
+    }
+  ],
+  "possibleOutcomes": [
+    "商隊和道路把聚落連成一個地區，壞年頭有人互相支援。",
+    "聚落各自封閉，彼此只剩傳聞。",
+    "商路帶來了財富，也帶來了搶劫和猜疑。"
+  ],
+  "status": "published"
+}

@@ -13,7 +13,7 @@ describe("event definition validation", () => {
   it("accepts all seeded content with at least 10 executable events and 3 storylines", () => {
     expect(seedContent.problems).toEqual([]);
     expect(seedContent.events.length).toBeGreaterThanOrEqual(10);
-    expect(seedContent.storylines.map((s) => s.id).sort()).toEqual(["first-water-crisis", "rebuilding-food-production", "the-forgotten-bunker"]);
+    expect(seedContent.storylines.map((s) => s.id).sort()).toEqual(["first-charter", "first-school", "first-water-crisis", "light-again", "rebuilding-food-production", "roads-between", "the-forgotten-bunker"]);
   });
 
   it("rejects unsupported effect types (e.g. arbitrary code from an LLM)", () => {

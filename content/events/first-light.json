@@ -1,0 +1,92 @@
+{
+  "id": "first-light",
+  "title": "第一個有燈的夜晚",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "太陽能第一次讓整個聚落在夜裡亮起來。",
+  "preconditions": [
+    {
+      "type": "technology",
+      "tech": "solar_power",
+      "has": true
+    },
+    {
+      "type": "flag",
+      "flag": "power.first_light",
+      "present": false
+    }
+  ],
+  "roles": [],
+  "effects": [
+    {
+      "type": "ADD_WORLD_FLAG",
+      "flag": "power.first_light"
+    }
+  ],
+  "choices": [
+    {
+      "id": "celebrate",
+      "label": "開燈到天亮",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 12
+        }
+      ],
+      "outcome": "那一夜沒有人睡。孩子們在燈下追著自己的影子跑。",
+      "memberEffects": [
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "actor",
+          "attribute": "social",
+          "delta": 1
+        }
+      ]
+    },
+    {
+      "id": "save",
+      "label": "只點一盞，省下來用",
+      "tags": [
+        "cautious",
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 6
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 4
+        }
+      ],
+      "outcome": "大家圍著那一盞燈坐了很久，誰都沒說話。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.6,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "light-again"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{settlement}}亮起了燈",
+    "text": "太陽下山之後，{{settlement}}沒有像四十年來的每一個晚上那樣暗下來。燈泡閃了兩下，然後穩穩地亮著。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "participation": "everyone",
+  "tags": [
+    "rebuild"
+  ]
+}

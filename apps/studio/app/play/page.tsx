@@ -1,5 +1,6 @@
 import { fullName, getCharacter } from "@genesis/narrative";
-import { availableOrigins, successionCandidates, TRAITS, PLAYERS } from "@genesis/simulation";
+import { availableOrigins, civilization, successionCandidates, TRAITS, PLAYERS } from "@genesis/simulation";
+import { CivilizationCard } from "@/components/civ/civilization";
 import { queryHistory } from "@genesis/database";
 import { EmptyState, SectionTitle } from "@/components/ui";
 import { ConditionPanel } from "@/components/play/condition";
@@ -96,6 +97,8 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
         <h2 className="label-xs mb-3">{t("play.cond.title")}</h2>
         <ConditionPanel c={conditionOf(state, character)} t={t} />
       </section>
+
+      <div className="mt-3"><CivilizationCard civ={civilization(state)} t={t} compact /></div>
 
       <Inbox items={inboxFor(ctx)} scope={`${ctx.runId}:${player.id}`} />
 

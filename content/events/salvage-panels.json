@@ -1,0 +1,102 @@
+{
+  "id": "salvage-panels",
+  "title": "屋頂上的太陽能板",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "工程師在廢墟屋頂上找到還完整的太陽能板。",
+  "preconditions": [
+    {
+      "type": "technology",
+      "tech": "salvage_tools",
+      "has": true
+    },
+    {
+      "type": "technology",
+      "tech": "solar_power",
+      "has": false
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 4
+    }
+  ],
+  "roles": [
+    {
+      "id": "engineer",
+      "profession": "Engineer",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "study",
+      "label": "帶回來拆解研究",
+      "tags": [
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 20
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "engineer",
+          "text": "把一塊太陽能板拆成了上百個零件"
+        }
+      ],
+      "outcome": "{{engineer}}花了一整季把太陽能板拆開又裝回去。那些線路，慢慢有人看懂了。"
+    },
+    {
+      "id": "use",
+      "label": "直接接到種植室",
+      "tags": [
+        "industry",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 8
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 3
+        }
+      ],
+      "outcome": "幾盞燈亮了起來，種植室的苗長得比以前快。"
+    },
+    {
+      "id": "leave",
+      "label": "太重了，放著吧",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "太陽能板留在屋頂上，繼續曬著太陽。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.3,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "light-again"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{engineer}}在屋頂上找到太陽能板",
+    "text": "{{engineer}}從{{settlement}}附近一棟倒塌的倉庫爬上屋頂，發現一排沾滿灰的太陽能板。擦掉灰之後，玻璃底下的電池片還完好。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "rebuild"
+  ]
+}

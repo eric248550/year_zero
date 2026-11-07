@@ -1,0 +1,85 @@
+{
+  "id": "charter-signing",
+  "title": "簽署憲章",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "第一部寫下來的公約完成了，要不要簽名？",
+  "preconditions": [
+    {
+      "type": "technology",
+      "tech": "civic_charter",
+      "has": true
+    },
+    {
+      "type": "flag",
+      "flag": "governance.charter_signed",
+      "present": false
+    }
+  ],
+  "roles": [],
+  "effects": [
+    {
+      "type": "ADD_WORLD_FLAG",
+      "flag": "governance.charter_signed"
+    }
+  ],
+  "choices": [
+    {
+      "id": "sign",
+      "label": "簽下名字",
+      "tags": [
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 8
+        }
+      ],
+      "outcome": "一張張歪歪扭扭的簽名，填滿了那張紙。",
+      "memberEffects": [
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "actor",
+          "attribute": "social",
+          "delta": 2
+        }
+      ]
+    },
+    {
+      "id": "refuse",
+      "label": "不簽",
+      "tags": [
+        "secrecy"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -2
+        }
+      ],
+      "outcome": "有些人沒有簽。他們說，紙上的字保護不了任何人。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.7,
+  "cooldown": 4,
+  "maxOccurrences": 1,
+  "storylineIds": [
+    "first-charter"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{settlement}}簽署第一部憲章",
+    "text": "那張紙上寫著：每個人都有權喝到乾淨的水，每個人都有權說話。現在，輪到大家簽名了。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "participation": "everyone",
+  "tags": [
+    "rebuild"
+  ]
+}
