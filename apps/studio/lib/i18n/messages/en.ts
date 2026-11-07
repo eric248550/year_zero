@@ -541,6 +541,7 @@ export const en = {
   "play.worlds.title": "Choose a world",
   "play.worlds.body": "Each world is its own server: it starts at Year Zero and has its own history, clock and players. You can live in several at once.",
   "play.worlds.meta": "{year} · year {tick} · {players} players · {population} people",
+  "play.worlds.opened": "Opened {date}",
   "play.worlds.current": "Current",
   "play.worlds.youAre": "You are {name}",
   "play.worlds.youDied": "Your character has died; you can carry on",

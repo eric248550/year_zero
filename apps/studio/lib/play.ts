@@ -34,6 +34,8 @@ export interface WorldInfo {
   tick: number;
   players: number;
   population: number;
+  /** When the server opened (ISO time). */
+  openedAt: string;
   /** This player's character in that world, if they have joined it. */
   me: { status: Player["status"]; name: string | null } | null;
 }
@@ -43,7 +45,8 @@ export function listWorlds(playerId: string | null): WorldInfo[] {
   const d = db();
   return listRuns(d)
     .filter((r) => r.status === "active")
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    // Newest server first.
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
     .map((r) => {
       const { state } = getRun(d, r.id);
       const players = Object.values(state.players ?? {}).filter((p) => p.status !== "left");
@@ -56,6 +59,7 @@ export function listWorlds(playerId: string | null): WorldInfo[] {
         tick: r.currentTick,
         players: players.length,
         population: r.population,
+        openedAt: r.createdAt,
         me: mine && mine.status !== "left" ? { status: mine.status, name: c ? fullName(c) : null } : null,
       };
     });

@@ -54,6 +54,9 @@ export function WorldList({ worlds, current }: { worlds: WorldInfo[]; current: s
                 <span className="truncate font-semibold">{w.name}</span>
                 {here && <span className="shrink-0 rounded-full bg-signal/15 px-2 py-0.5 text-[11px] text-signal">{t("play.worlds.current")}</span>}
               </span>
+              <span className="num block text-xs text-ink-3" suppressHydrationWarning>
+                {t("play.worlds.opened", { date: new Date(w.openedAt).toLocaleDateString(undefined, { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) })}
+              </span>
               <span className="num block text-xs text-ink-2">
                 {t("play.worlds.meta", { year: w.year, tick: w.tick, players: w.players, population: w.population })}
               </span>

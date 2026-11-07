@@ -529,6 +529,7 @@ export const zhTW: Record<Exclude<MessageKey, `${string}_one`>, string> = {
   "play.worlds.title": "選擇世界",
   "play.worlds.body": "每個世界都是獨立的伺服器，從元年開始，有自己的歷史、時間和玩家。你可以同時在好幾個世界裡生活。",
   "play.worlds.meta": "{year} 年 · 第 {tick} 年 · {players} 位玩家 · {population} 人",
+  "play.worlds.opened": "{date} 開服",
   "play.worlds.current": "目前所在",
   "play.worlds.youAre": "你是{name}",
   "play.worlds.youDied": "你的角色已經過世，可以接續下去",
