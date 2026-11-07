@@ -1,17 +1,15 @@
 import { fullName, getCharacter } from "@genesis/narrative";
 import { availableOrigins, successionCandidates, TRAITS, PLAYERS } from "@genesis/simulation";
 import { queryHistory } from "@genesis/database";
-import { ATTRIBUTES } from "@genesis/schemas";
-import { EmptyState, ProgressBar, SectionTitle } from "@/components/ui";
-
-const ATTR_COLOR = { health: "bg-ok", social: "bg-signal", knowledge: "bg-knowledge", survival: "bg-materials" } as const;
+import { EmptyState, SectionTitle } from "@/components/ui";
+import { ConditionPanel } from "@/components/play/condition";
 import { DecisionCard } from "@/components/play/decision-card";
 import { Onboarding, type InviteInfo } from "@/components/play/onboarding";
 import { Prologue } from "@/components/play/prologue";
 import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
 import { redirect } from "next/navigation";
-import { ageOf, decisionViews, listWorlds, loadPlay } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, listWorlds, loadPlay } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -64,7 +62,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
     const last = lastId ? getCharacter(state, lastId) : undefined;
     const candidates = successionCandidates(state, player.id).map((c) => {
       const ch = getCharacter(state, c.characterId)!;
-      return { id: ch.id, name: fullName(ch), kind: c.kind, age: ageOf(state, ch), home: state.settlements.find((s) => s.id === ch.homeId)?.name ?? "" };
+      return { id: ch.id, name: fullName(ch), kind: c.kind, age: ageOf(state, ch), home: state.settlements.find((s) => s.id === ch.homeId)?.name ?? "", attributes: ch.attributes ?? null };
     });
     return (
       <Succession
@@ -94,16 +92,10 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
           <RenameCharacter givenName={character.givenName} familyName={character.familyName} />
         </div>
       </section>
-      {character.attributes && (
-        <section className="card mt-3 grid grid-cols-2 gap-x-4 gap-y-3 p-4" aria-label={t("play.attr.title")}>
-          {ATTRIBUTES.map((k) => (
-            <div key={k} className="min-w-0 space-y-1" title={t(`play.attr.${k}.hint`)}>
-              <div className="flex justify-between text-xs"><span className="text-ink-2">{t(`play.attr.${k}`)}</span><span className="num">{character.attributes![k]}</span></div>
-              <ProgressBar value={character.attributes![k]} max={100} color={ATTR_COLOR[k]} />
-            </div>
-          ))}
-        </section>
-      )}
+      <section className="card mt-3 p-4" aria-label={t("play.cond.title")}>
+        <h2 className="label-xs mb-3">{t("play.cond.title")}</h2>
+        <ConditionPanel c={conditionOf(state, character)} t={t} />
+      </section>
 
       <SectionTitle>{t("play.decisions.title")}</SectionTitle>
       {decisions.length === 0 ? (

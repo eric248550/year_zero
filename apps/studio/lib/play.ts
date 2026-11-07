@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
-import { characterAge, fullName, getCharacter, renderTemplate } from "@genesis/narrative";
+import { characterAge, fullName, getCharacter, population, relationshipKey, renderTemplate } from "@genesis/narrative";
 import type { DecisionView } from "@/components/play/decision-card";
 import { db } from "./server";
 
@@ -133,4 +133,47 @@ export function ageOf(state: WorldState, c: Character): number {
 /** Apply an action as the current player. The player id always comes from the cookie, never the client. */
 export function actAs(runId: string, playerId: string, action: Record<string, unknown>) {
   return applyPlayerAction(db(), runId, { ...action, playerId });
+}
+
+/** How a character is doing right now. 0–100; for hunger and thirst, higher is worse. */
+export interface ConditionView {
+  hunger: { value: number; foodYears: number; shortYears: number };
+  thirst: { value: number; waterYears: number; shortYears: number };
+  health: { value: number; personal: boolean };
+  mood: { value: number; morale: number; closest: { name: string; bond: number } | null };
+  abilities: { knowledge: number; social: number; survival: number } | null;
+}
+
+const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+/** Hunger from the stores at home: plenty = barely hungry; each year of shortage makes it worse. */
+function need(stock: number, people: number, shortYears: number) {
+  const years = stock / Math.max(1, people);
+  const value = shortYears > 0 ? clamp(55 + 15 * shortYears) : clamp(45 - years * 15);
+  return { value: shortYears > 0 ? value : Math.max(5, value), years: Math.round(years * 10) / 10 };
+}
+
+/** Derived from the world each time (nothing extra is stored), so it is always in step with the simulation. */
+export function conditionOf(state: WorldState, c: Character): ConditionView {
+  const home = state.settlements.find((s) => s.id === c.homeId);
+  const people = home ? population(state, home.id) : 1;
+  const food = need(home?.resources.food ?? 0, people, home?.shortage.food ?? 0);
+  const water = need(home?.resources.water ?? 0, people, home?.shortage.water ?? 0);
+  let closest: { name: string; bond: number } | null = null;
+  for (const o of state.characters) {
+    if (o.id === c.id || o.deathTick !== null) continue;
+    const bond = state.relationships[relationshipKey(c.id, o.id)] ?? 0;
+    if (bond > (closest?.bond ?? 0)) closest = { name: fullName(o), bond };
+  }
+  const morale = home?.morale ?? 50;
+  const worstNeed = Math.max(food.value, water.value);
+  const mood = clamp(10 + morale * 0.8 + (closest ? closest.bond * 0.2 : 0) - Math.max(0, worstNeed - 50) / 2);
+  const a = c.attributes;
+  return {
+    hunger: { value: food.value, foodYears: food.years, shortYears: home?.shortage.food ?? 0 },
+    thirst: { value: water.value, waterYears: water.years, shortYears: home?.shortage.water ?? 0 },
+    health: { value: a?.health ?? home?.health ?? 50, personal: !!a },
+    mood: { value: mood, morale: Math.round(morale), closest },
+    abilities: a ? { knowledge: a.knowledge, social: a.social, survival: a.survival } : null,
+  };
 }

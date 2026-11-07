@@ -112,3 +112,41 @@ function Option({ title, body, active, disabled, onClick, icon }: { title: strin
     </button>
   );
 }
+
+/** Older worlds: one tap to give every character attributes from next year on. */
+export function EnableAttributes({ runId, queued }: { runId: string; queued: boolean }) {
+  const { t } = useI18n();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <section className="card flex flex-wrap items-center gap-3 border-signal/40 p-4">
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-semibold">{t("story.attrs.title")}</h3>
+        <p className="mt-0.5 text-xs text-ink-3">{queued ? t("story.attrs.queued") : t("story.attrs.body")}</p>
+        {error && <p role="alert" className="mt-1 text-xs text-danger">{error}</p>}
+      </div>
+      {!queued && (
+        <button
+          type="button"
+          disabled={busy}
+          className="min-h-10 shrink-0 rounded-xl bg-signal px-4 text-sm font-medium text-black disabled:opacity-60"
+          onClick={async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              await api(`/api/runs/${runId}/actions`, { action: { type: "ENABLE_ATTRIBUTES" } });
+              router.refresh();
+            } catch (err) {
+              setError((err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {t("story.attrs.button")}
+        </button>
+      )}
+    </section>
+  );
+}

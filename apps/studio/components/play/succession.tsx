@@ -2,6 +2,8 @@
 
 import { Dices, UserRound } from "lucide-react";
 import { useI18n } from "@/components/i18n";
+import type { Attributes } from "@genesis/schemas";
+import { AttributeBars } from "./attributes";
 import { useAct } from "./use-act";
 
 export interface CandidateView {
@@ -10,6 +12,7 @@ export interface CandidateView {
   kind: "child" | "ward" | "companion";
   age: number;
   home: string;
+  attributes: Attributes | null;
 }
 
 export function Succession({ dead, candidates }: {
@@ -41,6 +44,7 @@ export function Succession({ dead, candidates }: {
             <span className="min-w-0 flex-1">
               <span className="block font-medium">{c.name}</span>
               <span className="block text-xs text-ink-3">{t(`play.dead.kind.${c.kind}`)} · {t("play.me.age", { age: c.age })} · {c.home}</span>
+              {c.attributes && <span className="mt-2.5 block"><AttributeBars a={c.attributes} t={t} /></span>}
             </span>
           </button>
         ))}
