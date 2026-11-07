@@ -17,11 +17,7 @@ export const ORIGIN_IDS = ["haven_deep", "surface_born", "wanderer", "vault12"] 
 export type OriginId = (typeof ORIGIN_IDS)[number];
 
 /** Actions taken by individual players (as opposed to developer/council directives). */
-export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME", "YEAR_ACTION"] as const;
-
-/** What a player can spend a year on. One per world year; the result shows at once. */
-export const YEAR_ACTIONS = ["scavenge", "work", "study", "visit", "rest"] as const;
-export type YearActionId = (typeof YEAR_ACTIONS)[number];
+export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME"] as const;
 
 /** The first-session prologue: three small choices whose results show at once. Order matters. */
 export const PROLOGUE_STEPS = {
@@ -68,13 +64,6 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
   }).strict(),
   z.object({ type: z.literal("LEAVE_WORLD"), playerId: PlayerIdSchema }).strict(),
   z.object({ type: z.literal("RENAME"), playerId: PlayerIdSchema, givenName: NamePartSchema, familyName: NamePartSchema.or(z.literal("")) }).strict(),
-  z.object({
-    type: z.literal("YEAR_ACTION"),
-    playerId: PlayerIdSchema,
-    action: z.enum(YEAR_ACTIONS),
-    /** Who to spend time with (visit only). */
-    characterId: z.string().optional(),
-  }).strict(),
   z.object({
     type: z.literal("PROLOGUE"),
     playerId: PlayerIdSchema,

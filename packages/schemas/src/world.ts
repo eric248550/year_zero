@@ -96,8 +96,6 @@ export const PlayerSchema = z.object({
   lineage: z.array(z.string()),
   /** Prologue steps completed (first session only). */
   prologue: z.array(z.string()).optional(),
-  /** The year's chosen activity and its outcome, so the app can show it until the year turns. */
-  yearAction: z.object({ tick: z.number().int(), action: z.string(), title: z.string(), text: z.string() }).optional(),
 });
 export type Player = z.infer<typeof PlayerSchema>;
 
