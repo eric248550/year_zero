@@ -1,0 +1,84 @@
+{
+  "id": "extra-shift",
+  "title": "人手不夠",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "聚落這陣子缺人手，有人問你能不能多做一點。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 16
+    },
+    {
+      "id": "asker",
+      "minAge": 16,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "help",
+      "label": "答應加班",
+      "tags": [
+        "industry",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": 3
+        },
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "asker",
+          "delta": 6
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "health",
+          "delta": -2
+        }
+      ],
+      "outcome": "{{you}}連著好幾週天黑才收工。{{asker}}記住了這份人情。"
+    },
+    {
+      "id": "decline",
+      "label": "婉拒",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "asker",
+          "delta": -4
+        }
+      ],
+      "outcome": "{{asker}}點點頭，轉身去找別人了。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{asker}}來找{{you}}幫忙",
+    "text": "收成的日子到了，{{asker}}找上{{you}}：「這週能不能多留幾個小時？人真的不夠。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ]
+}

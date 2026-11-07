@@ -1,0 +1,78 @@
+{
+  "id": "old-book",
+  "title": "一本舊書",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "你在廢墟邊撿到一本還能讀的舊書。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 10
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "keep",
+      "label": "自己留著讀",
+      "tags": [
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "knowledge",
+          "delta": 4
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "you",
+          "text": "偷偷讀完了一本崩潰前的書"
+        }
+      ],
+      "outcome": "{{you}}每晚就著燈讀幾頁。書裡的世界，好像離得沒有那麼遠了。"
+    },
+    {
+      "id": "share",
+      "label": "交給檔案室",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 3
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "social",
+          "delta": 2
+        }
+      ],
+      "outcome": "大家輪流讀了那本書。有人在書頁邊寫下自己的心得。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.2,
+  "cooldown": 5,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}撿到一本舊書",
+    "text": "在一堆碎石底下，{{you}}摸到一本包著塑膠袋的書。封面已經褪色，裡面的字卻還清楚。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ]
+}

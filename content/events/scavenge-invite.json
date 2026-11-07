@@ -1,0 +1,97 @@
+{
+  "id": "scavenge-invite",
+  "title": "廢墟裡的邀約",
+  "scope": "settlement",
+  "category": "exploration",
+  "description": "熟識的斥候約你一起去廢墟搜刮。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 14
+    },
+    {
+      "id": "scout",
+      "profession": "Scout",
+      "minAge": 16,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "go",
+      "label": "跟去看看",
+      "tags": [
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 4
+        },
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "scout",
+          "delta": 10
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "survival",
+          "delta": 2
+        }
+      ],
+      "outcome": "{{you}}跟著{{scout}}在倒塌的商場裡翻了一整天，帶回一袋還能用的零件。",
+      "description": "可能帶回物資，也可能受傷。",
+      "risk": {
+        "chance": 0.2,
+        "description": "回程時{{you}}踩穿了一塊樓板，腿上劃開一道口子。",
+        "effects": [
+          {
+            "type": "ADJUST_ATTRIBUTE",
+            "role": "you",
+            "attribute": "health",
+            "delta": -12
+          }
+        ]
+      }
+    },
+    {
+      "id": "stay",
+      "label": "留在聚落",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "scout",
+          "delta": -3
+        }
+      ],
+      "outcome": "{{scout}}聳聳肩，一個人出發了。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{scout}}約{{you}}去廢墟",
+    "text": "天還沒亮，{{scout}}就來敲門：「北邊那棟商場還沒人翻過。一個人去太危險，要不要一起？」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ]
+}

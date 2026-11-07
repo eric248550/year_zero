@@ -1,0 +1,80 @@
+{
+  "id": "child-question",
+  "title": "孩子的問題",
+  "scope": "settlement",
+  "category": "social",
+  "description": "一個孩子追著你問東問西。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "minAge": 18
+    },
+    {
+      "id": "kid",
+      "minAge": 5,
+      "maxAge": 12,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "answer",
+      "label": "蹲下來好好回答",
+      "tags": [
+        "community",
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "kid",
+          "delta": 10
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "kid",
+          "attribute": "knowledge",
+          "delta": 2
+        }
+      ],
+      "outcome": "{{you}}講了一整個下午。{{kid}}聽得眼睛發亮，隔天又來了。"
+    },
+    {
+      "id": "brush",
+      "label": "叫他去玩",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "kid",
+          "delta": -3
+        }
+      ],
+      "outcome": "{{kid}}嘟著嘴跑開了。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{kid}}有問題要問{{you}}",
+    "text": "「以前的天空真的是藍色的嗎？」{{kid}}拉著{{you}}的袖子，一個問題接著一個問題。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ]
+}

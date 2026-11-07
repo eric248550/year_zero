@@ -1,5 +1,5 @@
 import { PlayerActionSchema, Rng, type EventDefinition, type HistoricalEvent, type PlayerAction, type WorldState } from "@genesis/schemas";
-import { choiceAvailability, resolvePendingDecisions, runNarrativePhase, type EventRejection } from "@genesis/narrative";
+import { choiceAvailability, resolvePendingDecisions, runNarrativePhase, runPersonalPhase, type EventRejection } from "@genesis/narrative";
 import { TickContext } from "./context";
 import { computeMetrics, type TickMetrics } from "./metrics";
 import { applyAction, councilDecisions, validateAction } from "./systems/agents";
@@ -89,6 +89,12 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   // Deaths caused by narrative effects count toward this tick's demographics.
   ctx.deaths += countDeaths(narrative.events);
 
+  // Things that happen to each player personally (newer worlds only).
+  const personal = runPersonalPhase(ctx.state, input.events, rng);
+  ctx.state = personal.state;
+  ctx.events.push(...personal.events);
+  ctx.deaths += countDeaths(personal.events);
+
   abandonment(ctx);
   milestones(ctx);
   playerUpkeep(ctx);
@@ -100,7 +106,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
     events: ctx.events,
     acceptedActions,
     rejectedActions,
-    rejectedEvents: [...resolved.rejections, ...narrative.rejections],
+    rejectedEvents: [...resolved.rejections, ...narrative.rejections, ...personal.rejections],
     metrics: computeMetrics(ctx.state, { births: ctx.births, deaths: ctx.deaths, events: narrativeCount }),
   };
 }

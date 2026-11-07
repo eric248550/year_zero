@@ -1,9 +1,11 @@
 import {
   POLICY_INFO,
+  type Character,
   type Choice,
   type ConditionTrace,
   type EventDefinition,
   type HistoricalEvent,
+  type Player,
   type PolicyId,
   type Rng,
   type Settlement,
@@ -147,10 +149,10 @@ export function executeEvent(
   def: EventDefinition,
   settlementId: string | null,
   rng: Rng,
-  meta: { chance: number | null; roll: number | null; choiceOverride?: string | undefined },
+  meta: { chance: number | null; roll: number | null; choiceOverride?: string | undefined; forcedRoles?: Record<string, string> },
 ): ExecutionResult {
   const settlement = settlementId ? state.settlements.find((s) => s.id === settlementId) ?? null : null;
-  const roles = resolveRoles(state, def.roles, settlementId, rng);
+  const roles = resolveRoles(state, def.roles, settlementId, rng, meta.forcedRoles);
   if (!roles) throw new EffectError("Required roles could not be filled");
 
   const { passed, traces } = evaluateAll(state, def.preconditions, { settlement });
@@ -364,7 +366,7 @@ export function runNarrativePhase(
   options: NarrativeOptions,
 ): { state: WorldState; events: HistoricalEvent[]; rejections: EventRejection[] } {
   const ordered = [...definitions]
-    .filter((d) => d.status === "published")
+    .filter((d) => d.status === "published" && !(state.personalEvents && isPersonalEvent(d)))
     .sort((a, b) => b.priority - a.priority || (a.id < b.id ? -1 : 1));
   let current = state;
   const events: HistoricalEvent[] = [];
@@ -391,6 +393,88 @@ export function runNarrativePhase(
     } catch (err) {
       if (err instanceof EffectError) rejections.push({ definitionId: def.id, reason: err.message });
       else throw err;
+    }
+  }
+  return { state: current, events, rejections };
+}
+
+/* ------------------------------------------------------------------ */
+/* Personal events                                                     */
+/* ------------------------------------------------------------------ */
+
+/** An event about one player: it has a role only a player can fill. */
+export function isPersonalEvent(def: EventDefinition): boolean {
+  return def.roles.some((r) => r.player);
+}
+
+export const PERSONAL_EVENTS = {
+  /** Chance each year that something finds each player; a second thing is rarer. */
+  chances: [0.85, 0.25] as readonly number[],
+};
+
+/** Whether `def` could happen to this player now. Per-player cooldown and occurrences; consumes no randomness. */
+export function personalEligible(state: WorldState, def: EventDefinition, player: Player, me: Character): boolean {
+  if (def.status !== "published" || !isPersonalEvent(def)) return false;
+  const mem = player.personal?.[def.id];
+  if (mem && state.tick - mem.last < Math.max(1, def.cooldown)) return false;
+  if (mem && def.maxOccurrences !== null && mem.count >= def.maxOccurrences) return false;
+  const home = state.settlements.find((s) => s.id === me.homeId && s.status === "active");
+  if (!home) return false;
+  const settlement = def.scope === "world" ? null : home;
+  if (!evaluateAll(state, def.preconditions, { settlement }).passed) return false;
+  const youRole = def.roles.find((r) => r.player)!;
+  const anchorId = def.scope === "world" ? null : home.id;
+  if (!candidatesForRole(state, youRole, anchorId, new Set()).some((c) => c.id === me.id)) return false;
+  const others = def.roles.filter((r) => r !== youRole && !r.optional);
+  return others.every((r) => candidatesForRole(state, r, anchorId, new Set([me.id])).length > 0);
+}
+
+/**
+ * Every year, each player (in id order) may run into something personal:
+ * one event picked from those that fit them, weighted by the event's chance.
+ * Nobody gets more than two open decisions in a year.
+ */
+export function runPersonalPhase(
+  state: WorldState,
+  definitions: readonly EventDefinition[],
+  rng: Rng,
+): { state: WorldState; events: HistoricalEvent[]; rejections: EventRejection[] } {
+  if (!state.personalEvents || !state.players) return { state, events: [], rejections: [] };
+  let current = state;
+  const events: HistoricalEvent[] = [];
+  const rejections: EventRejection[] = [];
+  const personal = definitions.filter(isPersonalEvent).sort((a, b) => (a.id < b.id ? -1 : 1));
+  const playerIds = Object.keys(state.players).sort();
+  for (const pid of playerIds) {
+    for (const chance of PERSONAL_EVENTS.chances) {
+      const player = current.players![pid]!;
+      if (player.status !== "active" || !player.characterId || (player.prologue?.length ?? 0) < 3) break;
+      const me = getCharacter(current, player.characterId);
+      if (!me || me.deathTick !== null) break;
+      // Never more than two open decisions at once (world events this year count too).
+      if ((current.pendingDecisions ?? []).filter((p) => p.participants.includes(me.id)).length >= 2) break;
+      const roll = rng.next();
+      if (roll >= chance) break;
+      const pool = personal.filter((d) => personalEligible(current, d, player, me));
+      if (pool.length === 0) break;
+      const def = rng.weighted(pool, (d) => Math.max(0.01, d.chance));
+      const youRole = def.roles.find((r) => r.player)!;
+      try {
+        const result = executeEvent(current, def, def.scope === "world" ? null : me.homeId, rng, {
+          chance,
+          roll,
+          forcedRoles: { [youRole.id]: me.id },
+        });
+        current = result.state;
+        events.push(...result.events);
+        const p = current.players![pid]!;
+        const prev = p.personal?.[def.id];
+        p.personal = { ...p.personal, [def.id]: { last: current.tick, count: (prev?.count ?? 0) + 1 } };
+      } catch (err) {
+        if (err instanceof EffectError) rejections.push({ definitionId: def.id, reason: err.message });
+        else throw err;
+        break;
+      }
     }
   }
   return { state: current, events, rejections };

@@ -1,0 +1,89 @@
+{
+  "id": "fever",
+  "title": "發燒",
+  "scope": "settlement",
+  "category": "health",
+  "description": "你病倒了。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "rest",
+      "label": "好好休息幾天",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "health",
+          "delta": 4
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "food",
+          "amount": -1
+        }
+      ],
+      "outcome": "{{you}}在床上躺了三天。燒退了，人也輕鬆了一點。",
+      "description": "健康回升，但聚落少了一份人手。"
+    },
+    {
+      "id": "push",
+      "label": "硬撐著去工作",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 2
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "health",
+          "delta": -6
+        }
+      ],
+      "outcome": "{{you}}咬著牙把活做完。事情做完了，身體卻更虛了。",
+      "risk": {
+        "chance": 0.15,
+        "description": "{{you}}在工作時昏倒，被人抬了回去。",
+        "effects": [
+          {
+            "type": "ADJUST_ATTRIBUTE",
+            "role": "you",
+            "attribute": "health",
+            "delta": -8
+          }
+        ]
+      }
+    }
+  ],
+  "priority": 4,
+  "chance": 0.2,
+  "cooldown": 4,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}發燒了",
+    "text": "一早醒來，{{you}}渾身發燙、頭重腳輕。今天輪到你的活還沒人接手。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ]
+}

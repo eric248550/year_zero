@@ -192,7 +192,21 @@ social scales positive relationship changes, and roles can require
 developer action.
 
 Bonds grow through events, not buttons. Personal scenes (`content/events/` with
-`tags: ["bonds"]`) use a `player: true` role so they only fall on players, an
+`tags: ["personal"]`) use a `player: true` role so they only fall on players, an
 `orphan` role filter, `familiarWith` to prefer people the player already has
 history with, and two effects: `ADJUST_ATTRIBUTE` and `ADD_CARETAKER` (which is
 how someone becomes a ward and a succession candidate).
+
+### Personal events
+
+Worlds created now also have `personalEvents`. Any event with a `player: true`
+role is then left out of the world-wide narrative phase and scheduled per
+player instead (`runPersonalPhase` in `packages/narrative/src/engine.ts`): each
+year, in player-id order, every player who has finished the prologue gets one
+event with chance 0.85 and a second with chance 0.25, picked from the events
+that fit them, using each event's `chance` as its relative weight. Cooldowns
+and `maxOccurrences` count per player (`player.personal`), and nobody gets
+more than two open decisions at once. In the same worlds, world events cast
+players `PLAYER_ROLE_WEIGHT` (4) times as often as NPCs. With the current
+content a player meets about one personal event a year, and goes at most two
+years without one. Older worlds skip both rules, so their replays are unchanged.

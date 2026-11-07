@@ -318,6 +318,7 @@ describe("attributes and bonds", () => {
 
   it("an orphan scene lets a player take a child in, which makes them a ward", () => {
     const w = createWorld({ seed: 32 });
+    w.personalEvents = false; // world-wide scheduling, so the scene fires on the join tick
     const orphan = w.characters.find((c) => characterAge(w, c) < 14)!;
     for (const pid of orphan.parentIds) { const p = getCharacter(w, pid)!; p.deathTick = 0; p.causeOfDeath = "test"; }
     const adult = w.characters.find((c) => characterAge(w, c) >= 25 && !orphan.parentIds.includes(c.id))!;

@@ -1,0 +1,77 @@
+{
+  "id": "shared-meal",
+  "title": "一頓飯",
+  "scope": "settlement",
+  "category": "social",
+  "description": "朋友邀你一起吃飯。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true
+    },
+    {
+      "id": "friend",
+      "minAge": 10,
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "go",
+      "label": "赴約",
+      "tags": [
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "friend",
+          "delta": 8
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "social",
+          "delta": 1
+        }
+      ],
+      "outcome": "那頓飯很簡單，但{{you}}和{{friend}}聊到燈都熄了。"
+    },
+    {
+      "id": "decline",
+      "label": "推掉",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "friend",
+          "delta": -2
+        }
+      ],
+      "outcome": "{{friend}}一個人吃完了那碗湯。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.3,
+  "cooldown": 2,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{friend}}約{{you}}吃飯",
+    "text": "{{friend}}多煮了一點湯，探頭問{{you}}：「今天要不要一起吃？」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ]
+}

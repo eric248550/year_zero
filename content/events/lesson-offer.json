@@ -1,0 +1,80 @@
+{
+  "id": "lesson-offer",
+  "title": "一堂課",
+  "scope": "settlement",
+  "category": "social",
+  "description": "聚落裡懂很多的人願意教你。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true
+    },
+    {
+      "id": "teacher",
+      "minAge": 20,
+      "minAttributes": {
+        "knowledge": 60
+      },
+      "familiarWith": "you"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "learn",
+      "label": "認真學",
+      "tags": [
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "knowledge",
+          "delta": 4
+        },
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "teacher",
+          "delta": 8
+        }
+      ],
+      "outcome": "{{teacher}}每天晚上教{{you}}一點。那些舊圖表，{{you}}慢慢看懂了。"
+    },
+    {
+      "id": "skip",
+      "label": "現在沒心思",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_RELATIONSHIP",
+          "a": "you",
+          "b": "teacher",
+          "delta": -2
+        }
+      ],
+      "outcome": "{{teacher}}把書收回架上：「想學的時候再來。」"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.25,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{teacher}}願意教{{you}}",
+    "text": "{{teacher}}看見{{you}}盯著檔案室的舊紀錄發呆，走過來說：「想知道那些是什麼嗎？我可以教你。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ]
+}

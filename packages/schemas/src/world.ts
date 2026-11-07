@@ -96,6 +96,8 @@ export const PlayerSchema = z.object({
   lineage: z.array(z.string()),
   /** Prologue steps completed (first session only). */
   prologue: z.array(z.string()).optional(),
+  /** Personal events this player has had: definition id -> last tick and count. */
+  personal: z.record(z.string(), z.object({ last: z.number().int(), count: z.number().int() })).optional(),
 });
 export type Player = z.infer<typeof PlayerSchema>;
 
@@ -145,6 +147,11 @@ export const WorldStateSchema = z.object({
   locale: z.enum(WORLD_LOCALES).optional(),
   /** Characters have attributes (health, social, knowledge, survival). Absent in older worlds. */
   attributesEnabled: z.boolean().optional(),
+  /**
+   * Events with a player role are scheduled per player (each player has their
+   * own chance and cooldowns every year) instead of world-wide. Absent in older worlds.
+   */
+  personalEvents: z.boolean().optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),

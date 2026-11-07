@@ -51,6 +51,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     schemaVersion: 1,
     locale,
     attributesEnabled: true,
+    personalEvents: true,
     rulesVersion: RULES_VERSION,
     worldName: options.worldName ?? "Year Zero",
     seed: options.seed,

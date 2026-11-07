@@ -1,0 +1,62 @@
+import { describe, expect, it } from "vitest";
+import type { WorldState } from "@genesis/schemas";
+import { getCharacter, isPersonalEvent } from "@genesis/narrative";
+import { applyImmediate, checkInvariants, createWorld, hashState, playerCharacter, stepWorld } from "@genesis/simulation";
+import { seedContent } from "./helpers";
+
+const events = seedContent.events;
+
+/** Join and finish the prologue, the way the app does on day one. */
+function played(state: WorldState, playerId: string): WorldState {
+  let s = applyImmediate(state, { type: "JOIN_WORLD", playerId, playerName: playerId }).state;
+  for (const [step, choiceId] of [["first_climb", "surface"], ["water", "share"], ["static", "tell"]] as const) {
+    const r = applyImmediate(s, { type: "PROLOGUE", playerId, step, choiceId });
+    expect(r.rejected).toBeNull();
+    s = r.state;
+  }
+  return s;
+}
+
+function run(state: WorldState, years: number) {
+  const fired: { tick: number; id: string; characterIds: string[] }[] = [];
+  let s = state;
+  for (let i = 0; i < years; i++) {
+    const r = stepWorld(s, { events, actions: [] });
+    expect(checkInvariants(r.state, r.events)).toEqual([]);
+    // Count openings only (the resolution next year shares the definition id).
+    for (const e of r.events) if (r.state.pendingDecisions?.some((p) => p.id === e.id) && events.find((d) => d.id === e.definitionId && isPersonalEvent(d))) fired.push({ tick: e.tick, id: e.definitionId!, characterIds: e.characterIds });
+    s = r.state;
+  }
+  return { state: s, fired };
+}
+
+describe("personal events", () => {
+  it("find each player on their own, about once a year", () => {
+    const start = played(played(createWorld({ seed: 50 }), "a"), "b");
+    const a = playerCharacter(start, "a")!.id;
+    const b = playerCharacter(start, "b")!.id;
+    const { state, fired } = run(start, 20);
+    for (const id of [a, b]) {
+      const mine = fired.filter((f) => f.characterIds.includes(id));
+      if (getCharacter(state, id)!.deathTick === null) expect(mine.length).toBeGreaterThanOrEqual(12);
+      // Per-player cooldowns: the same scene never repeats within its cooldown.
+      for (const f of mine) {
+        const cd = events.find((d) => d.id === f.id)!.cooldown;
+        expect(mine.some((g) => g !== f && g.id === f.id && g.tick > f.tick && g.tick - f.tick < Math.max(1, cd))).toBe(false);
+      }
+    }
+    // Personal events are always about a player.
+    expect(fired.every((f) => f.characterIds.includes(a) || f.characterIds.includes(b))).toBe(true);
+  });
+
+  it("never touch worlds created before they existed", () => {
+    const old = createWorld({ seed: 51 });
+    delete old.personalEvents;
+    const s = played(old, "a");
+    const r1 = stepWorld(s, { events, actions: [] });
+    const legacy = structuredClone(s);
+    const r2 = stepWorld(legacy, { events, actions: [] });
+    expect(hashState(r1.state)).toBe(hashState(r2.state));
+    expect(r1.state.players!.a!.personal).toBeUndefined();
+  });
+});
