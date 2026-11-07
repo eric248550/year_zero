@@ -178,3 +178,23 @@ describe("renaming", () => {
     expect(applyImmediate(s, { type: "RENAME", playerId: "nobody", givenName: "A", familyName: "" }).rejected).toBeTruthy();
   });
 });
+
+describe("instant decisions in a stored run", () => {
+  it("replays exactly", () => {
+    const run = createRun(db, { name: "instant", seed: 62 });
+    applyPlayerAction(db, run.id, join_("p"));
+    for (const [step, choiceId] of [["first_climb", "surface"], ["water", "share"], ["static", "tell"]] as const) applyPlayerAction(db, run.id, { type: "PROLOGUE", playerId: "p", step, choiceId });
+    let resolved = 0;
+    for (let i = 0; i < 6; i++) {
+      stepRun(db, run.id, 1);
+      const s = getRun(db, run.id).state;
+      const me = playerCharacter(s, "p");
+      const d = me && s.pendingDecisions?.find((x) => x.participants.length === 1 && x.participants[0] === me.id);
+      if (!d) continue;
+      const choiceId = seedContent.events.find((e) => e.id === d.definitionId)!.choices[0]!.id;
+      resolved += applyPlayerAction(db, run.id, { type: "CHOOSE", playerId: "p", decisionId: d.id, choiceId }).events.length > 0 ? 1 : 0;
+    }
+    expect(resolved).toBeGreaterThan(0);
+    expect(verifyReplay(db, run.id).ok).toBe(true);
+  });
+});

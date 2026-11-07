@@ -122,6 +122,7 @@ export function decisionViews(ctx: PlayContext): DecisionView[] {
         choices: (def?.choices ?? []).map((c) => ({ id: c.id, label: c.label, description: c.description ?? null })),
         myChoice: p.responses[character.id] ?? null,
         others: p.participants.length - 1,
+        instant: !!state.instantDecisions && p.participants.length === 1,
       };
     });
 }

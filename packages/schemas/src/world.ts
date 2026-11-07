@@ -152,6 +152,12 @@ export const WorldStateSchema = z.object({
    * own chance and cooldowns every year) instead of world-wide. Absent in older worlds.
    */
   personalEvents: z.boolean().optional(),
+  /**
+   * A decision resolves as soon as every participant has chosen (personal
+   * events show their result at once) instead of waiting for the year to end.
+   * Absent in older worlds.
+   */
+  instantDecisions: z.boolean().optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),

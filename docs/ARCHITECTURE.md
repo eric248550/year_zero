@@ -210,3 +210,10 @@ more than two open decisions at once. In the same worlds, world events cast
 players `PLAYER_ROLE_WEIGHT` (4) times as often as NPCs. With the current
 content a player meets about one personal event a year, and goes at most two
 years without one. Older worlds skip both rules, so their replays are unchanged.
+
+Worlds created now also have `instantDecisions`: when a CHOOSE completes a
+decision (every living participant has answered, which for a personal event
+means just the player), `applyImmediate` resolves it on the spot and the app
+shows the outcome at once. Group decisions with NPC participants still wait
+for the year to end. `applyImmediate` takes the run's frozen content for this,
+and replay passes it too.

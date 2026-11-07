@@ -314,7 +314,7 @@ export function applyPlayerAction(db: Db, id: string, raw: unknown): PlayerActio
   const row = getRunRow(db, id);
   if (row.status !== "active") throw new ConflictError("Archived runs are read-only");
   const head = row.headState as WorldState;
-  const r = applyImmediate(head, raw);
+  const r = applyImmediate(head, raw, getRunContent(db, id).events);
   if (r.rejected || !r.action) throw new ConflictError(r.rejected ?? "Action rejected");
   db.transaction((tx) => {
     const t = tx as unknown as Db;

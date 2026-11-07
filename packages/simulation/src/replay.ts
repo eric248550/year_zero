@@ -33,7 +33,7 @@ export function replay(input: ReplayInput): { state: WorldState; history: Histor
   const history: HistoricalEvent[] = [];
   const between = () => {
     for (const raw of input.immediates?.(state.tick) ?? []) {
-      const r = applyImmediate(state, raw);
+      const r = applyImmediate(state, raw, input.events);
       state = r.state;
       history.push(...r.events);
     }

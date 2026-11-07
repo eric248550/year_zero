@@ -60,3 +60,37 @@ describe("personal events", () => {
     expect(r1.state.players!.a!.personal).toBeUndefined();
   });
 });
+
+describe("instant decisions", () => {
+  function firstPersonal(seed: number, flag: boolean) {
+    const w = createWorld({ seed });
+    if (!flag) delete w.instantDecisions;
+    let s = played(w, "p");
+    for (let i = 0; i < 10; i++) {
+      const me = playerCharacter(s, "p")!;
+      const d = s.pendingDecisions?.find((x) => x.participants.length === 1 && x.participants[0] === me.id);
+      if (d) return { s, d };
+      s = stepWorld(s, { events, actions: [] }).state;
+    }
+    throw new Error("no personal event in 10 years");
+  }
+
+  it("a personal event resolves the moment the player chooses", () => {
+    const { s, d } = firstPersonal(60, true);
+    const def = events.find((e) => e.id === d.definitionId)!;
+    const r = applyImmediate(s, { type: "CHOOSE", playerId: "p", decisionId: d.id, choiceId: def.choices[0]!.id }, events);
+    expect(r.rejected).toBeNull();
+    expect(r.events.length).toBeGreaterThan(0);
+    expect(r.events[0]!.choice?.id).toBe(def.choices[0]!.id);
+    expect(r.state.pendingDecisions?.some((x) => x.id === d.id)).toBe(false);
+    expect(checkInvariants(r.state, r.events)).toEqual([]);
+  });
+
+  it("older worlds still wait for the year to end", () => {
+    const { s, d } = firstPersonal(61, false);
+    const def = events.find((e) => e.id === d.definitionId)!;
+    const r = applyImmediate(s, { type: "CHOOSE", playerId: "p", decisionId: d.id, choiceId: def.choices[0]!.id }, events);
+    expect(r.events).toHaveLength(0);
+    expect(r.state.pendingDecisions?.some((x) => x.id === d.id)).toBe(true);
+  });
+});
