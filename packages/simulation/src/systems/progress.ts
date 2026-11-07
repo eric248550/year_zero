@@ -60,7 +60,8 @@ export function attemptExploration(ctx: TickContext, s: Settlement, bonus: numbe
   let p = (1 - Math.pow(0.88, scouts.length)) * 0.35 + bonus;
   if (hasTech(st, "pathfinding")) p *= 1.3;
   if (hasTech(st, "radio")) p *= 1.5;
-  if ((s.facilities?.watchtower ?? 0) >= 30) p *= 1.2;
+  const tower = s.facilities?.watchtower ?? 0;
+  if (tower >= 30) p *= 1 + 0.2 * (tower / 100);
   if (!ctx.rng.chance(Math.min(0.95, p))) return false;
   const loc = ctx.rng.weighted(undiscovered, (l) => 1 / LOCATION_BY_ID[l.id]!.distance);
   const scout = ctx.rng.pick(scouts);

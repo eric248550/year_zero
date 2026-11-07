@@ -4,7 +4,13 @@
   "scope": "settlement",
   "category": "technology",
   "description": "你在廢墟邊撿到一本還能讀的舊書。",
-  "preconditions": [],
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 1
+    }
+  ],
   "roles": [
     {
       "id": "you",

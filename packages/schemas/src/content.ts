@@ -57,6 +57,10 @@ export const ConditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("tension"), op: ComparisonOpSchema, value: z.number() }).strict(),
   /** Years since the target settlement was founded (a field has to be sown before it is harvested). */
   z.object({ type: z.literal("settlement_age"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
+  /** At least one of these flags is set (or none is). */
+  z.object({ type: z.literal("flag_any"), flags: z.array(z.string().min(1)).min(2), present: z.boolean() }).strict(),
+  /** The target settlement's land can be farmed: fertile, by a river, or anywhere once irrigation is known. */
+  z.object({ type: z.literal("farmable"), present: z.boolean() }).strict(),
   /** Someone is (or is not) building this technology right now. */
   z.object({ type: z.literal("project"), tech: z.string(), active: z.boolean() }).strict(),
   /** The target settlement has this building in working order (condition ≥ 30), or not. */
@@ -97,7 +101,7 @@ export const RoleSchema = z.object({
    */
   familiarWith: z.string().optional(),
   /** Only characters working on an active project (optionally of this branch). Fills {{project}}. */
-  onProject: z.union([z.literal(true), z.enum(BRANCHES)]).optional(),
+  onProject: z.union([z.literal(true), z.enum(BRANCHES), z.array(z.enum(BRANCHES)).min(1)]).optional(),
   /** Only characters with this relationship strength toward the character in another role. */
   bondWith: z.object({ role: z.string(), min: z.number().min(-100).max(100).optional(), max: z.number().min(-100).max(100).optional() }).strict().optional(),
   /** Only characters born before this tick (e.g. -10: old enough to remember the bunker before the doors opened). */
@@ -140,6 +144,7 @@ export const EFFECT_TYPES = [
   "CEDE_CLAIM",
   "ADD_SPECIALTY",
   "SCHEDULE_EVENT",
+  "AFTER",
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -224,6 +229,20 @@ export const EffectSchema = z.discriminatedUnion("type", [
     event: z.string(),
     seasons: z.number().int().min(1).max(16),
     away: z.array(z.string()).optional(),
+  }).strict(),
+  /**
+   * An outcome that takes time, without a separate event: after `seasons` the
+   * `effects` apply and a history entry is written. If anyone in `away` has
+   * died meanwhile, nothing is delivered and the loss is recorded instead.
+   */
+  z.object({
+    type: z.literal("AFTER"),
+    seasons: z.number().int().min(1).max(16),
+    away: z.array(z.string()).optional(),
+    title: z.string().min(1).max(160),
+    text: z.string().min(1).max(1000),
+    effects: z.array(z.lazy((): z.ZodTypeAny => EffectSchema)).default([]),
+    risk: z.object({ chance: z.number().min(0).max(1), text: z.string().min(1).max(400), effects: z.array(z.lazy((): z.ZodTypeAny => EffectSchema)).min(1) }).strict().optional(),
   }).strict(),
 ]);
 export type Effect = z.infer<typeof EffectSchema>;

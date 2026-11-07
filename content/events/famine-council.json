@@ -44,23 +44,34 @@
       ],
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 20
+          "type": "AFTER",
+          "seasons": 1,
+          "away": [
+            "forager"
+          ],
+          "title": "{{forager}}從荒野帶回了食物",
+          "text": "{{forager}}在荒野待了一整季，帶回能吃的根、種子和獵物。",
+          "effects": [
+            {
+              "type": "ADJUST_RESOURCE",
+              "resource": "food",
+              "amount": 20
+            }
+          ],
+          "risk": {
+            "chance": 0.25,
+            "text": "{{forager}}沒能撐過那一季，倒在了荒野裡。",
+            "effects": [
+              {
+                "type": "CHARACTER_DEATH",
+                "role": "forager",
+                "cause": "饑荒期間外出採集時失蹤"
+              }
+            ]
+          }
         }
       ],
-      "risk": {
-        "chance": 0.25,
-        "description": "{{forager}}從灰燼荒原出去之後，再也沒有回來。",
-        "effects": [
-          {
-            "type": "CHARACTER_DEATH",
-            "role": "forager",
-            "cause": "饑荒期間外出採集時失蹤"
-          }
-        ]
-      },
-      "outcome": "{{forager}}帶著採集隊，走到比已知廢墟更遠的地方。"
+      "outcome": "{{forager}}背著空袋子出發了。下一季才知道結果。"
     },
     {
       "id": "strip",

@@ -18,10 +18,10 @@ import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { initAttributes } from "./attributes";
-import { activeProjects, joinProject, projectBlocker, projectFor, proposableBranches, startProject } from "./projects";
+import { activeProjects, donateToProject, joinProject, logProject, projectBlocker, projectFor, proposableBranches, startProject } from "./projects";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "START_PROJECT" | "JOIN_PROJECT" | "PROJECT_APPROACH">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "START_PROJECT" | "JOIN_PROJECT" | "PROJECT_APPROACH" | "DONATE_PROJECT">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -261,6 +261,16 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (me.awayUntil !== undefined && me.awayUntil >= st.tick * 4) return "You are away and cannot join anything until you are back";
       return null;
     }
+    case "DONATE_PROJECT": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      const p = projectFor(st, me.id);
+      if (!p) return "You are not on a project";
+      if (p.donations?.[me.id] === st.tick) return "You already put materials into it this year";
+      const home = getSettlement(st, p.settlementId);
+      if (!home || home.resources.materials < a.amount) return `${home?.name ?? "Your settlement"} has only ${Math.floor(home?.resources.materials ?? 0)} materials`;
+      return null;
+    }
     case "PROJECT_APPROACH": {
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
@@ -493,7 +503,14 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
     }
     case "PROJECT_APPROACH": {
       const me = playerCharacter(st, a.playerId)!;
-      activeProjects(st).find((x) => x.leadId === me.id)!.approach = a.approach;
+      const p = activeProjects(st).find((x) => x.leadId === me.id)!;
+      p.approach = a.approach;
+      logProject(p, st.tick, say(st).projectApproachLog(fullName(me), a.approach));
+      return;
+    }
+    case "DONATE_PROJECT": {
+      const me = playerCharacter(st, a.playerId)!;
+      donateToProject(ctx, me, a.amount);
       return;
     }
     case "RENAME": {

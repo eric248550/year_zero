@@ -9,7 +9,7 @@ import { births, comingOfAge, mortality } from "./systems/demographics";
 import { development, exploration } from "./systems/progress";
 import { councilProjects, projects } from "./systems/projects";
 import { friction, raids, schisms } from "./systems/conflict";
-import { claims, facilities, teaching } from "./systems/legacy";
+import { claims, construction, facilities, infrastructure, teaching } from "./systems/legacy";
 import { abandonment, milestones } from "./systems/settlements";
 import { playerUpkeep } from "./systems/players";
 import { attributeDrift } from "./systems/attributes";
@@ -89,6 +89,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   councilProjects(ctx);
   projects(ctx);
   development(ctx);
+  infrastructure(ctx);
   exploration(ctx);
   schisms(ctx);
 
@@ -107,6 +108,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   ctx.events.push(...personal.events);
   ctx.deaths += countDeaths(personal.events);
 
+  construction(ctx);
   // Follow-ups whose season falls in this year: an expedition comes back, a harvest comes in.
   const scheduled = runScheduledPhase(ctx.state, input.events, rng);
   ctx.state = scheduled.state;

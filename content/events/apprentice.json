@@ -18,7 +18,11 @@
     {
       "id": "youth",
       "minAge": 12,
-      "maxAge": 17
+      "maxAge": 17,
+      "bondWith": {
+        "role": "you",
+        "max": 40
+      }
     }
   ],
   "effects": [],

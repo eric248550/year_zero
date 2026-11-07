@@ -92,7 +92,16 @@ rejectedEvents, metrics }`. Phases:
    resource. `pnpm sim:report [worlds] [years]` runs seeded worlds and writes
    `docs/sim-report.json`. Studio `/debug` shows pending decisions, follow-ups,
    people away, construction, projects, rejected events/actions, transfers
-   between settlements and state changes by path.
+   between settlements and state changes by path, and the last sim report.
+   Infrastructure (rules 0.9): technology bonuses that need equipment apply only
+   where the facility stands (`INFRASTRUCTURE`: watermill, generator, forge,
+   well, clinic, granary), scaled by condition (`level`); settlements that know
+   the technology build it themselves (`infrastructure`), and `construction`
+   finishes builds and repairs right before the year's follow-ups. Surface food
+   needs sown `fields` (sowing builds them). `AFTER` effects schedule an inline
+   outcome; follow-ups whose `away` people died are recorded as lost and deliver
+   nothing. Claims only take unclaimed, discovered, unsettled sites. Players can
+   `DONATE_PROJECT` materials once a year; projects keep a short `log`.
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

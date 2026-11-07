@@ -11,7 +11,10 @@
       "description": "玩家自己",
       "player": true,
       "profession": "Engineer",
-      "onProject": true
+      "onProject": [
+        "industry",
+        "energy"
+      ]
     }
   ],
   "effects": [],

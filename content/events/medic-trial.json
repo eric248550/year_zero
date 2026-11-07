@@ -11,7 +11,10 @@
       "description": "玩家自己",
       "player": true,
       "profession": "Medic",
-      "onProject": true
+      "onProject": [
+        "medicine",
+        "knowledge"
+      ]
     }
   ],
   "effects": [],

@@ -43,37 +43,49 @@
       },
       "effects": [
         {
-          "type": "DISCOVER_LOCATION",
-          "location": "vault_12"
-        },
-        {
-          "type": "ADD_WORLD_FLAG",
-          "flag": "mystery.vault12_found"
-        },
-        {
           "type": "CHANGE_RELATIONSHIP",
           "a": "scout",
           "b": "partner",
           "delta": 20
         },
         {
-          "type": "ADD_LIFE_EVENT",
-          "role": "scout",
-          "text": "找到了失落的第十二號避難所"
+          "type": "AFTER",
+          "seasons": 3,
+          "away": [
+            "scout",
+            "partner"
+          ],
+          "title": "{{scout}}找到了訊號的來源",
+          "text": "走了大半年，{{scout}}在東邊的山丘下找到一扇不在任何地圖上的防爆門。",
+          "effects": [
+            {
+              "type": "DISCOVER_LOCATION",
+              "location": "vault_12"
+            },
+            {
+              "type": "ADD_WORLD_FLAG",
+              "flag": "mystery.vault12_found"
+            },
+            {
+              "type": "ADD_LIFE_EVENT",
+              "role": "scout",
+              "text": "找到了失落的第十二號避難所"
+            }
+          ],
+          "risk": {
+            "chance": 0.15,
+            "text": "在門口不遠處，{{scout}}掉進了一個天坑。",
+            "effects": [
+              {
+                "type": "CHARACTER_DEATH",
+                "role": "scout",
+                "cause": "在第十二號避難所附近掉進天坑"
+              }
+            ]
+          }
         }
       ],
-      "risk": {
-        "chance": 0.15,
-        "description": "{{scout}}在避難所附近掉進一個天坑，從此下落不明。",
-        "effects": [
-          {
-            "type": "CHARACTER_DEATH",
-            "role": "scout",
-            "cause": "在第十二號避難所附近掉進天坑"
-          }
-        ]
-      },
-      "outcome": "往東走了三天，{{scout}}在山坡上發現一扇半埋在土裡的防爆門：第十二號避難所。"
+      "outcome": "{{scout}}收拾好裝備，往訊號的方向出發了。"
     },
     {
       "id": "wait",

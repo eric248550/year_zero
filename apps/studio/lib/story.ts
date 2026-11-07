@@ -88,6 +88,10 @@ function plain(c: Condition, i18n: I18n): string {
       return zh ? `${c.occurred ? "要先發生" : "不能已經發生"}「${c.event}」` : `"${c.event}" must ${c.occurred ? "" : "not "}have happened`;
     case "shortage":
       return zh ? `聚落${c.active ? "正在缺" : "沒有缺"}${term.resource(c.resource)}` : `Settlement ${c.active ? "is short of" : "has enough"} ${term.resource(c.resource)}`;
+    case "flag_any":
+      return zh ? `${c.present ? "需要先發生其中之一" : "不能已經發生"}（${c.flags.join("、")}）` : `${c.present ? "Needs one of" : "Must have none of"} ${c.flags.join(", ")}`;
+    case "farmable":
+      return zh ? `聚落的土地${c.present ? "要能耕種（沃土、河邊，或已有灌溉）" : "不能耕種"}` : `Settlement land must ${c.present ? "" : "not "}be farmable`;
     case "children":
       return zh ? `聚落裡的孩子要${op(c.op)} ${c.value} 個` : `Children in the settlement must be ${op(c.op)} ${c.value}`;
     case "site_feature":

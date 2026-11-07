@@ -1,9 +1,9 @@
 {
   "id": "heirloom-hydroponics",
-  "title": "傳家種水耕",
+  "title": "傳家種育種",
   "scope": "settlement",
   "category": "technology",
-  "description": "科學家把找回來的種子，和地堡種植架的設計結合在一起。",
+  "description": "科學家用找回來的傳家種當親本，加快作物育種。",
   "preconditions": [
     {
       "type": "flag",
@@ -11,13 +11,8 @@
       "present": true
     },
     {
-      "type": "technology",
-      "tech": "hydroponics",
-      "has": false
-    },
-    {
       "type": "project",
-      "tech": "hydroponics",
+      "tech": "crop_genetics",
       "active": true
     }
   ],
@@ -44,15 +39,15 @@
         {
           "type": "ADD_LIFE_EVENT",
           "role": "scientist",
-          "text": "研發出傳家種水耕法"
+          "text": "用傳家種當親本，加快了作物育種"
         },
         {
           "type": "CHANGE_PROJECT",
-          "tech": "hydroponics",
-          "progress": 0.4
+          "tech": "crop_genetics",
+          "progress": 0.3
         }
       ],
-      "outcome": "{{scientist}}讓傳家種在生長燈下結出了果實。「種子與水耕」的試驗一下子往前跳了一大截。"
+      "outcome": "{{scientist}}讓傳家種和地堡的品種雜交。「作物育種」一下子往前跳了一大截。"
     },
     {
       "id": "wait",
@@ -74,7 +69,7 @@
   "importance": "major",
   "narrative": {
     "headline": "{{settlement}}燈下的傳家種",
-    "text": "{{scientist}}把找回來的種子攤在實驗桌上，開始一一比對地堡的種植手冊。"
+    "text": "{{scientist}}把從種子庫找回來的傳家種攤在實驗桌上：這些老品種耐旱、耐寒，正好拿來當育種的親本。"
   },
   "version": 1,
   "status": "published",

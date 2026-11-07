@@ -248,6 +248,8 @@ export function projectsFor(state: WorldState, c: Character, term: Term): Projec
       myWork: workEstimate(state, c, p.techId, true),
       fits: c.profession === BRANCH_INFO[tech.branch].profession,
       approach: p.approach ?? "steady",
+      log: (p.log ?? []).slice(-3).reverse().map((l) => ({ year: state.startYear + l.tick, text: l.text })),
+      canDonate: p.memberIds.includes(c.id) && p.donations?.[c.id] !== state.tick && (state.settlements.find((s) => s.id === p.settlementId)?.resources.materials ?? 0) >= 10,
       place: state.settlements.find((s) => s.id === p.settlementId)?.name ?? "",
     };
   };

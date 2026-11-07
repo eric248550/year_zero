@@ -11,7 +11,7 @@
       "description": "玩家自己",
       "player": true,
       "profession": "Scientist",
-      "onProject": true
+      "onProject": "knowledge"
     }
   ],
   "effects": [],

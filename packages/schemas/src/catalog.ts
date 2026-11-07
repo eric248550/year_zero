@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-0.8.0";
+export const RULES_VERSION = "rules-0.9.0";
 
 export const START_YEAR = 2131;
 
@@ -130,7 +130,7 @@ export const TECH_IDS = TECHNOLOGIES.map((t) => t.id);
  * it up, neglect, storms and raids wear it down; below 30 it is broken and does
  * nothing until repaired.
  */
-export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall"] as const;
+export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall", "fields", "watermill", "generator"] as const;
 export type FacilityId = (typeof FACILITIES)[number];
 export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }> = {
   granary: { name: "Granary", effect: "Food spoils half as fast." },
@@ -142,12 +142,25 @@ export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }>
   watchtower: { name: "Watchtower", effect: "Exploration +20%, raids on it are less likely." },
   greenhouse: { name: "Greenhouse", effect: "Food +10%." },
   meeting_hall: { name: "Meeting Hall", effect: "Morale +3, splits half as likely." },
+  fields: { name: "Fields", effect: "Sown surface land. Without fields a surface settlement grows only 60% of its food; irrigation adds 25% more." },
+  watermill: { name: "Water Mill", effect: "Water power: water and materials +10% (needs a river)." },
+  generator: { name: "Generator", effect: "Local electricity: knowledge +20%, materials +10%; with the power grid, water and materials +10% more." },
 };
 export const FACILITY_WORKING = 30;
 /** Finishing these technologies raises a building in the settlement that built them. */
 export const TECH_FACILITY: Partial<Record<string, FacilityId>> = {
   hydroponics: "greenhouse", water_purification: "well", field_medicine: "clinic", workshop: "forge",
   schooling: "schoolhouse", civic_charter: "meeting_hall", mass_farming: "granary", pathfinding: "watchtower",
+  water_wheel: "watermill", solar_power: "generator",
+};
+/** Technologies whose benefit needs the building on site; knowing them elsewhere lets a settlement build it. */
+export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; materials: number; seasons: number; needs?: LocationFeature }>> = {
+  watermill: { tech: "water_wheel", materials: 25, seasons: 2, needs: "river" },
+  generator: { tech: "solar_power", materials: 40, seasons: 2 },
+  forge: { tech: "workshop", materials: 25, seasons: 2 },
+  well: { tech: "water_purification", materials: 15, seasons: 1 },
+  clinic: { tech: "field_medicine", materials: 20, seasons: 2 },
+  granary: { tech: "mass_farming", materials: 25, seasons: 2 },
 };
 
 /** Rules a settlement lives by. Enacted and repealed by its people (usually a vote). */

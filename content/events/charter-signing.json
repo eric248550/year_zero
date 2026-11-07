@@ -16,8 +16,11 @@
       "present": false
     },
     {
-      "type": "flag",
-      "flag": "governance.assembly",
+      "type": "flag_any",
+      "flags": [
+        "governance.assembly",
+        "governance.elder_council"
+      ],
       "present": true
     }
   ],
@@ -78,7 +81,7 @@
   "importance": "major",
   "narrative": {
     "headline": "{{settlement}}簽署第一部憲章",
-    "text": "那張紙上寫著：每個人都有權喝到乾淨的水，每個人都有權說話。現在，輪到大家簽名了。"
+    "text": "那張紙上寫著：每個人都有權喝到乾淨的水，有權被公平地審判，有權知道規矩是怎麼定的。不管是大會還是長者訂的，現在都要大家簽名。"
   },
   "version": 1,
   "status": "published",

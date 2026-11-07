@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { Bug } from "lucide-react";
 import { TECH_BY_ID } from "@genesis/schemas";
 import { fullName, getCharacter } from "@genesis/narrative";
@@ -9,7 +11,7 @@ import { getI18n } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["pending", "rejected", "transfers", "changes"] as const;
+const TABS = ["pending", "rejected", "transfers", "changes", "sim"] as const;
 type Tab = (typeof TABS)[number];
 const PATHS = ["flags.", "facilities", "laws", "claimedBy", "tensions.", "projects.", "scheduled.", "specialties", "resources."];
 
@@ -79,6 +81,7 @@ export default async function DebugPage({ searchParams }: { searchParams: Promis
       {tab === "rejected" && <Rejected runId={summary.id} t={t} />}
       {tab === "transfers" && <Transfers runId={summary.id} t={t} />}
       {tab === "changes" && <Changes runId={summary.id} path={sp.path ?? ""} t={t} />}
+      {tab === "sim" && <SimReport t={t} />}
     </div>
   );
 }
@@ -170,6 +173,40 @@ function Changes({ runId, path, t }: { runId: string; path: string; t: T }) {
           ))}
         </Block>
       )}
+    </div>
+  );
+}
+
+/** The last `pnpm sim:report` run, read from docs/sim-report.json. */
+function SimReport({ t }: { t: T }) {
+  const file = [resolve(process.cwd(), "docs/sim-report.json"), resolve(process.cwd(), "../../docs/sim-report.json")].find((f) => existsSync(f));
+  if (!file) return <p className="text-xs text-ink-3">{t("debug.sim.none")}</p>;
+  const r = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+  const kv = (o: unknown) => Object.entries((o ?? {}) as Record<string, unknown>);
+  const show = (v: unknown): string => (typeof v === "object" && v !== null ? Object.entries(v).map(([k, x]) => `${k} ${String(x)}`).join(" · ") : String(v));
+  const list = (v: unknown) => ((v as string[] | undefined) ?? []);
+  const ev = (r.events ?? {}) as Record<string, unknown>;
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-ink-3">{t("debug.sim.hint", { worlds: String(r.worlds), years: String(r.years) })}</p>
+      <Block title={t("debug.sim.civ")} empty={false}>
+        {kv(r.civilization).map(([k, v]) => <Row key={k} title={k}>{show(v)}</Row>)}
+        <Row title={t("debug.sim.unfinished")}>{String(r.unfinishedCivilizations)} · {String(r.medianNote)}</Row>
+      </Block>
+      <Block title={t("debug.sim.population")} empty={false}>
+        {kv(r.population).map(([k, v]) => <Row key={k} title={k}>{show(v)}</Row>)}
+        {kv(r.survival).map(([k, v]) => <Row key={k} title={k}>{String(v)}</Row>)}
+        {kv(r.extinction).map(([k, v]) => <Row key={k} title={k}>{String(v)}</Row>)}
+      </Block>
+      <Block title={t("debug.sim.milestones")} empty={false}>
+        <li className="py-2 text-xs"><div className="grid grid-cols-2 gap-x-3 gap-y-0.5 sm:grid-cols-3">{kv(r.milestones).map(([k, v]) => <span key={k} className="num">{k} <b>{String(v)}</b></span>)}</div></li>
+      </Block>
+      <Block title={t("debug.sim.blockers")} empty={list(r.commonBlockers).length === 0}>{list(r.commonBlockers).map((x) => <Row key={x} title={x} />)}</Block>
+      <Block title={t("debug.sim.never")} empty={list(ev.neverFired).length + list(ev.firedInUnder5PercentOfWorlds).length === 0}>
+        {[...list(ev.neverFired), ...list(ev.firedInUnder5PercentOfWorlds)].map((x) => <Row key={x} title={x} />)}
+      </Block>
+      <Block title={t("debug.sim.repeated")} empty={list(ev.mostRepeated).length === 0}>{list(ev.mostRepeated).map((x) => <Row key={x} title={x} />)}</Block>
+      <Block title={t("debug.sim.rejections")} empty={list(r.topRejections).length === 0}>{list(r.topRejections).map((x) => <Row key={x} title={x} />)}</Block>
     </div>
   );
 }

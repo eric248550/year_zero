@@ -1,84 +1,133 @@
 {
   "worlds": 100,
   "years": 150,
-  "msPerYear": 11.04,
+  "msPerYear": 13.25,
   "population": {
     "year 10": {
-      "p10": 123,
+      "p10": 122,
       "median": 132,
       "p90": 140
     },
     "year 30": {
-      "p10": 134,
-      "median": 152,
-      "p90": 172
+      "p10": 136,
+      "median": 151,
+      "p90": 171
     },
     "year 60": {
-      "p10": 166,
-      "median": 198,
-      "p90": 235
+      "p10": 161,
+      "median": 200,
+      "p90": 240
     },
     "year 100": {
-      "p10": 269,
-      "median": 336,
-      "p90": 436
+      "p10": 284,
+      "median": 369,
+      "p90": 425
     },
     "year 150": {
-      "p10": 512,
-      "median": 594,
-      "p90": 612
+      "p10": 533,
+      "median": 602,
+      "p90": 617
     }
   },
   "lowestPopulation": {
-    "p10": 119,
+    "p10": 118,
     "median": 123
   },
   "extinction": {
     "worldsExtinctAtEnd": "0/100 (0%)",
     "worldsEverEmpty": "0/100",
-    "settlementCollapses": 0
+    "settlementCollapses": 3
   },
   "conflict": {
-    "raids": 74,
-    "schisms": 461
+    "raids": 20,
+    "schisms": 353
+  },
+  "survival": {
+    "populationAtOrAboveStart": "100/100 (100%)",
+    "surfaceSettlementsFounded": 403,
+    "surfaceSettlementsStillStanding": "400/403 (99.3%)"
   },
   "civilization": {
     "survive": {
       "reached": "100/100 (100%)",
-      "medianYear": 5,
-      "p90Year": 6
+      "medianYearOfFinishedWorlds": 5,
+      "medianYearAllWorlds": 5,
+      "p90Year": 6,
+      "stalledOver40Years": 0
     },
     "root": {
       "reached": "100/100 (100%)",
-      "medianYear": 29,
-      "p90Year": 42
+      "medianYearOfFinishedWorlds": 29,
+      "medianYearAllWorlds": 29,
+      "p90Year": 36,
+      "stalledOver40Years": 1
     },
     "connect": {
       "reached": "100/100 (100%)",
-      "medianYear": 47,
-      "p90Year": 77
+      "medianYearOfFinishedWorlds": 44,
+      "medianYearAllWorlds": 44,
+      "p90Year": 59,
+      "stalledOver40Years": 2
     },
     "order": {
-      "reached": "99/100 (99%)",
-      "medianYear": 68,
-      "p90Year": 100
+      "reached": "100/100 (100%)",
+      "medianYearOfFinishedWorlds": 64,
+      "medianYearAllWorlds": 64,
+      "p90Year": 79,
+      "stalledOver40Years": 2
     },
     "renewal": {
-      "reached": "96/100 (96%)",
-      "medianYear": 95,
-      "p90Year": 110
+      "reached": "100/100 (100%)",
+      "medianYearOfFinishedWorlds": 93,
+      "medianYearAllWorlds": 93,
+      "p90Year": 106,
+      "stalledOver40Years": 4
     }
   },
+  "medianNote": "medianYearOfFinishedWorlds leaves out worlds that never reached the stage; medianYearAllWorlds counts them as not reached.",
+  "milestones": {
+    "survive.water": "100%",
+    "survive.hydroponics": "100%",
+    "survive.surface": "100%",
+    "root.harvest": "100%",
+    "root.irrigation": "100%",
+    "root.workshop": "100%",
+    "root.school": "100%",
+    "root.people": "100%",
+    "connect.caravan": "100%",
+    "connect.network": "100%",
+    "connect.homesteading": "100%",
+    "connect.radio": "100%",
+    "connect.clinic": "100%",
+    "order.assembly": "100%",
+    "order.schooling": "100%",
+    "order.antibiotics": "100%",
+    "order.trade": "100%",
+    "order.people": "100%",
+    "renewal.light": "100%",
+    "renewal.grid": "100%",
+    "renewal.institute": "100%",
+    "renewal.charter": "100%",
+    "renewal.people": "100%"
+  },
+  "unfinishedCivilizations": "0/100",
+  "commonBlockers": [],
   "events": {
     "total": 71,
     "neverFired": [],
-    "firedInUnder5PercentOfWorlds": [
-      "famine-council (3 worlds)",
-      "ration-vote (3 worlds)"
+    "firedInUnder5PercentOfWorlds": [],
+    "mostRepeated": [
+      "shared-meal: 29.6 per world",
+      "night-watch: 26.7 per world",
+      "elder-stories: 25.2 per world",
+      "quarrel: 25 per world",
+      "injured-neighbour: 24.5 per world",
+      "child-question: 23.5 per world",
+      "lesson-offer: 22.5 per world",
+      "scavenge-invite: 22.3 per world"
     ]
   },
   "topRejections": [
-    "5× scavenge-return: Required roles could not be filled",
     "1× dust-caught: Every participant died before deciding"
   ],
   "invariantFailures": 0

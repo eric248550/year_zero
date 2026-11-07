@@ -63,27 +63,39 @@
       ],
       "effects": [
         {
-          "type": "ADD_WORLD_FLAG",
-          "flag": "food.heirloom_seeds"
-        },
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 10
+          "type": "AFTER",
+          "seasons": 1,
+          "away": [
+            "scout",
+            "helper"
+          ],
+          "title": "{{scout}}從種子庫跑回來了",
+          "text": "{{scout}}一行人扛著搶出來的箱子回到{{settlement}}。很多種子在搬運時摔壞了，但還是帶回了一些；種子庫沒有人守，很快又被荒野吞了回去。",
+          "effects": [
+            {
+              "type": "ADD_WORLD_FLAG",
+              "flag": "food.heirloom_seeds"
+            },
+            {
+              "type": "ADJUST_RESOURCE",
+              "resource": "food",
+              "amount": 6
+            }
+          ],
+          "risk": {
+            "chance": 0.3,
+            "text": "冷藏室在他們身後塌了，{{scout}}被壓在底下，沒能活著出來。",
+            "effects": [
+              {
+                "type": "CHARACTER_DEATH",
+                "role": "scout",
+                "cause": "在種子庫坍塌時被壓死"
+              }
+            ]
+          }
         }
       ],
-      "risk": {
-        "chance": 0.25,
-        "description": "冷藏室的屋頂塌了下來，{{scout}}被壓在底下。",
-        "effects": [
-          {
-            "type": "CHARACTER_DEATH",
-            "role": "scout",
-            "cause": "在種子庫坍塌時被壓死"
-          }
-        ]
-      },
-      "outcome": "一箱箱種子被從搖搖欲墜的冷藏室裡拖了出來。 他們沒有留人守著，種子庫很快又被荒野吞回去。"
+      "outcome": "{{scout}}帶著人衝進冷藏室，打算搬了就跑。下一季才會回來。"
     }
   ],
   "priority": 6,

@@ -68,7 +68,7 @@ export function attributeDrift(ctx: TickContext): void {
     if (age >= 55) a.health -= 1;
     if (age >= 70) a.health -= 1;
     if (age >= 6 && age < ADULT_AGE) {
-      a.knowledge += 2 + ((home?.facilities?.schoolhouse ?? 0) >= 30 ? 1 : 0);
+      a.knowledge += 2 + ((home?.facilities?.schoolhouse ?? 0) >= 30 ? 1 : 0); // schoolhouse
       a.survival += 1;
     } else if (age >= ADULT_AGE && age < 65) {
       if (c.profession === "Scientist") a.knowledge += 2;

@@ -10,7 +10,8 @@ export type MilestoneCheck =
   | { kind: "tech"; tech: string }
   | { kind: "population"; min: number }
   | { kind: "settlements"; min: number }
-  | { kind: "flag"; flag: string };
+  | { kind: "flag"; flag: string }
+  | { kind: "anyFlag"; flags: string[] };
 
 export interface CivMilestone {
   id: string;
@@ -54,7 +55,8 @@ export const CIV_STAGES: readonly CivStage[] = [
   {
     id: "order",
     milestones: [
-      { id: "assembly", check: { kind: "flag", flag: "governance.assembly" } },
+      // Either way of governing counts: an elected assembly or a council of elders.
+      { id: "assembly", check: { kind: "anyFlag", flags: ["governance.assembly", "governance.elder_council"] } },
       { id: "schooling", check: { kind: "tech", tech: "schooling" } },
       { id: "antibiotics", check: { kind: "tech", tech: "antibiotics" } },
       { id: "trade", check: { kind: "tech", tech: "trade_routes" } },
@@ -91,6 +93,7 @@ function check(state: WorldState, c: MilestoneCheck): { done: boolean; current: 
   switch (c.kind) {
     case "tech": return { done: state.technologies.includes(c.tech), current: null };
     case "flag": return { done: state.flags[c.flag] !== undefined && state.flags[c.flag] !== false, current: null };
+    case "anyFlag": return { done: c.flags.some((f) => state.flags[f] !== undefined && state.flags[f] !== false), current: null };
     case "population": { const n = population(state); return { done: n >= c.min, current: n }; }
     case "settlements": { const n = activeSettlements(state).length; return { done: n >= c.min, current: n }; }
   }

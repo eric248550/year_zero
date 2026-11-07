@@ -4,7 +4,13 @@
   "scope": "settlement",
   "category": "environment",
   "description": "你在外面時遇上了沙塵暴。",
-  "preconditions": [],
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 1
+    }
+  ],
   "roles": [
     {
       "id": "you",

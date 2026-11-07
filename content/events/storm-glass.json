@@ -37,12 +37,12 @@
       },
       "effects": [
         {
-          "type": "CHANGE_FACILITY",
+          "type": "BUILD_FACILITY",
           "facility": "greenhouse",
-          "delta": 35
+          "seasons": 1
         }
       ],
-      "outcome": "大家連夜把能找到的玻璃和塑膠布都拿來補。溫室保住了，只是不太好看。"
+      "outcome": "大家把能找到的玻璃和塑膠布都拿來補，花了一季把溫室修好。"
     },
     {
       "id": "later",

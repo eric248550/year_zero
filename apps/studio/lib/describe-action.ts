@@ -24,6 +24,7 @@ export function describeAction(a: PlayerAction, { t, term }: Pick<I18n, "t" | "t
     case "START_PROJECT": return t("action.desc.startProject", { player: a.playerId, tech: term.techName(a.tech) });
     case "JOIN_PROJECT": return a.projectId ? t("action.desc.joinProject", { player: a.playerId, project: a.projectId }) : t("action.desc.leaveProject", { player: a.playerId });
     case "PROJECT_APPROACH": return t("action.desc.approach", { player: a.playerId, approach: a.approach });
+    case "DONATE_PROJECT": return t("action.desc.donate", { player: a.playerId, amount: a.amount });
     case "TRANSFER_RESOURCES": return t("action.desc.transfer", { amount: a.amount, resource: term.resource(a.resource), from: a.fromSettlementId, to: a.toSettlementId });
   }
 }

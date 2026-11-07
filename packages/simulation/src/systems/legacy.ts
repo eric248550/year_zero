@@ -1,5 +1,7 @@
 import {
   CLAIM_YIELD,
+  INFRASTRUCTURE,
+  LOCATION_BY_ID,
   FACILITY_WORKING,
   type Character,
   type FacilityId,
@@ -15,6 +17,7 @@ import {
   facilityName,
   fullName,
   getCharacter,
+  residents,
   round2,
   say,
   specialtyName,
@@ -42,6 +45,48 @@ export function working(s: Settlement | undefined, f: FacilityId): boolean {
   return (s?.facilities?.[f] ?? 0) >= FACILITY_WORKING;
 }
 
+/** How much of its effect a building gives: 0 when missing or broken, else its condition (0.3–1). */
+export function level(s: Settlement | undefined, f: FacilityId): number {
+  const c = s?.facilities?.[f] ?? 0;
+  return c >= FACILITY_WORKING ? c / 100 : 0;
+}
+
+/**
+ * Settlements that know a technology build its infrastructure for themselves:
+ * one construction a year, paid in materials up front, finished in seasons.
+ * Broken buildings are rebuilt the same way.
+ */
+export function infrastructure(ctx: TickContext): void {
+  const st = ctx.state;
+  for (const s of activeSettlements(st)) {
+    if (residents(st, s.id).length < 8 || Object.keys(s.building ?? {}).length > 0) continue;
+    const features = LOCATION_BY_ID[s.locationId]?.features ?? [];
+    for (const [f, info] of Object.entries(INFRASTRUCTURE) as [FacilityId, NonNullable<(typeof INFRASTRUCTURE)[FacilityId]>][]) {
+      if (!st.technologies.includes(info.tech) || (info.needs && !features.includes(info.needs))) continue;
+      if ((s.facilities?.[f] ?? 0) >= FACILITY_WORKING) continue;
+      // Keep enough for a year of upkeep and emergencies.
+      if (s.resources.materials < info.materials + 20) continue;
+      const before = s.resources.materials;
+      s.resources.materials = round2(before - info.materials);
+      const due = st.tick * 4 + info.seasons;
+      s.building = { ...(s.building ?? {}), [f]: due };
+      ctx.system({
+        category: "settlement",
+        importance: "minor",
+        title: say(st).buildStartTitle(s.name, facilityName(st, f)),
+        text: say(st).buildStartText(s.name, facilityName(st, f), info.seasons),
+        settlementIds: [s.id],
+        changes: [
+          { path: `settlements.${s.id}.resources.materials`, label: `${s.name} materials`, before, after: s.resources.materials },
+          { path: `settlements.${s.id}.building.${f}`, label: `${s.name} builds ${f}`, before: null, after: due },
+        ],
+        summary: `${info.tech} is known here; ${info.materials} materials`,
+      });
+      break;
+    }
+  }
+}
+
 export function hasLaw(s: Settlement | undefined, law: LawId): boolean {
   return !!s?.laws?.includes(law);
 }
@@ -50,21 +95,6 @@ export function hasLaw(s: Settlement | undefined, law: LawId): boolean {
 export function facilities(ctx: TickContext): void {
   const st = ctx.state;
   for (const s of activeSettlements(st)) {
-    // Construction sites whose season has come are finished.
-    for (const [id, due] of Object.entries(s.building ?? {}) as [FacilityId, number][]) {
-      if (due >= (st.tick + 1) * 4) continue;
-      delete s.building![id];
-      s.facilities = { ...(s.facilities ?? {}), [id]: 100 };
-      ctx.system({
-        category: "settlement",
-        importance: "notable",
-        title: say(st).facilityDoneTitle(s.name, facilityName(st, id)),
-        text: say(st).facilityDoneText(s.name, facilityName(st, id)),
-        settlementIds: [s.id],
-        characterIds: st.characters.filter((c) => c.deathTick === null && c.controllerId && c.homeId === s.id).map((c) => c.id),
-        changes: [{ path: `settlements.${s.id}.facilities.${id}`, label: `${s.name} ${id}`, before: null, after: 100 }],
-      });
-    }
     for (const [id, cond] of Object.entries(s.facilities ?? {}) as [FacilityId, number][]) {
       const paid = s.resources.materials >= LEGACY.upkeep;
       if (paid) s.resources.materials = round2(s.resources.materials - LEGACY.upkeep);
@@ -80,6 +110,33 @@ export function facilities(ctx: TickContext): void {
           changes: [{ path: `settlements.${s.id}.facilities.${id}`, label: `${s.name} ${id}`, before: cond, after }],
         });
       }
+    }
+  }
+}
+
+/**
+ * Finish construction (and repairs) whose season falls in this year. Runs just
+ * before this year's follow-ups, so a field sown in spring is ready for the
+ * autumn harvest in the same year.
+ */
+export function construction(ctx: TickContext): void {
+  const st = ctx.state;
+  for (const s of activeSettlements(st)) {
+    // Construction sites whose season has come are finished.
+    for (const [id, due] of Object.entries(s.building ?? {}) as [FacilityId, number][]) {
+      if (due >= (st.tick + 1) * 4) continue;
+      const before = s.facilities?.[id] ?? null;
+      delete s.building![id];
+      s.facilities = { ...(s.facilities ?? {}), [id]: 100 };
+      ctx.system({
+        category: "settlement",
+        importance: "notable",
+        title: say(st).facilityDoneTitle(s.name, facilityName(st, id)),
+        text: say(st).facilityDoneText(s.name, facilityName(st, id)),
+        settlementIds: [s.id],
+        characterIds: st.characters.filter((c) => c.deathTick === null && c.controllerId && c.homeId === s.id).map((c) => c.id),
+        changes: [{ path: `settlements.${s.id}.facilities.${id}`, label: `${s.name} ${id}`, before, after: 100 }],
+      });
     }
   }
 }

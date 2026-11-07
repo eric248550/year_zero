@@ -10,9 +10,9 @@
       "kind": "settlement"
     },
     {
-      "type": "flag",
-      "flag": "food.surface_farming",
-      "present": false
+      "type": "facility",
+      "facility": "fields",
+      "working": true
     }
   ],
   "roles": [
@@ -26,7 +26,7 @@
     {
       "type": "ADJUST_RESOURCE",
       "resource": "food",
-      "amount": 25
+      "amount": 18
     },
     {
       "type": "CHANGE_SETTLEMENT_STAT",
@@ -47,17 +47,17 @@
   "priority": 6,
   "chance": 0.6,
   "cooldown": 0,
-  "maxOccurrences": 1,
   "storylineIds": [
     "rebuilding-food-production"
   ],
   "importance": "major",
   "narrative": {
     "headline": "{{settlement}}的第一次地表收成",
-    "text": "{{year}} 年，{{farmer}}把第一籃露天種出來的穀子扛進{{settlement}}。有人哭了。"
+    "text": "{{farmer}}把第一籃露天種出來的穀子扛進{{settlement}}。種下去的種子，收回來三倍。有人哭了。"
   },
   "version": 1,
   "status": "published",
   "source": "seed",
-  "scheduledOnly": true
+  "scheduledOnly": true,
+  "maxOccurrences": null
 }

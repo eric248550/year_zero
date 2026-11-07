@@ -40,27 +40,38 @@
       },
       "effects": [
         {
-          "type": "DISCOVER_LOCATION",
-          "location": "old_reservoir"
-        },
-        {
-          "type": "ADD_LIFE_EVENT",
-          "role": "scout",
-          "text": "找到舊水庫底下的乾淨含水層"
+          "type": "AFTER",
+          "seasons": 2,
+          "away": [
+            "scout"
+          ],
+          "title": "{{scout}}從舊水庫回來了",
+          "text": "{{scout}}花了半年，循著供水圖找到了舊水庫，底下的含水層還流著乾淨的水。",
+          "effects": [
+            {
+              "type": "DISCOVER_LOCATION",
+              "location": "old_reservoir"
+            },
+            {
+              "type": "ADD_LIFE_EVENT",
+              "role": "scout",
+              "text": "找到舊水庫底下的乾淨含水層"
+            }
+          ],
+          "risk": {
+            "chance": 0.15,
+            "text": "回程時一場沙塵暴吞沒了{{scout}}。",
+            "effects": [
+              {
+                "type": "CHARACTER_DEATH",
+                "role": "scout",
+                "cause": "從舊水庫回程時迷失在沙塵暴中"
+              }
+            ]
+          }
         }
       ],
-      "risk": {
-        "chance": 0.15,
-        "description": "{{scout}}在回程時遇上沙塵暴，再也沒有回來。",
-        "effects": [
-          {
-            "type": "CHARACTER_DEATH",
-            "role": "scout",
-            "cause": "從舊水庫回程時迷失在沙塵暴中"
-          }
-        ]
-      },
-      "outcome": "{{scout}}照著地圖走到舊水庫。龜裂的庫底下方，水依然清澈。"
+      "outcome": "{{scout}}帶著地圖和兩季的口糧出發了。"
     },
     {
       "id": "ignore",

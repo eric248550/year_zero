@@ -30,29 +30,40 @@
       ],
       "effects": [
         {
-          "type": "CHANGE_PROJECT",
-          "role": "you",
-          "progress": 0.15
-        },
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 6
+          "type": "AFTER",
+          "seasons": 1,
+          "away": [
+            "you"
+          ],
+          "title": "{{you}}從廢墟回來了",
+          "text": "{{you}}從廢墟深處拖回了一整袋零件，「{{project}}」的工作一下子往前推了一截。",
+          "effects": [
+            {
+              "type": "CHANGE_PROJECT",
+              "role": "you",
+              "progress": 0.15
+            },
+            {
+              "type": "ADJUST_RESOURCE",
+              "resource": "materials",
+              "amount": 6
+            }
+          ],
+          "risk": {
+            "chance": 0.25,
+            "text": "{{you}}在倒塌的樓梯間摔傷了，被同伴扛了回來。",
+            "effects": [
+              {
+                "type": "ADJUST_ATTRIBUTE",
+                "role": "you",
+                "attribute": "health",
+                "delta": -20
+              }
+            ]
+          }
         }
       ],
-      "risk": {
-        "chance": 0.25,
-        "description": "{{you}}在倒塌的樓梯間摔傷了，被同伴扛了回來。",
-        "effects": [
-          {
-            "type": "ADJUST_ATTRIBUTE",
-            "role": "you",
-            "attribute": "health",
-            "delta": -20
-          }
-        ]
-      },
-      "outcome": "{{you}}從廢墟深處拖回了一整袋零件。"
+      "outcome": "{{you}}往廢墟出發了，下一季才會回來。"
     },
     {
       "id": "long_way",

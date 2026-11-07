@@ -61,7 +61,11 @@ describe("tension between settlements", () => {
     let s = withOutpost(13);
     const [a, b] = s.settlements.filter((x) => x.status === "active");
     s.tensions = { [tensionKey(a!.id, b!.id)]: 30 };
-    for (let i = 0; i < 5; i++) s = stepWorld(s, { events: [], actions: [] }).state;
+    // Nothing to feed it: no outpost to supply, both well stocked.
+    for (let i = 0; i < 5; i++) {
+      for (const x of s.settlements) { x.supportedBy = null; x.resources.food = 500; x.resources.water = 500; }
+      s = stepWorld(s, { events: [], actions: [] }).state;
+    }
     expect(tensionBetween(s, a!.id, b!.id)).toBeLessThan(40);
   });
 });

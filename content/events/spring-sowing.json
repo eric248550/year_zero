@@ -10,14 +10,13 @@
       "kind": "settlement"
     },
     {
-      "type": "site_feature",
-      "feature": "fertile",
+      "type": "farmable",
       "present": true
     },
     {
-      "type": "flag",
-      "flag": "food.surface_farming",
-      "present": false
+      "type": "facility",
+      "facility": "fields",
+      "working": false
     },
     {
       "type": "event_occurred",
@@ -47,6 +46,11 @@
       },
       "effects": [
         {
+          "type": "BUILD_FACILITY",
+          "facility": "fields",
+          "seasons": 2
+        },
+        {
           "type": "SCHEDULE_EVENT",
           "event": "first-surface-harvest",
           "seasons": 2
@@ -56,12 +60,23 @@
     },
     {
       "id": "wait",
-      "label": "再等一年，先把土養好",
+      "label": "先種豆子養地，明年秋天再收",
       "tags": [
         "cautious"
       ],
-      "effects": [],
-      "outcome": "{{farmer}}說土還太酸。今年先種豆子養地。"
+      "effects": [
+        {
+          "type": "BUILD_FACILITY",
+          "facility": "fields",
+          "seasons": 6
+        },
+        {
+          "type": "SCHEDULE_EVENT",
+          "event": "first-surface-harvest",
+          "seasons": 6
+        }
+      ],
+      "outcome": "{{farmer}}說土還太酸。今年先種豆子養地，不用動到存糧裡的留種；田要到明年秋天才收得到。"
     }
   ],
   "priority": 3,

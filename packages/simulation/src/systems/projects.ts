@@ -304,6 +304,7 @@ export function projects(ctx: TickContext): void {
         const who = ctx.rng.pick(people);
         const before = p.progress;
         p.progress = round2(Math.max(0, p.progress - tech.cost * (0.1 + 0.1 * ctx.rng.next())));
+        logProject(p, st.tick, say(st).projectSetbackLog(fullName(who), Math.round(((before - p.progress) / tech.cost) * 100)));
         ctx.system({
           category: "technology",
           importance: "minor",
@@ -319,6 +320,7 @@ export function projects(ctx: TickContext): void {
           const who = ctx.rng.pick(gifted);
           const before = p.progress;
           p.progress = round2(p.progress + tech.cost * 0.15);
+          logProject(p, st.tick, say(st).projectBreakthroughLog(fullName(who)));
           ctx.system({
             category: "technology",
             importance: "minor",
@@ -375,4 +377,40 @@ function complete(ctx: TickContext, p: Project, s: Settlement, tech: TechnologyI
     const c = getCharacter(st, id);
     c?.lifeEvents.push({ tick: st.tick, text: id === p.leadId ? say(st).ledProject(t.name) : say(st).workedProject(t.name), historyId: e.id });
   }
+}
+
+/** Keep the last few things that happened to a project, for the people working on it. */
+export function logProject(p: Project, tick: number, text: string): void {
+  p.log = [...(p.log ?? []), { tick, text }].slice(-5);
+}
+
+/** Work a unit of materials buys when a member puts it in. */
+export const WORK_PER_MATERIAL = 0.6;
+
+/** A member puts the settlement's materials into their project. Validated by the caller; all or nothing. */
+export function donateToProject(ctx: TickContext, c: Character, amount: number): void {
+  const st = ctx.state;
+  const p = projectFor(st, c.id)!;
+  const s = getSettlement(st, p.settlementId)!;
+  const tech = TECH_BY_ID[p.techId]!;
+  const before = { materials: s.resources.materials, progress: p.progress };
+  s.resources.materials = round2(s.resources.materials - amount);
+  p.progress = round2(Math.min(tech.cost - 0.01, p.progress + amount * WORK_PER_MATERIAL));
+  p.donations = { ...(p.donations ?? {}), [c.id]: st.tick };
+  p.contributions = { ...(p.contributions ?? {}), [c.id]: round2((p.contributions?.[c.id] ?? 0) + amount * WORK_PER_MATERIAL) };
+  const name = techText(st, tech.id).name;
+  logProject(p, st.tick, say(st).projectDonationLog(fullName(c), amount));
+  ctx.system({
+    category: "technology",
+    importance: "minor",
+    title: say(st).projectDonationTitle(fullName(c), name),
+    text: say(st).projectDonationText(fullName(c), amount, s.name, name),
+    settlementIds: [s.id],
+    characterIds: [c.id],
+    changes: [
+      { path: `settlements.${s.id}.resources.materials`, label: `${s.name} materials`, before: before.materials, after: s.resources.materials },
+      { path: `projects.${p.id}.progress`, label: name, before: before.progress, after: p.progress },
+    ],
+    summary: "Player action (logged for replay)",
+  });
 }

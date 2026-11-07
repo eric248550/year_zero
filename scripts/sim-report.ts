@@ -44,11 +44,18 @@ const fired = new Map<string, number>();
 const worldsFiring = new Map<string, number>();
 const rejections = new Map<string, number>();
 const stageYears: Record<string, number[]> = Object.fromEntries(CIV_STAGES.map((s) => [s.id, []]));
+const milestoneDone: Record<string, number> = Object.fromEntries(CIV_STAGES.flatMap((s) => s.milestones.map((m) => [`${s.id}.${m.id}`, 0])));
+const blockers = new Map<string, number>();
+const stalls = new Map<string, number>();
+let failed = 0, popGrew = 0, founded = 0, survived = 0;
+const perWorldCounts = new Map<string, number[]>();
 const popAt: Record<number, number[]> = {};
 const checkpoints = [10, 30, 60, 100, YEARS];
 let extinct = 0, everEmpty = 0, collapses = 0, raids = 0, schisms = 0, invariantFailures = 0, ticks = 0;
 const minPop: number[] = [];
 const t0 = Date.now();
+const stageYearsThisWorld = new Map<string, number>();
+const countsThisWorld = new Map<string, number>();
 
 for (let seed = 1; seed <= SEEDS; seed++) {
   let s = withPlayers(createWorld({ seed }));
@@ -65,6 +72,7 @@ for (let seed = 1; seed <= SEEDS; seed++) {
     for (const e of r.events) {
       if (e.definitionId) {
         fired.set(e.definitionId, (fired.get(e.definitionId) ?? 0) + 1);
+        countsThisWorld.set(e.definitionId, (countsThisWorld.get(e.definitionId) ?? 0) + 1);
         if (!seen.has(e.definitionId)) { seen.add(e.definitionId); worldsFiring.set(e.definitionId, (worldsFiring.get(e.definitionId) ?? 0) + 1); }
       }
       if (e.changes.some((c) => c.path.endsWith(".status") && c.after === "abandoned")) collapses++;
@@ -75,10 +83,34 @@ for (let seed = 1; seed <= SEEDS; seed++) {
     const pop = s.characters.filter((c) => c.deathTick === null).length;
     low = Math.min(low, pop);
     if (pop === 0) wasEmpty = true;
-    for (const st of civilization(s).stages) if (st.done && !done.has(st.id)) { done.add(st.id); stageYears[st.id]!.push(s.tick); }
+    for (const st of civilization(s).stages) if (st.done && !done.has(st.id)) { done.add(st.id); stageYears[st.id]!.push(s.tick); stageYearsThisWorld.set(st.id, s.tick); }
     if (checkpoints.includes(s.tick)) (popAt[s.tick] ??= []).push(pop);
   }
   minPop.push(low);
+  // Milestones reached by the end, and what held back worlds that did not finish.
+  const civ = civilization(s);
+  for (const st of civ.stages) for (const m of st.milestones) if (m.done) milestoneDone[`${st.id}.${m.id}`]!++;
+  if (civ.stage < CIV_STAGES.length) {
+    failed++;
+    const open = civ.stages[civ.stage]!;
+    for (const m of open.milestones) if (!m.done) blockers.set(`${open.id}.${m.id}`, (blockers.get(`${open.id}.${m.id}`) ?? 0) + 1);
+  }
+  // A stage that took more than 40 years after the previous one counts as stalled.
+  let prev = 0;
+  for (const st of CIV_STAGES) {
+    const year = stageYearsThisWorld.get(st.id);
+    const end = year ?? YEARS;
+    if (end - prev > 40) stalls.set(st.id, (stalls.get(st.id) ?? 0) + 1);
+    if (year === undefined) break;
+    prev = year;
+  }
+  stageYearsThisWorld.clear();
+  if (s.characters.filter((c) => c.deathTick === null).length >= 120) popGrew++;
+  const surface = s.settlements.filter((x) => x.kind === "settlement");
+  founded += surface.length;
+  survived += surface.filter((x) => x.status === "active").length;
+  for (const [id, n] of countsThisWorld) (perWorldCounts.get(id) ?? perWorldCounts.set(id, []).get(id)!).push(n);
+  countsThisWorld.clear();
   if (s.characters.every((c) => c.deathTick !== null)) extinct++;
   if (wasEmpty) everEmpty++;
 }
@@ -93,8 +125,28 @@ const report = {
   lowestPopulation: { p10: quant(minPop, 0.1), median: quant(minPop, 0.5) },
   extinction: { worldsExtinctAtEnd: `${extinct}/${SEEDS} (${pct(extinct, SEEDS)})`, worldsEverEmpty: `${everEmpty}/${SEEDS}`, settlementCollapses: collapses },
   conflict: { raids, schisms },
-  civilization: Object.fromEntries(CIV_STAGES.map((st) => [st.id, { reached: `${stageYears[st.id]!.length}/${SEEDS} (${pct(stageYears[st.id]!.length, SEEDS)})`, medianYear: quant(stageYears[st.id]!, 0.5), p90Year: quant(stageYears[st.id]!, 0.9) }])),
-  events: { total: events.length, neverFired: never, firedInUnder5PercentOfWorlds: rare },
+  survival: {
+    populationAtOrAboveStart: `${popGrew}/${SEEDS} (${pct(popGrew, SEEDS)})`,
+    surfaceSettlementsFounded: founded,
+    surfaceSettlementsStillStanding: `${survived}/${founded} (${pct(survived, founded)})`,
+  },
+  civilization: Object.fromEntries(CIV_STAGES.map((st) => {
+    const v = stageYears[st.id]!;
+    // Worlds that never finished a stage count as "after the last year" in the censored median.
+    const censored = [...v, ...Array(SEEDS - v.length).fill(Infinity)];
+    const m = quant(censored, 0.5);
+    return [st.id, { reached: `${v.length}/${SEEDS} (${pct(v.length, SEEDS)})`, medianYearOfFinishedWorlds: quant(v, 0.5), medianYearAllWorlds: m === Infinity ? `not reached by ${YEARS}` : m, p90Year: quant(v, 0.9), stalledOver40Years: stalls.get(st.id) ?? 0 }];
+  })),
+  medianNote: "medianYearOfFinishedWorlds leaves out worlds that never reached the stage; medianYearAllWorlds counts them as not reached.",
+  milestones: Object.fromEntries(Object.entries(milestoneDone).map(([k, n]) => [k, pct(n, SEEDS)])),
+  unfinishedCivilizations: `${failed}/${SEEDS}`,
+  commonBlockers: [...blockers.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => `${k}: ${n} worlds`),
+  events: {
+    total: events.length,
+    neverFired: never,
+    firedInUnder5PercentOfWorlds: rare,
+    mostRepeated: [...perWorldCounts.entries()].map(([id, v]) => [id, v.reduce((a, b) => a + b, 0) / SEEDS] as const).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([id, n]) => `${id}: ${Math.round(n * 10) / 10} per world`),
+  },
   topRejections: [...rejections.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => `${n}× ${k}`),
   invariantFailures,
 };

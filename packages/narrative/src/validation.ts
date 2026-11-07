@@ -168,6 +168,9 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
       case "facility": { const k = `facility:${c.facility}`; if (bool.has(k) && bool.get(k) !== c.working) errors.push({ path, code: "precondition.contradiction", message: `${c.facility} must be both working and not` }); bool.set(k, c.working); break; }
       case "law": { const k = `law:${c.law}`; if (bool.has(k) && bool.get(k) !== c.active) errors.push({ path, code: "precondition.contradiction", message: `Law ${c.law} must be both in force and not` }); bool.set(k, c.active); break; }
       case "site_claimed": { const k = `claim:${c.location}`; if (bool.has(k) && bool.get(k) !== c.claimed) errors.push({ path, code: "precondition.contradiction", message: `${c.location} must be both claimed and not` }); bool.set(k, c.claimed); break; }
+      case "flag_any":
+        break;
+      case "farmable": { const k = "farmable"; if (bool.has(k) && bool.get(k) !== c.present) errors.push({ path, code: "precondition.contradiction", message: "Land must be both farmable and not" }); bool.set(k, c.present); break; }
       case "children":
         key = "children"; label = "children"; domain = { lo: 0, loInc: true, hi: Infinity, hiInc: false };
         break;
@@ -207,7 +210,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 
   if (scope === "world") {
     conds.forEach((c, i) => {
-      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age" || c.type === "facility" || c.type === "law" || c.type === "claims" || c.type === "children" || c.type === "site_feature"
+      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age" || c.type === "facility" || c.type === "law" || c.type === "claims" || c.type === "children" || c.type === "site_feature" || c.type === "farmable"
         || ((c.type === "resource" || c.type === "population") && c.scope === "target");
       if (settlementOnly) {
         errors.push({ path: `${basePath}.${i}`, code: "scope.mismatch", message: `World-scoped events have no target settlement; use scope "world" on this condition or change the event scope` });
@@ -273,6 +276,13 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         else if (LOCATION_BY_ID[e.location]!.hidden || e.location === "haven_deep") errors.push({ path, code: "effect.invalid", message: `${e.location} cannot be claimed` });
         if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Claims need a target settlement" });
         break;
+      case "AFTER": {
+        for (const r of e.away ?? []) if (!roleIds.has(r)) errors.push({ path, code: "ref.role", message: `Unknown role "${r}"` });
+        const inner = [...e.effects, ...(e.risk?.effects ?? [])] as Effect[];
+        if (inner.some((x) => x.type === "AFTER" || x.type === "SCHEDULE_EVENT")) errors.push({ path, code: "effect.invalid", message: "An AFTER outcome cannot schedule more follow-ups" });
+        checkEffects(def, inner, `${path}.effects`, errors, warnings, extraRoles);
+        break;
+      }
       case "SCHEDULE_EVENT":
         for (const r of e.away ?? []) if (!roleIds.has(r)) errors.push({ path, code: "ref.role", message: `Unknown role "${r}"` });
         if (e.event === def.id) errors.push({ path, code: "effect.invalid", message: "An event cannot schedule itself" });
@@ -467,7 +477,8 @@ export const ENGINE_FLAGS = new Set([
 ]);
 
 function allEffects(d: EventDefinition): Effect[] {
-  return [...d.effects, ...d.choices.flatMap((c) => [...c.effects, ...(c.memberEffects ?? []), ...(c.risk?.effects ?? [])])];
+  const top = [...d.effects, ...d.choices.flatMap((c) => [...c.effects, ...(c.memberEffects ?? []), ...(c.risk?.effects ?? [])])];
+  return [...top, ...top.flatMap((e) => (e.type === "AFTER" ? ([...e.effects, ...(e.risk?.effects ?? [])] as Effect[]) : []))];
 }
 function allConditions(d: EventDefinition): Condition[] {
   return [...d.preconditions, ...d.choices.flatMap((c) => c.requires)];
@@ -496,7 +507,10 @@ export function validateBundle(events: readonly EventDefinition[]): { errors: Va
       }
       if (e.type === "ADD_WORLD_FLAG") setFlags.add(e.flag);
     }
-    for (const c of allConditions(d)) if (c.type === "flag") readFlags.add(c.flag);
+    for (const c of allConditions(d)) {
+      if (c.type === "flag") readFlags.add(c.flag);
+      if (c.type === "flag_any") c.flags.forEach((f) => readFlags.add(f));
+    }
   }
   for (const d of events) {
     if (d.scheduledOnly && !scheduled.has(d.id)) errors.push({ path: d.id, code: "event.unreachable", message: `${d.id} is scheduledOnly but nothing schedules it` });

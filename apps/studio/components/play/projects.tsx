@@ -25,6 +25,10 @@ export interface ProjectItem {
   /** The character's profession is the one this branch needs. */
   fits: boolean;
   approach: "steady" | "careful" | "bold" | "frugal";
+  /** Latest things that happened to it, newest first. */
+  log: { year: number; text: string }[];
+  /** This player can put materials into it this year. */
+  canDonate: boolean;
   place: string;
 }
 
@@ -82,11 +86,17 @@ export function Projects({ v }: { v: ProjectsView }) {
                   <p className="text-[11px] text-ink-3">{t(`play.proj.approach.${p.approach}.hint`)}</p>
                 </div>
               ) : p.approach !== "steady" && <p className="text-[11px] text-ink-3">{t("play.proj.runAs", { how: t(`play.proj.approach.${p.approach}`) })}</p>}
+              {p.log.length > 0 && (
+                <ul className="space-y-0.5 border-l border-line pl-2 text-[11px] text-ink-3">
+                  {p.log.map((l, i) => <li key={i}><span className="num">{l.year}</span> {l.text}</li>)}
+                </ul>
+              )}
               {v.canWork && (
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   {p.mine ? (
                     <>
                       <span className="text-xs text-signal">{t("play.proj.mine", { n: p.myWork })}</span>
+                      {p.canDonate && <button type="button" disabled={busy} onClick={() => act({ type: "DONATE_PROJECT", amount: 10 })} className="min-h-9 rounded-lg border border-signal/50 bg-signal/10 px-3 text-xs font-medium text-signal hover:bg-signal/15 disabled:opacity-50">{t("play.proj.donate")}</button>}
                       <button type="button" disabled={busy} onClick={() => act({ type: "JOIN_PROJECT", projectId: null })} className="min-h-9 rounded-lg border border-line-strong px-3 text-xs hover:bg-surface-2 disabled:opacity-50">{t("play.proj.leave")}</button>
                     </>
                   ) : (

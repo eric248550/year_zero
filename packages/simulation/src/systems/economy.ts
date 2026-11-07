@@ -1,8 +1,8 @@
-import { LOCATION_BY_ID, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
+import { LOCATION_BY_ID, type FacilityId, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
 import { characterAge, hasTech, residents, round2 } from "@genesis/narrative";
 import { ADULT_AGE, ELDER_AGE } from "@genesis/schemas";
 import type { TickContext } from "../context";
-import { hasLaw, isAway, working } from "./legacy";
+import { hasLaw, isAway, level } from "./legacy";
 import { resourceName, say } from "@genesis/narrative";
 
 /** Tunable economic constants. Changing these changes RULES_VERSION semantics. */
@@ -61,41 +61,47 @@ export function workforce(ctx: TickContext, s: Settlement): Workforce {
 function multipliers(ctx: TickContext, s: Settlement) {
   const features = LOCATION_BY_ID[s.locationId]?.features ?? [];
   const t = (id: string) => hasTech(ctx.state, id);
-  const grid = (t("power_grid") ? 1.1 : 1) * (t("machining") ? 1.1 : 1);
+  // Buildings work in proportion to their condition; broken ones (below 30) do nothing.
+  const L = (f: FacilityId) => level(s, f);
+  // Know-how spreads to everyone; infrastructure only helps where it stands.
+  const grid = (t("power_grid") ? 1 + 0.1 * L("generator") : 1) * (t("machining") ? 1.1 : 1);
   let food = s.kind === "bunker" ? 0.95 : 1.05;
   if (features.includes("fertile")) food *= 1.15;
   if (t("hydroponics")) food *= 1.2;
-  if (t("irrigation") && s.kind !== "bunker") food *= 1.25;
+  if (s.kind !== "bunker") {
+    // Surface food comes from sown fields; until then only forage and kitchen gardens.
+    food *= 0.6 + 0.4 * L("fields");
+    if (t("irrigation")) food *= 1 + 0.25 * L("fields");
+  }
   if (t("crop_genetics")) food *= 1.15;
   if (t("mass_farming")) food *= 1.15;
   if (ctx.state.flags["food.heirloom_seeds"]) food *= 1.1;
-  if (working(s, "greenhouse")) food *= 1.1;
+  food *= 1 + 0.1 * L("greenhouse");
   let water = 1;
   if (t("water_purification")) water *= 1.3;
   if (features.includes("clean_aquifer")) water *= 1.3;
   if (features.includes("river")) water *= 1.15;
-  if (t("water_wheel")) water *= 1.1;
-  if (working(s, "well")) water *= 1.1;
+  water *= 1 + 0.1 * L("watermill");
+  water *= 1 + 0.1 * L("well");
   if (ctx.state.flags["governance.engineer_control"]) water *= 1.1;
   water *= grid;
   let materials = 1;
   if (features.includes("ruins")) materials *= 1.4;
   if (t("salvage_tools")) materials *= 1.4;
-  if (t("solar_power")) materials *= 1.1;
-  if (t("water_wheel")) materials *= 1.1;
+  materials *= 1 + 0.1 * L("generator");
+  materials *= 1 + 0.1 * L("watermill");
   if (t("mechanical_power")) materials *= 1.1;
-  if (t("workshop")) materials *= 1.2;
+  materials *= 1 + (t("workshop") ? 0.2 : 0.1) * L("forge");
   if (t("metallurgy")) materials *= 1.2;
-  if (working(s, "forge")) materials *= 1.1;
   materials *= grid;
   let knowledge = 1;
-  if (t("solar_power")) knowledge *= 1.2;
+  knowledge *= 1 + 0.2 * L("generator");
   if (t("archives")) knowledge *= 1.15;
   if (t("apprenticeship")) knowledge *= 1.1;
   if (t("schooling")) knowledge *= 1.25;
   if (t("research_institute")) knowledge *= 1.3;
   if (ctx.state.flags["mystery.halcyon_archive"]) knowledge *= 1.15;
-  if (working(s, "schoolhouse")) knowledge *= 1.1;
+  knowledge *= 1 + 0.1 * L("schoolhouse");
   return { food, water, materials, knowledge };
 }
 
@@ -131,7 +137,7 @@ export function consume(ctx: TickContext): void {
       const unmet = Math.max(0, need - available);
       s.resources[r] = round2(Math.max(0, available - need));
       deficit[r] = need > 0 ? unmet / need : 0;
-      const loss = r === "food" ? ECONOMY.foodSpoilage * (hasTech(ctx.state, "mass_farming") ? 0.5 : 1) * (working(s, "granary") ? 0.5 : 1) : ECONOMY.waterLoss;
+      const loss = r === "food" ? ECONOMY.foodSpoilage * (hasTech(ctx.state, "mass_farming") ? 0.5 : 1) * (1 - 0.5 * level(s, "granary")) : ECONOMY.waterLoss;
       s.resources[r] = round2(s.resources[r] * (1 - loss));
 
       if (deficit[r] > 0.02) {
@@ -194,7 +200,9 @@ export function wellbeing(ctx: TickContext): void {
     // The founders' memorial was torn down: Haven Deep's oldest families never forgave it.
     if (st.flags["society.founders_repudiated"] && s.kind === "bunker") morale -= 3;
     if (st.flags["society.closed_gates"]) morale += 2;
-    if (working(s, "meeting_hall")) morale += 3;
+    morale += 3 * level(s, "meeting_hall");
+    // How the settlement is governed: an assembly gives people a voice.
+    if (st.flags["governance.assembly"]) morale += 2;
     if (hasLaw(s, "rationing")) morale -= 3;
     if (hasLaw(s, "work_duty")) morale -= 4;
     if (hasLaw(s, "shared_stores")) morale += 2;
@@ -206,7 +214,7 @@ export function wellbeing(ctx: TickContext): void {
     if (hasTech(st, "field_medicine")) health += 8;
     if (hasTech(st, "antibiotics")) health += 10;
     if (hasTech(st, "water_purification")) health += 4;
-    if (working(s, "clinic")) health += 5;
+    health += 5 * level(s, "clinic");
     health -= d.food * 30 + d.water * 40;
     if (crowded) health -= 10;
 

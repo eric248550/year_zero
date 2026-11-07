@@ -103,7 +103,7 @@ describe("P0.2 event effects", () => {
     const sowing = byId("spring-sowing");
     expect(harvest.scheduledOnly).toBe(true);
     expect(sowing.preconditions.some((c) => c.type === "technology")).toBe(false);
-    expect(sowing.preconditions).toEqual(expect.arrayContaining([{ type: "site_feature", feature: "fertile", present: true }]));
+    expect(sowing.preconditions).toEqual(expect.arrayContaining([{ type: "farmable", present: true }]));
     const sow = sowing.choices.find((c) => c.id === "sow_all")!;
     expect(sow.costs?.food).toBeGreaterThan(0);
     expect(sow.effects).toEqual(expect.arrayContaining([expect.objectContaining({ type: "SCHEDULE_EVENT", event: "first-surface-harvest", seasons: 2 })]));

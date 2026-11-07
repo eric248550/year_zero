@@ -176,6 +176,10 @@ export const ProjectSchema = z.object({
   idleYears: z.number().int().min(0),
   /** Work each person has put in so far (character id -> work), kept for history. */
   contributions: z.record(z.string(), z.number()).optional(),
+  /** Tick each player last put materials into it (once a year each). */
+  donations: z.record(z.string(), z.number().int()).optional(),
+  /** Last few things that happened to it, newest last (for players to see). */
+  log: z.array(z.object({ tick: z.number().int(), text: z.string() })).optional(),
   /** How it is being run (chosen by its lead). Absent = steady. */
   approach: z.enum(PROJECT_APPROACHES).optional(),
 });
@@ -186,7 +190,18 @@ export const SEASONS_PER_YEAR = 4;
 
 export const ScheduledEventSchema = z.object({
   id: z.string(),
+  /** The scheduledOnly event to fire, or "" for an inline AFTER outcome. */
   definitionId: z.string(),
+  /** Inline outcome (AFTER effect): what happens and how it reads. */
+  inline: z.object({
+    title: z.string(),
+    text: z.string(),
+    effects: z.array(z.unknown()),
+    risk: z.object({ chance: z.number(), text: z.string(), effects: z.array(z.unknown()) }).optional(),
+    /** Roles that went away: if one has died, the outcome is lost. */
+    away: z.array(z.string()),
+    category: z.string(),
+  }).optional(),
   /** Season index it happens in. */
   dueSeason: z.number().int(),
   settlementId: z.string().nullable(),
@@ -194,6 +209,8 @@ export const ScheduledEventSchema = z.object({
   roles: z.record(z.string(), z.string()),
   /** History id of that event. */
   causeId: z.string(),
+  /** Roles that went away for it: if one of them has died, it is lost. */
+  away: z.array(z.string()).optional(),
 });
 export type ScheduledEvent = z.infer<typeof ScheduledEventSchema>;
 

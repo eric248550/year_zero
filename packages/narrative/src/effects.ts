@@ -233,7 +233,8 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
     case "BUILD_FACILITY": {
       const [s] = targetSettlements(state, "settlement", ctx);
       if (effect.seasons) {
-        if (s!.building?.[effect.facility] !== undefined) return; // already being built
+        // On a building that already stands this is a repair: it keeps working as it is until the work is done.
+        if (s!.building?.[effect.facility] !== undefined) return; // already being built or repaired
         const due = (ctx.season ?? ctx.tick * 4) + effect.seasons;
         s!.building = { ...(s!.building ?? {}), [effect.facility]: due };
         record(rec, `settlements.${s!.id}.building.${effect.facility}`, `${s!.name} builds ${effect.facility}`, null, due);
@@ -272,7 +273,8 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       const loc = state.locations.find((l) => l.id === effect.location);
       if (!loc || !loc.discovered || loc.settlementId) return; // unknown, or someone lives there
       const before = loc.claimedBy ?? null;
-      if (before === s!.id) return;
+      // A site belongs to one settlement at a time; taking it from another goes through CEDE_CLAIM.
+      if (before !== null) return;
       loc.claimedBy = s!.id;
       record(rec, `locations.${loc.id}.claimedBy`, `${LOCATION_BY_ID[loc.id]?.name ?? loc.id} claim`, before, s!.id);
       return;
@@ -280,8 +282,8 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
     case "CEDE_CLAIM": {
       const [s] = targetSettlements(state, "settlement", ctx);
       const rival = rivalOf(state, s!);
-      const loc = state.locations.find((l) => l.claimedBy === s!.id);
-      if (!rival || !loc) return;
+      const loc = state.locations.find((l) => l.claimedBy === s!.id && !l.settlementId);
+      if (!rival || rival.status !== "active" || !loc) return;
       loc.claimedBy = rival.id;
       record(rec, `locations.${loc.id}.claimedBy`, `${LOCATION_BY_ID[loc.id]?.name ?? loc.id} claim`, s!.id, rival.id);
       return;
@@ -293,13 +295,29 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       record(rec, `characters.${c.id}.specialties.${effect.specialty}`, `${fullName(c)} learns ${effect.specialty}`, false, true);
       return;
     }
+    case "AFTER": {
+      const due = (ctx.season ?? ctx.tick * 4) + effect.seasons;
+      const actor = ctx.roles.actor ?? "";
+      const id = `${ctx.historyId}:after${actor ? `:${actor}` : ""}:${(state.scheduled ?? []).length}`;
+      state.scheduled ??= [];
+      state.scheduled.push({
+        id, definitionId: "", dueSeason: due, settlementId: ctx.settlementId, roles: { ...ctx.roles }, causeId: ctx.historyId,
+        inline: { title: effect.title, text: effect.text, effects: effect.effects, risk: effect.risk, away: effect.away ?? [], category: ctx.category },
+      });
+      record(rec, `scheduled.${id}`, `Follow-up: ${effect.title}`, null, due);
+      for (const r of effect.away ?? []) {
+        const c = roleCharacter(state, r, ctx);
+        if (c) c.awayUntil = Math.max(c.awayUntil ?? 0, due);
+      }
+      return;
+    }
     case "SCHEDULE_EVENT": {
       const due = (ctx.season ?? ctx.tick * 4) + effect.seasons;
       const actor = ctx.roles.actor ?? "";
       const id = `${ctx.historyId}:${effect.event}${actor ? `:${actor}` : ""}`;
       state.scheduled ??= [];
       if (state.scheduled.some((x) => x.id === id)) return;
-      state.scheduled.push({ id, definitionId: effect.event, dueSeason: due, settlementId: ctx.settlementId, roles: { ...ctx.roles }, causeId: ctx.historyId });
+      state.scheduled.push({ id, definitionId: effect.event, dueSeason: due, settlementId: ctx.settlementId, roles: { ...ctx.roles }, causeId: ctx.historyId, ...(effect.away?.length ? { away: effect.away } : {}) });
       record(rec, `scheduled.${id}`, `Follow-up ${effect.event}`, null, due);
       for (const r of effect.away ?? []) {
         const c = roleCharacter(state, r, ctx);

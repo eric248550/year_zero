@@ -13,6 +13,7 @@ import {
 } from "@genesis/schemas";
 import { causesFor, evaluateAll } from "./conditions";
 import { applyEffects, canAfford, newRecorder, spendResources, transact, type EffectContext } from "./effects";
+import type { Effect } from "@genesis/schemas";
 import { EffectError } from "./errors";
 import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, round2 } from "./queries";
 import { candidatesForRole, resolveRoles, rolesSatisfiable } from "./roles";
@@ -505,33 +506,96 @@ export function runScheduledPhase(
   const due = (state.scheduled ?? []).filter((x) => x.dueSeason < until).sort((a, b) => a.dueSeason - b.dueSeason || (a.id < b.id ? -1 : 1));
   if (due.length === 0) return { state, events: [], rejections: [] };
   let current = structuredClone(state);
+  // Taken off the queue first: a follow-up fires at most once, whatever happens below.
   current.scheduled = (current.scheduled ?? []).filter((x) => x.dueSeason >= until);
   const events: HistoricalEvent[] = [];
   const rejections: EventRejection[] = [];
+  const alive = (id: string) => getCharacter(current, id)?.deathTick === null;
   for (const item of due) {
     for (const id of Object.values(item.roles)) {
       const c = getCharacter(current, id);
       if (c && c.awayUntil !== undefined && c.awayUntil <= item.dueSeason) delete c.awayUntil;
     }
-    const def = definitions.find((d) => d.id === item.definitionId && d.status === "published");
-    if (!def) { rejections.push({ definitionId: item.definitionId, reason: "Scheduled event is not in this run's content" }); continue; }
-    if (item.settlementId && current.settlements.find((s) => s.id === item.settlementId)?.status !== "active") {
-      rejections.push({ definitionId: def.id, reason: "The settlement is gone" });
+    const settlement = item.settlementId ? current.settlements.find((s) => s.id === item.settlementId) : null;
+    if (item.settlementId && settlement?.status !== "active") {
+      rejections.push({ definitionId: item.definitionId || "after", reason: "The settlement is gone" });
       continue;
     }
-    const roleIds = new Set(def.roles.map((r) => r.id));
-    const forced = Object.fromEntries(Object.entries(item.roles).filter(([r, id]) => roleIds.has(r) && getCharacter(current, id)?.deathTick === null));
+    const def = item.definitionId ? definitions.find((d) => d.id === item.definitionId && d.status === "published") : undefined;
+    if (item.definitionId && !def) { rejections.push({ definitionId: item.definitionId, reason: "Scheduled event is not in this run's content" }); continue; }
+    // Who went must be who comes back: if any of them died meanwhile, nothing is delivered.
+    // Only people who were sent away count; a field still ripens if the farmer who sowed it dies.
+    const went = item.inline ? item.inline.away : item.away ?? [];
+    const lost = went.map((r) => item.roles[r]).filter((id): id is string => !!id && !alive(id));
+    if (lost.length > 0) {
+      events.push(scheduledRecord(current, item, say(current).lostTitle(listNames(current, lost.map((id) => fullName(getCharacter(current, id)!)))), say(current).lostText(), [], lost));
+      continue;
+    }
+    if (item.inline) {
+      const inline = item.inline;
+      const roles = Object.fromEntries(Object.entries(item.roles).filter(([, id]) => alive(id)));
+      const ctxFor = (draft: WorldState, historyId: string): EffectContext => ({
+        tick: draft.tick, settlementId: item.settlementId, roles, historyId, title: inline.title,
+        scope: item.settlementId ? "settlement" : "world", category: inline.category as EffectContext["category"], storylineIds: [], season: item.dueSeason,
+      });
+      const hit = inline.risk ? rng.next() < inline.risk.chance : false;
+      try {
+        let historyId = "";
+        const rec = newRecorder();
+        const next = transact(current, (draft) => {
+          historyId = allocateHistoryId(draft);
+          applyEffects(draft, inline.effects as Effect[], ctxFor(draft, historyId), rec);
+          if (hit && inline.risk) applyEffects(draft, inline.risk.effects as Effect[], ctxFor(draft, historyId), rec);
+        }).state;
+        const values = templateValues(current, settlement ?? null, roles);
+        const text = [renderTemplate(inline.text, values), ...(hit && inline.risk ? [renderTemplate(inline.risk.text, values)] : [])].join("\n\n");
+        current = next;
+        events.push({ ...scheduledRecord(current, item, renderTemplate(inline.title, values), text, rec.changes, Object.values(roles)), id: historyId }, ...rec.childEvents);
+      } catch (err) {
+        if (err instanceof EffectError) rejections.push({ definitionId: "after", reason: err.message });
+        else throw err;
+      }
+      continue;
+    }
+    const roleIds = new Set(def!.roles.map((r) => r.id));
+    const forced = Object.fromEntries(Object.entries(item.roles).filter(([r, id]) => roleIds.has(r) && alive(id)));
     try {
-      const result = executeEvent(current, def, item.settlementId, rng, { chance: null, roll: null, forcedRoles: forced, season: item.dueSeason });
+      const result = executeEvent(current, def!, item.settlementId, rng, { chance: null, roll: null, forcedRoles: forced, season: item.dueSeason });
       current = result.state;
       const [first, ...rest] = result.events;
       if (first) {
         events.push({ ...first, text: `${say(current).seasonOpening(item.dueSeason % 4)}${first.text}`, causeIds: [...new Set([...first.causeIds, item.causeId])] }, ...rest);
       }
     } catch (err) {
-      if (err instanceof EffectError) rejections.push({ definitionId: def.id, reason: err.message });
+      if (err instanceof EffectError) rejections.push({ definitionId: def!.id, reason: err.message });
       else throw err;
     }
   }
   return { state: current, events, rejections };
+}
+
+/** History entry for a follow-up that resolved inline or was lost. */
+function scheduledRecord(state: WorldState, item: NonNullable<WorldState["scheduled"]>[number], title: string, text: string, changes: HistoricalEvent["changes"], characterIds: string[]): HistoricalEvent {
+  const id = allocateHistoryId(state);
+  return {
+    id,
+    tick: state.tick,
+    year: currentYear(state),
+    kind: "narrative",
+    definitionId: item.definitionId || null,
+    definitionVersion: null,
+    category: (item.inline?.category as HistoricalEvent["category"]) ?? "exploration",
+    scope: item.settlementId ? "settlement" : "world",
+    importance: "notable",
+    title,
+    text: `${say(state).seasonOpening(item.dueSeason % 4)}${text}`,
+    settlementIds: item.settlementId ? [item.settlementId] : [],
+    characterIds,
+    storylineIds: [],
+    causeIds: [item.causeId],
+    parentId: item.causeId,
+    trigger: { summary: `Scheduled for season ${item.dueSeason} by ${item.causeId}`, chance: item.inline?.risk?.chance ?? null, roll: null, priority: null, conditions: [], roles: item.roles },
+    choice: null,
+    changes,
+  };
 }

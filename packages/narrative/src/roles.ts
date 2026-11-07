@@ -39,7 +39,9 @@ export function candidatesForRole(
     }
     if (role.onProject) {
       const p = projectOf(state, c.id);
-      if (!p || (role.onProject !== true && TECH_BY_ID[p.techId]?.branch !== role.onProject)) return false;
+      const branch = p ? TECH_BY_ID[p.techId]?.branch : undefined;
+      const wanted = role.onProject === true ? null : Array.isArray(role.onProject) ? role.onProject : [role.onProject];
+      if (!p || (wanted && (!branch || !wanted.includes(branch)))) return false;
     }
     if (role.minAttributes) {
       for (const [k, min] of Object.entries(role.minAttributes) as [keyof Attributes, number][]) {

@@ -26,6 +26,7 @@ export function describeEffect(e: Effect): string {
     case "CLAIM_SITE": return `Claim ${LOCATION_BY_ID[e.location]?.name ?? e.location}`;
     case "CEDE_CLAIM": return "Hand a claimed site to the rival";
     case "ADD_SPECIALTY": return `${e.role} learns ${e.specialty}`;
+    case "AFTER": return `After ${e.seasons} season(s): ${e.title}`;
     case "SCHEDULE_EVENT": return `${e.event} follows in ${e.seasons} season(s)${e.away?.length ? ` (${e.away.join(", ")} away)` : ""}`;
     case "CHANGE_TENSION": return `Tension with rival ${e.delta >= 0 ? "+" : ""}${e.delta}`;
   }

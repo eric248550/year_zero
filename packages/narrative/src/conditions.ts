@@ -54,6 +54,10 @@ export function describeCondition(c: Condition): string {
       return `Settlement ${c.resource} shortage is ${c.active ? "active" : "not active"}`;
     case "tension":
       return `Tension with rival settlement ${c.op} ${c.value}`;
+    case "flag_any":
+      return `${c.present ? "One of" : "None of"} flags ${c.flags.join(", ")} ${c.present ? "is set" : "is set"}`;
+    case "farmable":
+      return `Settlement land ${c.present ? "can" : "cannot"} be farmed`;
     case "children":
       return `Children in the settlement ${c.op} ${c.value}`;
     case "site_feature":
@@ -153,6 +157,15 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
       const t = tensionBetween(state, s.id, rival.id);
       return result(t, compare(t, c.op, c.value));
     }
+    case "flag_any": {
+      const any = c.flags.some((f) => state.flags[f] !== undefined && state.flags[f] !== false);
+      return result(any, any === c.present);
+    }
+    case "farmable": {
+      if (!s) return result(null, false);
+      const ok = isFarmable(state, s);
+      return result(ok, ok === c.present);
+    }
     case "children": {
       if (!s) return result(null, false);
       const n = residents(state, s.id).filter((x) => characterAge(state, x) < ADULT_AGE).length;
@@ -220,4 +233,11 @@ export function causesFor(state: WorldState, conditions: readonly Condition[], s
     }
   }
   return [...causes];
+}
+
+/** Land that can be sown: fertile, by a river, or anywhere once irrigation is known. The bunker grows in racks, not fields. */
+export function isFarmable(state: WorldState, s: Settlement): boolean {
+  if (s.kind === "bunker") return false;
+  const f = LOCATION_BY_ID[s.locationId]?.features ?? [];
+  return f.includes("fertile") || f.includes("river") || state.technologies.includes("irrigation");
 }

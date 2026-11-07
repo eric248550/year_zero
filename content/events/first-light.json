@@ -6,9 +6,9 @@
   "description": "太陽能第一次讓整個聚落在夜裡亮起來。",
   "preconditions": [
     {
-      "type": "technology",
-      "tech": "solar_power",
-      "has": true
+      "type": "facility",
+      "facility": "generator",
+      "working": true
     },
     {
       "type": "flag",

@@ -41,7 +41,7 @@ export function CivilizationCard({ civ, t, compact }: { civ: CivilizationStatus;
                 {m.done ? <Check size={15} className="mt-0.5 shrink-0 text-signal" /> : <Circle size={15} className="mt-0.5 shrink-0 text-ink-3" />}
                 <span className={clsx("min-w-0", m.done && "text-ink-3 line-through")}>
                   {t(`civ.m.${current!.id}.${m.id}` as MessageKey)}
-                  {!m.done && m.current !== null && m.check.kind !== "tech" && m.check.kind !== "flag" && (
+                  {!m.done && m.current !== null && (m.check.kind === "population" || m.check.kind === "settlements") && (
                     <span className="num ml-1.5 text-xs text-ink-3">{m.current}/{m.check.min}</span>
                   )}
                 </span>

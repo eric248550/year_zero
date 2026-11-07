@@ -4,7 +4,7 @@ import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { healthMortality, initAttributes } from "./attributes";
-import { hasLaw, working } from "./legacy";
+import { hasLaw, level } from "./legacy";
 import { professionName, say } from "@genesis/narrative";
 
 export const DEMOGRAPHY = {
@@ -37,7 +37,7 @@ export function mortality(ctx: TickContext): void {
     let mult = Math.min(2.5, Math.max(0.5, 1 + (60 - s.health) / 50));
     if (hasTech(st, "field_medicine")) mult *= 0.8;
     if (hasTech(st, "antibiotics")) mult *= 0.75;
-    if (working(s, "clinic")) mult *= 0.9;
+    mult *= 1 - 0.1 * level(s, "clinic");
     // Someone at home who knows how to deliver a baby.
     const childCare = (hasTech(st, "maternal_care") ? 0.5 : 1) * (people.some((c) => c.specialties?.includes("midwifery")) ? 0.7 : 1);
     mult *= Math.max(0.7, 1 - 0.04 * medics);
