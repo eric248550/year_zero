@@ -113,6 +113,18 @@ rejectedEvents, metrics }`. Phases:
    (`expanding`); worn infrastructure is repaired automatically. Choices whose
    effects cannot happen are not offered (`effectBlocker`). Follow-ups never
    refill a carried role whose person died.
+   Rules 1.1: shared changes made from personal events are `PROPOSE` effects
+   (`narrative/src/authority.ts`): domain changes go to the head of that
+   profession (who may act alone), settlement changes to the governing body
+   (assembly: all adults; elders; otherwise the council of heads). A proposal
+   becomes a `proposal-vote` pending decision (`proposalId`) resolved next
+   year; `RESOLVE_PROPOSAL` runs the stored effects atomically against the
+   current world or marks it failed; one open proposal per settlement and key;
+   `state.proposals` records proposer, deciders, approvers and outcome.
+   Materials come only from salvage, timber (lumber camp, regrows) and ore (mine,
+   finite, halved without a forge) via `materialsFrom`; engineers recycle 30%
+   of upkeep. Decisions made between ticks count seasons from the coming
+   spring; nobody can be away on two trips.
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

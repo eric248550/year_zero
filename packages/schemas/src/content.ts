@@ -130,6 +130,13 @@ export type Role = z.infer<typeof RoleSchema>;
 
 const SettlementTargetSchema = z.enum(["settlement", "all_settlements"]).default("settlement");
 
+export const CostSchema = z.object({
+  food: z.number().min(0).optional(),
+  water: z.number().min(0).optional(),
+  materials: z.number().min(0).optional(),
+  knowledge: z.number().min(0).optional(),
+}).strict();
+
 export const EFFECT_TYPES = [
   "ADJUST_RESOURCE",
   "CHANGE_RELATIONSHIP",
@@ -161,6 +168,9 @@ export const EFFECT_TYPES = [
   "SET_FARM_PLAN",
   "CHANGE_CROPS",
   "PRIORITIZE_BRANCH",
+  "PROPOSE",
+  "RESOLVE_PROPOSAL",
+  "SPEND",
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -240,6 +250,24 @@ export const EffectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("SET_FARM_PLAN"), plan: z.enum(FARM_PLANS) }).strict(),
   /** Damage (negative) the crops now in the ground, as a share of them. */
   z.object({ type: z.literal("CHANGE_CROPS"), fraction: z.number().min(-1).max(0) }).strict(),
+  /**
+   * Propose a change to shared state instead of making it. A domain change
+   * (`domain`: the head of that profession decides) runs at once if the
+   * proposer is that head; otherwise, and for every settlement change, the
+   * right people decide next year. Recorded: who proposed, who approved.
+   */
+  z.object({
+    type: z.literal("PROPOSE"),
+    kind: z.enum(["domain", "settlement"]),
+    domain: z.enum(PROFESSIONS).optional(),
+    title: z.string().min(1).max(120),
+    tags: z.array(z.enum(CHOICE_TAGS)).default([]),
+    effects: z.array(z.lazy((): z.ZodTypeAny => EffectSchema)).min(1),
+  }).strict(),
+  /** Used by the approval vote: carry out (or drop) the proposal it is about. */
+  z.object({ type: z.literal("RESOLVE_PROPOSAL"), approve: z.boolean() }).strict(),
+  /** Pay from the target settlement; the whole outcome fails if it cannot be paid. */
+  z.object({ type: z.literal("SPEND"), costs: CostSchema }).strict(),
   /** The council starts the next project in this branch first (sets the research focus). */
   z.object({ type: z.literal("PRIORITIZE_BRANCH"), branch: z.enum(BRANCHES) }).strict(),
   /** The target settlement hands its oldest claim to its rival. */
@@ -278,12 +306,7 @@ export type EffectInput = z.input<typeof EffectSchema>;
 /* Choices                                                             */
 /* ------------------------------------------------------------------ */
 
-export const CostSchema = z.object({
-  food: z.number().min(0).optional(),
-  water: z.number().min(0).optional(),
-  materials: z.number().min(0).optional(),
-  knowledge: z.number().min(0).optional(),
-}).strict();
+
 
 export const ChoiceSchema = z.object({
   id: z.string().regex(/^[a-z][a-z0-9_]*$/),

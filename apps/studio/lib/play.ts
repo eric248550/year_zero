@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
-import { characterAge, fullName, getCharacter, population, relationshipKey, powerLevel, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
+import { characterAge, fullName, getCharacter, population, relationshipKey, governanceOf, powerLevel, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
 import { BRANCH_INFO, CLAIM_YIELD, FACILITY_INFO, FACILITY_WORKING, LAW_INFO, SPECIALTY_INFO, TECH_BY_ID, ZH_CATALOG, type FacilityId, type LawId, type SpecialtyId } from "@genesis/schemas";
 import { activeProjects, projectBlocker, proposableBranches, startableTechs, workEstimate } from "@genesis/simulation";
 import type { ProjectsView } from "@/components/play/projects";
@@ -146,7 +146,7 @@ export function decisionViews(ctx: PlayContext): DecisionView[] {
     .map((p) => {
       const def = ctx.events.find((e) => e.id === p.definitionId);
       const settlement = p.settlementId ? state.settlements.find((s) => s.id === p.settlementId) : undefined;
-      const values: Record<string, string> = { settlement: settlement?.name ?? "the settlements", rival: (settlement && rivalOf(state, settlement)?.name) || "", year: String(state.startYear + p.firedTick), world: state.worldName };
+      const values: Record<string, string> = { proposal: state.proposals?.find((x) => x.id === p.proposalId)?.title ?? "", settlement: settlement?.name ?? "the settlements", rival: (settlement && rivalOf(state, settlement)?.name) || "", year: String(state.startYear + p.firedTick), world: state.worldName };
       for (const [role, id] of Object.entries(p.roles)) {
         const c = getCharacter(state, id);
         const proj = c && values.project === undefined ? projectOf(state, c.id) : undefined;
@@ -288,7 +288,11 @@ export function neighboursOf(state: WorldState, c: Character): { name: string; t
     .sort((a, b) => b.tension - a.tension);
 }
 
+export interface ProposalView { title: string; proposer: string; status: "open" | "executed" | "rejected" | "failed"; deciders: string; yes: number; no: number; year: number }
+
 export interface HomeView {
+  proposals: ProposalView[];
+  governance: string;
   farm: { seeds: number; fertility: number; plan: string; growing: number; readyLabel: string | null; harvests: number } | null;
   power: number;
   salvage: number;
@@ -308,7 +312,16 @@ export function homeOf(state: WorldState, c: Character, zh: boolean): HomeView |
   const seasons = zh ? ["春天", "夏天", "秋天", "冬天"] : ["spring", "summer", "autumn", "winter"];
   const growing = home.farm?.crops.reduce((n, c) => n + c.seeds, 0) ?? 0;
   const ready = home.farm?.crops.length ? Math.min(...home.farm.crops.map((c) => c.readySeason)) : null;
+  const name = (id: string) => { const x = getCharacter(state, id); return x ? fullName(x) : id; };
+  const gov = governanceOf(state);
+  const proposals = (state.proposals ?? []).filter((p) => p.settlementId === home.id).slice(-6).reverse().map((p) => ({
+    title: p.title, proposer: name(p.proposerId), status: p.status, year: state.startYear + (p.resolvedTick ?? p.createdTick),
+    deciders: p.kind === "domain" && p.deciders.length === 1 ? name(p.deciders[0]!) : p.deciders.length === 1 ? name(p.deciders[0]!) : `${p.deciders.length}`,
+    yes: p.approvedBy.length, no: p.rejectedBy.length,
+  }));
   return {
+    proposals,
+    governance: zh ? { assembly: "居民大會投票", elders: "長者議政", heads: "各職業帶頭的人組成的議會" }[gov] : { assembly: "the assembly votes", elders: "the elders decide", heads: "the council of heads decides" }[gov],
     farm: home.kind === "bunker" && !home.farm?.seeds ? null : home.farm ? {
       seeds: Math.round(home.farm.seeds), fertility: Math.round(home.farm.fertility), plan: plans[home.farm.plan ?? "seedsave"], growing: Math.round(growing),
       readyLabel: ready === null ? null : `${state.startYear + Math.floor(ready / 4)} ${seasons[ready % 4]}`, harvests: home.farm.harvests,
@@ -336,4 +349,19 @@ export function personalOf(state: WorldState, c: Character, zh: boolean): { spec
     specialties: (c.specialties ?? []).map((x: SpecialtyId) => ({ name: zh ? ZH_CATALOG.specialty[x] : SPECIALTY_INFO[x].name, effect: zh ? ZH_CATALOG.specialtyEffect[x] : SPECIALTY_INFO[x].effect })),
     awayUntil: c.awayUntil !== undefined && c.awayUntil >= state.tick * 4 ? { year: state.startYear + Math.floor(c.awayUntil / 4), season: seasons[c.awayUntil % 4]! } : null,
   };
+}
+
+/** What this player's earlier lives left behind: the people they were and what they did that is on record. */
+export function legacyOf(state: WorldState, player: Player): { name: string; years: string; deeds: string[]; skills: string[] }[] {
+  return player.lineage.slice(0, -1).reverse().map((id) => {
+    const c = getCharacter(state, id);
+    if (!c) return null;
+    const zh = state.locale === "zh-TW";
+    return {
+      name: fullName(c),
+      years: `${state.startYear + c.birthTick}–${c.deathTick !== null ? state.startYear + c.deathTick : ""}`,
+      deeds: c.lifeEvents.filter((l) => l.historyId && l.tick >= 0).slice(-4).map((l) => `${state.startYear + l.tick} ${l.text}`),
+      skills: (c.specialties ?? []).map((x) => (zh ? ZH_CATALOG.specialty[x] : SPECIALTY_INFO[x].name)),
+    };
+  }).filter((x): x is NonNullable<typeof x> => !!x);
 }

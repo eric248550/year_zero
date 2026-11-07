@@ -281,6 +281,20 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         else if (LOCATION_BY_ID[e.location]!.hidden || e.location === "haven_deep") errors.push({ path, code: "effect.invalid", message: `${e.location} cannot be claimed` });
         if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Claims need a target settlement" });
         break;
+      case "PROPOSE": {
+        const inner = e.effects as Effect[];
+        if (inner.some((x) => x.type === "PROPOSE" || x.type === "RESOLVE_PROPOSAL")) errors.push({ path, code: "effect.invalid", message: "A proposal cannot contain another proposal" });
+        if (e.kind === "domain" && !e.domain) errors.push({ path, code: "effect.invalid", message: "A domain proposal needs the domain (profession) that decides it" });
+        if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Proposals belong to a settlement" });
+        checkEffects(def, inner, `${path}.effects`, errors, warnings, extraRoles);
+        break;
+      }
+      case "RESOLVE_PROPOSAL":
+        if (!def.tags.includes("proposal")) errors.push({ path, code: "effect.invalid", message: "Only the proposal vote can resolve proposals" });
+        break;
+      case "SPEND":
+        if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Spending needs a target settlement" });
+        break;
       case "AFTER": {
         for (const r of e.away ?? []) if (!roleIds.has(r)) errors.push({ path, code: "ref.role", message: `Unknown role "${r}"` });
         const inner = [...e.effects, ...(e.risk?.effects ?? [])] as Effect[];
@@ -318,7 +332,7 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         warnings.push({ path, code: "effect.lethal", message: `This effect kills the character in role "${e.role}"` });
         break;
       case "DISCOVER_LOCATION":
-        if (!LOCATION_BY_ID[e.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${e.location}"` });
+        if (e.location !== "nearest" && !LOCATION_BY_ID[e.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${e.location}"` });
         break;
       case "UNLOCK_TECHNOLOGY": {
         const tech = TECH_BY_ID[e.tech];
@@ -426,7 +440,7 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
   // Shared goods are settled once per choice, never once per person who chose it.
   def.choices.forEach((c, i) => {
     for (const e of c.memberEffects ?? []) {
-      const shared = (e.type === "ADJUST_RESOURCE" && e.amount > 0) || ["EXCHANGE", "BUILD_FACILITY", "ADD_SEEDS", "CLAIM_SITE", "ADD_WORLD_FLAG", "ENACT_LAW", "CHANGE_PROJECT"].includes(e.type);
+      const shared = (e.type === "ADJUST_RESOURCE" && e.amount > 0) || ["EXCHANGE", "BUILD_FACILITY", "ADD_SEEDS", "CLAIM_SITE", "ADD_WORLD_FLAG", "ENACT_LAW", "CHANGE_PROJECT", "PROPOSE", "SPEND"].includes(e.type);
       if (shared) errors.push({ path: `choices.${i}.memberEffects`, code: "effect.shared", message: `${e.type} changes shared state and would repeat for every member; put it in effects` });
     }
   });
@@ -450,7 +464,7 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
     }
   }
 
-  const allowedPlaceholders = new Set(["settlement", "rival", "project", "year", "world", "choice", ...[...roleIds, "actor"].flatMap((r) => [r, `${r}.profession`])]);
+  const allowedPlaceholders = new Set(["settlement", "rival", "project", "proposal", "year", "world", "choice", ...[...roleIds, "actor"].flatMap((r) => [r, `${r}.profession`])]);
   const templates: [string, string][] = [["narrative.headline", def.narrative.headline], ["narrative.text", def.narrative.text]];
   def.choices.forEach((c, i) => {
     if (c.outcome) templates.push([`choices.${i}.outcome`, c.outcome]);
@@ -499,7 +513,10 @@ export const ENGINE_FLAGS = new Set([
 
 function allEffects(d: EventDefinition): Effect[] {
   const top = [...d.effects, ...d.choices.flatMap((c) => [...c.effects, ...(c.memberEffects ?? []), ...(c.risk?.effects ?? [])])];
-  return [...top, ...top.flatMap((e) => (e.type === "AFTER" ? ([...e.effects, ...(e.risk?.effects ?? [])] as Effect[]) : []))];
+  // Look inside proposals and timed outcomes too (two levels: a proposal may hold a trip).
+  const inner = (e: Effect): Effect[] => e.type === "AFTER" ? ([...e.effects, ...(e.risk?.effects ?? [])] as Effect[]) : e.type === "PROPOSE" ? (e.effects as Effect[]) : [];
+  const level1 = top.flatMap(inner);
+  return [...top, ...level1, ...level1.flatMap(inner)];
 }
 function allConditions(d: EventDefinition): Condition[] {
   return [...d.preconditions, ...d.choices.flatMap((c) => c.requires)];
@@ -534,7 +551,7 @@ export function validateBundle(events: readonly EventDefinition[]): { errors: Va
     }
   }
   for (const d of events) {
-    if (d.scheduledOnly && !scheduled.has(d.id)) errors.push({ path: d.id, code: "event.unreachable", message: `${d.id} is scheduledOnly but nothing schedules it` });
+    if (d.scheduledOnly && !scheduled.has(d.id) && !d.tags.includes("proposal")) errors.push({ path: d.id, code: "event.unreachable", message: `${d.id} is scheduledOnly but nothing schedules it` });
     for (const c of allConditions(d)) {
       if (c.type === "flag" && c.present && !setFlags.has(c.flag) && !ENGINE_FLAGS.has(c.flag)) {
         errors.push({ path: d.id, code: "event.unreachable", message: `${d.id} needs flag ${c.flag}, which nothing sets` });

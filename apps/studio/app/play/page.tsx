@@ -11,7 +11,7 @@ import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
 import { Projects } from "@/components/play/projects";
 import { redirect } from "next/navigation";
-import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor, homeOf, personalOf } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor, homeOf, personalOf, legacyOf } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -82,6 +82,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
   const zh = state.locale === "zh-TW";
   const place = homeOf(state, character, zh);
   const mine = personalOf(state, character, zh);
+  const before = legacyOf(state, player);
   const story = [...character.lifeEvents].reverse().slice(0, 8);
   const news = home ? queryHistory(db(), ctx.runId, { settlementId: home.id, minImportance: "notable", order: "desc", limit: 4 }).items.filter((e) => e.tick >= state.tick - PLAYERS.inviteTtl) : [];
 
@@ -128,6 +129,21 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
         </ol>
       )}
 
+      {before.length > 0 && (
+        <>
+          <SectionTitle>{t("play.legacy.title")}</SectionTitle>
+          <ul className="space-y-2">
+            {before.map((b) => (
+              <li key={b.name + b.years} className="card px-4 py-3">
+                <div className="text-sm font-medium">{b.name} <span className="num text-xs text-ink-3">{b.years}</span></div>
+                {b.skills.length > 0 && <div className="text-[11px] text-ink-3">{t("play.me.skills")}：{b.skills.join("、")}</div>}
+                <ul className="mt-1 space-y-0.5 text-xs text-ink-2">{b.deeds.map((d) => <li key={d}>{d}</li>)}</ul>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       {neighbours.length > 0 && (
         <>
           <SectionTitle>{t("play.rel.title")}</SectionTitle>
@@ -155,6 +171,20 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
               <span>{t("play.home.power")} <b className="num">{place.power}%</b></span>
               <span>{t("play.home.salvage")} <b className="num">{place.salvage}</b></span>
               {place.farm && <span className="col-span-2 text-xs text-ink-3 sm:col-span-4">{t("play.home.farm", { plan: place.farm.plan, harvests: place.farm.harvests })}{place.farm.growing > 0 && place.farm.readyLabel ? ` · ${t("play.home.growing", { n: place.farm.growing, when: place.farm.readyLabel })}` : ""}</span>}
+            </div>
+            <div className="px-4 py-3">
+              <h3 className="label-xs mb-1">{t("play.home.proposals")}</h3>
+              <p className="mb-2 text-[11px] text-ink-3">{t("play.home.howDecided", { who: place.governance })}</p>
+              {place.proposals.length === 0 ? <p className="text-xs text-ink-3">—</p> : (
+                <ul className="space-y-1.5">
+                  {place.proposals.map((p, i) => (
+                    <li key={i} className="text-sm">
+                      <span className={p.status === "executed" ? "text-ok" : p.status === "open" ? "text-signal" : "text-ink-3"}>{t(`play.home.proposal.${p.status}`)}</span> {p.title}
+                      <div className="text-[11px] text-ink-3">{t("play.home.proposalBy", { who: p.proposer, year: p.year })}{p.status !== "open" && (p.yes + p.no > 0) ? ` · ${t("play.home.proposalVotes", { yes: p.yes, no: p.no })}` : ""}{p.status === "open" ? ` · ${t("play.home.proposalDecider", { who: p.deciders })}` : ""}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             {place.facilities.length > 0 && (
               <div className="px-4 py-3">

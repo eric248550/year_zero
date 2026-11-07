@@ -10,3 +10,4 @@ export * from "./validation";
 export { makeContentBundle } from "./bundle";
 export * from "./describe";
 export * from "./texts";
+export * from "./authority";

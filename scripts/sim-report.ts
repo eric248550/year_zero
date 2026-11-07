@@ -12,7 +12,7 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContentDir } from "@genesis/narrative/node";
 import { activeProjects, applyImmediate, checkInvariants, civilization, CIV_STAGES, createWorld, playerCharacter, stepWorld } from "@genesis/simulation";
-import { BRANCH_INFO, TECH_BY_ID, type WorldState } from "@genesis/schemas";
+import { BRANCH_INFO, TECHNOLOGIES, TECH_BY_ID, type WorldState } from "@genesis/schemas";
 
 /** Players who show up: each joins a project of their own trade where they live, if there is one. */
 /** A third player joins as a surface-born farmer once a surface settlement has stood for a year. */
@@ -60,7 +60,7 @@ const blockers = new Map<string, number>();
 const stalls = new Map<string, number>();
 let failed = 0, popGrew = 0, founded = 0, survived = 0;
 const perWorldCounts = new Map<string, number[]>();
-type WorldStats = { renewal: number | null; pop: number; settlements: number; raids: number; schisms: number; shortYears: number; starvedYears: number; seedlessYears: number; harvestFailures: number; fertility: number; settlementYears: number };
+type WorldStats = { p1: string; techs: number; projectsSetAside: number; longProjects: number; proposals: Record<string, number>; sustainable: number; surface: number; materials: { salvage: number; timber: number; ore: number }; renewal: number | null; pop: number; settlements: number; raids: number; schisms: number; shortYears: number; starvedYears: number; seedlessYears: number; harvestFailures: number; fertility: number; settlementYears: number };
 const worlds: WorldStats[] = [];
 let w: WorldStats;
 const popAt: Record<number, number[]> = {};
@@ -70,11 +70,12 @@ const minPop: number[] = [];
 const t0 = Date.now();
 const stageYearsThisWorld = new Map<string, number>();
 let exhaustedSites = 0;
+const techDone = new Map<string, number>();
 const countsThisWorld = new Map<string, number>();
 
 for (let seed = 1; seed <= SEEDS; seed++) {
   let s = withPlayers(createWorld({ seed }));
-  w = { renewal: null, pop: 0, settlements: 0, raids: 0, schisms: 0, shortYears: 0, starvedYears: 0, seedlessYears: 0, harvestFailures: 0, fertility: 0, settlementYears: 0 };
+  w = { p1: playerCharacter(s, "p1")?.profession ?? "?", techs: 0, projectsSetAside: 0, longProjects: 0, proposals: {}, sustainable: 0, surface: 0, materials: { salvage: 0, timber: 0, ore: 0 }, renewal: null, pop: 0, settlements: 0, raids: 0, schisms: 0, shortYears: 0, starvedYears: 0, seedlessYears: 0, harvestFailures: 0, fertility: 0, settlementYears: 0 };
   const seen = new Set<string>();
   const done = new Set<string>();
   let low = Infinity;
@@ -96,6 +97,7 @@ for (let seed = 1; seed <= SEEDS; seed++) {
       if (e.title.includes("搶了")) { raids++; w.raids++; }
       if (e.title.includes("分裂了")) { schisms++; w.schisms++; }
       if (e.title.includes("歉收")) w.harvestFailures++;
+      if (e.title.includes("被擱置")) w.projectsSetAside++;
     }
     for (const x of r.rejectedEvents) rejections.set(`${x.definitionId}: ${x.reason}`, (rejections.get(`${x.definitionId}: ${x.reason}`) ?? 0) + 1);
     const pop = s.characters.filter((c) => c.deathTick === null).length;
@@ -112,6 +114,14 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   }
   minPop.push(low);
   w.renewal = stageYearsThisWorld.get("renewal") ?? null;
+  w.techs = s.technologies.length;
+  for (const t of s.technologies) techDone.set(t, (techDone.get(t) ?? 0) + 1);
+  w.longProjects = (s.projects ?? []).filter((p) => s.tick - p.startedTick > 30).length;
+  for (const p of s.proposals ?? []) w.proposals[p.status] = (w.proposals[p.status] ?? 0) + 1;
+  const surfaceNow = s.settlements.filter((z) => z.status === "active" && z.kind === "settlement");
+  w.surface = surfaceNow.length;
+  w.sustainable = surfaceNow.filter((z) => (z.facilities?.lumber_camp ?? 0) >= 30 || (z.facilities?.mine ?? 0) >= 30).length;
+  w.materials = s.stats.materialsBySource ?? { salvage: 0, timber: 0, ore: 0 };
   w.pop = s.characters.filter((c) => c.deathTick === null).length;
   w.settlements = s.settlements.filter((z) => z.status === "active").length;
   const farms = s.settlements.filter((z) => z.status === "active" && z.farm && z.kind === "settlement");
@@ -198,6 +208,37 @@ const report = {
     const share = (g: WorldStats[], k: "shortYears" | "starvedYears" | "seedlessYears") => g.length ? pct(g.reduce((n, x) => n + x[k], 0), g.reduce((n, x) => n + x.settlementYears, 0)) : null;
     const describe = (g: WorldStats[]) => ({ worlds: g.length, populationAtEnd: mean(g, "pop"), settlements: mean(g, "settlements"), raids: mean(g, "raids"), schisms: mean(g, "schisms"), harvestFailures: mean(g, "harvestFailures"), shortage: share(g, "shortYears"), materialsStarved: share(g, "starvedYears"), seedless: share(g, "seedlessYears") });
     return { split: `renewal by year ${cut} vs later or never`, fast: describe(fast), slow: describe(slow) };
+  })(),
+  production: (() => {
+    const tot = worlds.reduce((n, x) => ({ salvage: n.salvage + x.materials.salvage, timber: n.timber + x.materials.timber, ore: n.ore + x.materials.ore }), { salvage: 0, timber: 0, ore: 0 });
+    const all = tot.salvage + tot.timber + tot.ore;
+    return {
+      materialsBySource: { salvage: pct(tot.salvage, all), timber: pct(tot.timber, all), ore: pct(tot.ore, all) },
+      surfaceSettlementsWithOwnExtraction: pct(worlds.reduce((n, x) => n + x.sustainable, 0), worlds.reduce((n, x) => n + x.surface, 0)),
+      note: "Own extraction = a working lumber camp or mine at year " + YEARS + ".",
+    };
+  })(),
+  projects: {
+    setAsidePerWorld: Math.round((worlds.reduce((n, x) => n + x.projectsSetAside, 0) / SEEDS) * 10) / 10,
+    runningOver30YearsAtEnd: worlds.reduce((n, x) => n + x.longProjects, 0),
+    technologiesNeverFinished: TECHNOLOGIES.filter((t) => !techDone.has(t.id)).map((t) => t.id),
+    technologiesFinishedInUnderHalfOfWorlds: TECHNOLOGIES.filter((t) => (techDone.get(t.id) ?? 0) < SEEDS / 2).map((t) => `${t.id} (${techDone.get(t.id) ?? 0})`),
+  },
+  proposals: (() => {
+    const by: Record<string, number> = {};
+    for (const x of worlds) for (const [k, n] of Object.entries(x.proposals)) by[k] = (by[k] ?? 0) + n;
+    return { ...by, note: "Recent proposals kept in each world (up to 40 settled); conflicting proposals are refused before they are made and two open ones for the same thing never coexist (checked every year by the invariants)." };
+  })(),
+  byFirstPlayerProfession: (() => {
+    const groups = new Map<string, WorldStats[]>();
+    for (const x of worlds) (groups.get(x.p1) ?? groups.set(x.p1, []).get(x.p1)!).push(x);
+    return Object.fromEntries([...groups.entries()].map(([k, g]) => [k, {
+      worlds: g.length,
+      renewalMedian: quant(g.filter((x) => x.renewal !== null).map((x) => x.renewal!), 0.5),
+      populationAtEnd: Math.round(g.reduce((n, x) => n + x.pop, 0) / g.length),
+      technologies: Math.round((g.reduce((n, x) => n + x.techs, 0) / g.length) * 10) / 10,
+      proposalsExecuted: Math.round((g.reduce((n, x) => n + (x.proposals.executed ?? 0), 0) / g.length) * 10) / 10,
+    }]));
   })(),
   topRejections: [...rejections.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => `${n}× ${k}`),
   invariantFailures,

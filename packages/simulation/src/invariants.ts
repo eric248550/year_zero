@@ -96,6 +96,15 @@ export function checkInvariants(state: WorldState, history: readonly HistoricalE
   }
   for (const l of state.locations) if (l.claimedBy && !ids.has(l.claimedBy)) v.push(`${l.id} claimed by unknown ${l.claimedBy}`);
   for (const s of state.settlements) for (const [f, cond] of Object.entries(s.facilities ?? {})) if (cond === undefined || cond < 0 || cond > 100) v.push(`${s.name} ${f} condition out of range`);
+  const openKeys = new Set<string>();
+  for (const p of state.proposals ?? []) {
+    if (p.status !== "open") continue;
+    const k = `${p.settlementId}|${p.key}`;
+    if (openKeys.has(k)) v.push(`Two open proposals for ${k}`);
+    openKeys.add(k);
+  }
+  const sched = new Set<string>();
+  for (const x of state.scheduled ?? []) { if (sched.has(x.id)) v.push(`Duplicate scheduled ${x.id}`); sched.add(x.id); }
   for (const g of EXCLUSIVE_FLAGS) if (g.filter((f) => state.flags[f] !== undefined).length > 1) v.push(`Rival flags held together: ${g.join(", ")}`);
   const hIds = new Set<string>();
   for (const h of history) {

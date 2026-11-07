@@ -31,6 +31,9 @@ export function describeEffect(e: Effect): string {
     case "SET_FARM_PLAN": return `Farm plan: ${e.plan}`;
     case "CHANGE_CROPS": return `Crops ${Math.round(e.fraction * 100)}%`;
     case "PRIORITIZE_BRANCH": return `Council prioritises ${e.branch}`;
+    case "PROPOSE": return `Propose (${e.kind}${e.domain ? ` · ${e.domain}` : ""}): ${e.title}`;
+    case "RESOLVE_PROPOSAL": return e.approve ? "Carry out the proposal" : "Drop the proposal";
+    case "SPEND": return `Pay ${Object.entries(e.costs).map(([k, v]) => `${v} ${k}`).join(", ")}`;
     case "AFTER": return `After ${e.seasons} season(s): ${e.title}`;
     case "SCHEDULE_EVENT": return `${e.event} follows in ${e.seasons} season(s)${e.away?.length ? ` (${e.away.join(", ")} away)` : ""}`;
     case "CHANGE_TENSION": return `Tension with rival ${e.delta >= 0 ? "+" : ""}${e.delta}`;

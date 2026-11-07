@@ -62,6 +62,10 @@ export const LocationStateSchema = z.object({
   salvage: z.number().min(0).optional(),
   /** Wild food (forage, game) available now; grows back each year. */
   wild: z.number().min(0).optional(),
+  /** Standing timber; grows back each year up to the site's cap. */
+  timber: z.number().min(0).optional(),
+  /** Ore left in the ground; it does not come back. */
+  ore: z.number().min(0).optional(),
 });
 export type LocationState = z.infer<typeof LocationStateSchema>;
 
@@ -147,6 +151,8 @@ export const PendingDecisionSchema = z.object({
   resolveTick: z.number().int(),
   /** characterId -> choiceId, submitted by players before the deadline. */
   responses: z.record(z.string(), z.string()),
+  /** Set when this decision is the approval of a proposal. */
+  proposalId: z.string().optional(),
 });
 export type PendingDecision = z.infer<typeof PendingDecisionSchema>;
 
@@ -229,6 +235,36 @@ export const ScheduledEventSchema = z.object({
 });
 export type ScheduledEvent = z.infer<typeof ScheduledEventSchema>;
 
+/**
+ * A change to shared settlement state that someone proposed. The person in
+ * charge of that kind of work approves domain changes; major changes go to the
+ * settlement's governing body (assembly, elders, or the council of heads).
+ */
+export const ProposalSchema = z.object({
+  id: z.string(),
+  settlementId: z.string(),
+  proposerId: z.string(),
+  kind: z.enum(["domain", "settlement"]),
+  /** For domain proposals: whose domain (the head of this profession decides). */
+  domain: z.enum(PROFESSIONS).optional(),
+  title: z.string(),
+  /** What happens if it is approved (validated again when it runs). */
+  effects: z.array(z.unknown()),
+  roles: z.record(z.string(), z.string()),
+  tags: z.array(z.string()),
+  /** Proposals with the same key conflict; only one can be open per settlement. */
+  key: z.string(),
+  createdTick: z.number().int(),
+  status: z.enum(["open", "executed", "rejected", "failed"]),
+  deciders: z.array(z.string()),
+  approvedBy: z.array(z.string()),
+  rejectedBy: z.array(z.string()),
+  resolvedTick: z.number().int().optional(),
+  /** History entry of the outcome. */
+  historyId: z.string().optional(),
+});
+export type Proposal = z.infer<typeof ProposalSchema>;
+
 export const WORLD_LOCALES = ["en", "zh-TW"] as const;
 export type WorldLocale = (typeof WORLD_LOCALES)[number];
 
@@ -266,7 +302,11 @@ export const WorldStateSchema = z.object({
   }),
   counters: z.object({ nextCharacter: z.number().int(), nextHistory: z.number().int(), nextSettlement: z.number().int(), nextProject: z.number().int().optional() }),
   milestones: z.array(z.string()),
-  stats: z.object({ births: z.number().int(), deaths: z.number().int(), peakPopulation: z.number().int() }),
+  stats: z.object({
+    births: z.number().int(), deaths: z.number().int(), peakPopulation: z.number().int(),
+    /** Materials produced so far, by where they came from. */
+    materialsBySource: z.object({ salvage: z.number(), timber: z.number(), ore: z.number() }).optional(),
+  }),
   /**
    * Multiplayer state. Optional so worlds that never had a player keep the
    * exact shape (and hash) they had before players existed.
@@ -279,5 +319,6 @@ export const WorldStateSchema = z.object({
   tensions: z.record(z.string(), z.number()).optional(),
   /** Follow-up events waiting for their season (an expedition's return, a harvest). */
   scheduled: z.array(ScheduledEventSchema).optional(),
+  proposals: z.array(ProposalSchema).optional(),
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;

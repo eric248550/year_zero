@@ -1,4 +1,4 @@
-import { LOCATION_BY_ID, type FacilityId, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
+import { LOCATION_BY_ID, type FacilityId, type LocationState, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
 import { characterAge, hasTech, powerLevel, residents, round2 } from "@genesis/narrative";
 import { ADULT_AGE, ELDER_AGE } from "@genesis/schemas";
 import type { TickContext } from "../context";
@@ -22,6 +22,8 @@ export const ECONOMY = {
   waterLoss: 0.1,
   materialsUpkeepPerResident: 0.12,
   materialsUpkeepPerLevel: 2,
+  /** Share of materials spent on upkeep that engineers recover. */
+  recycleShare: 0.3,
 } as const;
 
 export interface Workforce {
@@ -115,16 +117,43 @@ export function produce(ctx: TickContext): void {
     // Foraging and everyday salvage come out of the land, which holds only so much.
     const loc = ctx.state.locations.find((l) => l.id === s.locationId);
     const forage = Math.min(w.scouts * ECONOMY.forageFoodPerScout * efficiency, loc?.wild ?? 0);
-    const scrap = Math.min(w.labor * ECONOMY.materialsPerLabor * m.materials * efficiency, loc?.salvage ?? 0);
-    if (loc) { loc.wild = round2((loc.wild ?? 0) - forage); loc.salvage = round2((loc.salvage ?? 0) - scrap); }
+    if (loc) loc.wild = round2((loc.wild ?? 0) - forage);
+    const made = materialsFrom(ctx, s, loc, (w.labor * ECONOMY.materialsPerLabor + w.engineers * ECONOMY.materialsPerEngineer) * m.materials * efficiency);
     const out: Record<ResourceId, number> = {
       food: (w.labor * ECONOMY.foodPerLabor + w.farmers * ECONOMY.foodPerFarmer) * m.food * season * efficiency + forage,
       water: (w.labor * ECONOMY.waterPerLabor * m.water * season) * efficiency + (s.kind === "bunker" ? ECONOMY.bunkerWaterReclaimer : 0),
-      materials: w.engineers * ECONOMY.materialsPerEngineer * m.materials * efficiency + scrap,
+      materials: made,
       knowledge: (w.scientists * ECONOMY.knowledgePerScientist + w.labor * ECONOMY.knowledgePerLabor) * m.knowledge * efficiency,
     };
     for (const r of Object.keys(out) as ResourceId[]) s.resources[r] = round2(s.resources[r] + out[r]);
   }
+}
+
+/**
+ * Materials are never made from nothing. Work (labourers and, far more,
+ * engineers) turns raw stock into materials: the old world's salvage first,
+ * then timber from a lumber camp (it grows back), then ore from a mine (it does
+ * not; without a forge to smelt it only half is usable). When a site's salvage
+ * is gone, a settlement needs its own camps and mines, or materials from others.
+ */
+export function materialsFrom(ctx: TickContext, s: Settlement, loc: LocationState | undefined, capacity: number): number {
+  if (!loc || capacity <= 0) return 0;
+  const stats = (ctx.state.stats.materialsBySource ??= { salvage: 0, timber: 0, ore: 0 });
+  let left = capacity;
+  const salvage = Math.min(left, loc.salvage ?? 0);
+  loc.salvage = round2((loc.salvage ?? 0) - salvage);
+  left -= salvage;
+  // Without a camp people still gather deadwood and cut a little by hand.
+  const timber = Math.min(left * Math.max(0.3, level(s, "lumber_camp")), loc.timber ?? 0);
+  loc.timber = round2((loc.timber ?? 0) - timber);
+  left -= timber;
+  const ore = Math.min(left * level(s, "mine"), loc.ore ?? 0);
+  loc.ore = round2((loc.ore ?? 0) - ore);
+  const smelted = ore * (0.5 + 0.5 * level(s, "forge"));
+  stats.salvage = round2(stats.salvage + salvage);
+  stats.timber = round2(stats.timber + timber);
+  stats.ore = round2(stats.ore + smelted);
+  return salvage + timber + smelted;
 }
 
 /** Consumption, spoilage, upkeep and shortage tracking. Stocks never go negative. */
@@ -176,7 +205,10 @@ export function consume(ctx: TickContext): void {
 
     const upkeep = w.residents * ECONOMY.materialsUpkeepPerResident + s.level * ECONOMY.materialsUpkeepPerLevel + (hasLaw(s, "sanitation") ? 2 : 0);
     if (s.resources.materials < upkeep) s.morale = Math.max(0, s.morale - 3); // infrastructure decays
-    s.resources.materials = round2(Math.max(0, s.resources.materials - upkeep));
+    const paid = Math.min(upkeep, s.resources.materials);
+    // Engineers recover part of what wears out (scrap, offcuts, broken tools): never more than was used.
+    const recycled = w.engineers > 0 ? paid * ECONOMY.recycleShare : 0;
+    s.resources.materials = round2(Math.max(0, s.resources.materials - paid + recycled));
   }
 }
 

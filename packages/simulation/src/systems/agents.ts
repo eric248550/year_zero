@@ -190,10 +190,10 @@ export function councilDecisions(ctx: TickContext): void {
   for (const needy of active) {
     if (needy.resources.materials >= 15) continue;
     const donor = active
-      .filter((d) => d.id !== needy.id && d.resources.materials > 150 && tensionBetween(st, d.id, needy.id) < 50)
+      .filter((d) => d.id !== needy.id && d.resources.materials > 80 && tensionBetween(st, d.id, needy.id) < 50)
       .sort((a, b) => b.resources.materials - a.resources.materials || (a.id < b.id ? -1 : 1))[0];
     if (!donor) continue;
-    const amount = 30;
+    const amount = Math.min(30, Math.round(donor.resources.materials - 60));
     const rec = newRecorder();
     spendResources(donor, { materials: amount }, rec);
     const before = needy.resources.materials;

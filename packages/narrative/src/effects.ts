@@ -19,8 +19,12 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { EffectError, InsufficientResourcesError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, projectOf, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
+import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, nearestUnknown, projectOf, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
 import { say } from "./texts";
+import { mayActAlone, proposalDeciders, proposalKey } from "./authority";
+
+/** The approval vote every proposal goes to (content/events/proposal-vote.json). */
+export const PROPOSAL_EVENT = "proposal-vote";
 
 /** Collects every transition made inside a transaction. */
 export interface ChangeRecorder {
@@ -44,6 +48,8 @@ export interface EffectContext {
   storylineIds: string[];
   /** Season index the event happens in (default: spring of this tick). Follow-ups count from it. */
   season?: number;
+  /** Set while resolving a proposal's approval. */
+  proposalId?: string;
 }
 
 function record(rec: ChangeRecorder, path: string, label: string, before: StateChange["before"], after: StateChange["after"]) {
@@ -409,9 +415,73 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       record(rec, `relationships.${key}`, `${fullName(a)} ↔ ${fullName(b)}`, before, after);
       return;
     }
-    case "DISCOVER_LOCATION":
-      discoverLocation(state, effect.location, rec);
+    case "DISCOVER_LOCATION": {
+      const id = effect.location === "nearest" ? nearestUnknown(state)?.id : effect.location;
+      if (id) discoverLocation(state, id, rec);
       return;
+    }
+    case "SPEND": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      spendResources(s!, effect.costs, rec); // throws if it cannot be paid: the whole outcome fails
+      return;
+    }
+    case "PROPOSE": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const proposerId = ctx.roles.you ?? ctx.roles.actor ?? Object.values(ctx.roles)[0];
+      if (!proposerId) throw new EffectError("A proposal needs someone to propose it");
+      const inner = effect.effects as Effect[];
+      const key = proposalKey(inner);
+      const id = `${ctx.historyId}:proposal`;
+      state.proposals ??= [];
+      if (state.proposals.some((p) => p.status === "open" && p.settlementId === s!.id && p.key === key)) throw new EffectError("Someone has already proposed this; it is waiting for a decision");
+      const base = {
+        id, settlementId: s!.id, proposerId, kind: effect.kind, ...(effect.domain ? { domain: effect.domain } : {}), title: effect.title,
+        effects: inner, roles: { ...ctx.roles }, tags: effect.tags ?? [], key, createdTick: state.tick, approvedBy: [] as string[], rejectedBy: [] as string[],
+      };
+      if (mayActAlone(state, s!, proposerId, effect.kind, effect.domain)) {
+        // The head of this work decides it themselves.
+        applyEffects(state, inner, { ...ctx, roles: { ...ctx.roles, actor: proposerId } }, rec);
+        state.proposals.push({ ...base, status: "executed", deciders: [proposerId], approvedBy: [proposerId], resolvedTick: state.tick, historyId: ctx.historyId });
+        record(rec, `proposals.${id}`, `Proposal: ${effect.title}`, null, "executed");
+        return;
+      }
+      const deciders = proposalDeciders(state, s!, effect.kind, effect.domain);
+      state.proposals.push({ ...base, status: "open", deciders });
+      // The people who decide get it as a decision of their own, due next year. NPCs decide by their nature.
+      (state.pendingDecisions ??= []).push({
+        id, definitionId: PROPOSAL_EVENT, definitionVersion: 1, settlementId: s!.id, roles: { proposer: proposerId },
+        participants: deciders, firedTick: state.tick, resolveTick: state.tick + 1, responses: {}, proposalId: id,
+      });
+      record(rec, `proposals.${id}`, `Proposal: ${effect.title}`, null, "open");
+      // Keep the record short: the last 40 settled proposals plus the open ones.
+      const settled = state.proposals.filter((p) => p.status !== "open");
+      if (settled.length > 40) { const drop = new Set(settled.slice(0, settled.length - 40).map((p) => p.id)); state.proposals = state.proposals.filter((p) => !drop.has(p.id)); }
+      return;
+    }
+    case "RESOLVE_PROPOSAL": {
+      const p = state.proposals?.find((x) => x.id === ctx.proposalId);
+      if (!p || p.status !== "open") return;
+      p.resolvedTick = state.tick;
+      p.historyId = ctx.historyId;
+      if (!effect.approve) { p.status = "rejected"; record(rec, `proposals.${p.id}`, `Proposal: ${p.title}`, "open", "rejected"); return; }
+      // Approved: it runs now, against today's world. If it can no longer be done, nothing of it happens.
+      const inner = newRecorder();
+      try {
+        const next = transact(state, (draft) => applyEffects(draft, p.effects as Effect[], { ...ctx, settlementId: p.settlementId, roles: { ...p.roles, actor: p.proposerId } }, inner)).state;
+        Object.assign(state, next);
+        const q = state.proposals!.find((x) => x.id === p.id)!;
+        q.status = "executed";
+        q.resolvedTick = state.tick;
+        q.historyId = ctx.historyId;
+        rec.changes.push(...inner.changes);
+        rec.childEvents.push(...inner.childEvents);
+      } catch (err) {
+        if (!(err instanceof EffectError)) throw err;
+        p.status = "failed";
+      }
+      record(rec, `proposals.${p.id}`, `Proposal: ${p.title}`, "open", state.proposals!.find((x) => x.id === p.id)!.status);
+      return;
+    }
     case "UNLOCK_TECHNOLOGY":
       unlockTechnology(state, effect.tech, rec);
       return;

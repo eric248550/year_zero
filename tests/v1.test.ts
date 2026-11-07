@@ -235,7 +235,9 @@ describe("power and infrastructure", () => {
     const d = byId("engineer-repair-or-strip");
     expect(d.preconditions).toEqual([{ type: "worn", present: true }]);
     const strip = d.choices.find((c) => c.id === "strip")!;
-    expect(strip.effects).toEqual(expect.arrayContaining([{ type: "CHANGE_FACILITY", facility: "worst", delta: -40 }]));
+    // Taking a shared building apart is a settlement decision: it is proposed, not done.
+    expect(strip.effects[0]).toMatchObject({ type: "PROPOSE", kind: "settlement" });
+    expect((strip.effects[0] as { effects: unknown[] }).effects).toEqual(expect.arrayContaining([{ type: "CHANGE_FACILITY", facility: "worst", delta: -40 }]));
   });
 });
 

@@ -1,0 +1,63 @@
+{
+  "id": "proposal-vote",
+  "title": "提案",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "有人提議改變聚落的事，依規矩由負責的人或大家決定。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "proposer",
+      "minAge": 0,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "approve",
+      "label": "同意",
+      "tags": [],
+      "effects": [
+        {
+          "type": "RESOLVE_PROPOSAL",
+          "approve": true
+        }
+      ],
+      "outcome": "提案通過：{{proposal}}。"
+    },
+    {
+      "id": "reject",
+      "label": "反對",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "RESOLVE_PROPOSAL",
+          "approve": false
+        }
+      ],
+      "outcome": "提案沒有通過：{{proposal}}。"
+    }
+  ],
+  "participation": "roles",
+  "resolution": "vote",
+  "scheduledOnly": true,
+  "priority": 5,
+  "chance": 1,
+  "cooldown": 0,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{proposer}}提議：{{proposal}}",
+    "text": "{{proposer}}提議：{{proposal}}。依{{settlement}}的規矩，這件事由你們決定。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "proposal"
+  ]
+}

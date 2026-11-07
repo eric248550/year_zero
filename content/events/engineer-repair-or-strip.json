@@ -28,17 +28,32 @@
         "cautious",
         "industry"
       ],
-      "costs": {
-        "materials": 12
-      },
       "effects": [
         {
-          "type": "BUILD_FACILITY",
-          "facility": "worst",
-          "seasons": 1
+          "type": "PROPOSE",
+          "kind": "domain",
+          "title": "花一季好好修最破舊的設施（12 份物資）",
+          "tags": [
+            "cautious",
+            "industry"
+          ],
+          "effects": [
+            {
+              "type": "SPEND",
+              "costs": {
+                "materials": 12
+              }
+            },
+            {
+              "type": "BUILD_FACILITY",
+              "facility": "worst",
+              "seasons": 1
+            }
+          ],
+          "domain": "Engineer"
         }
       ],
-      "outcome": "{{you}}把它拆開，換掉磨壞的零件。一季之後，它跟新的一樣。"
+      "outcome": "{{you}}提出修理。由帶頭的工程師決定；如果{{you}}自己就是，就馬上開工。"
     },
     {
       "id": "jury_rig",
@@ -74,17 +89,27 @@
       ],
       "effects": [
         {
-          "type": "CHANGE_FACILITY",
-          "facility": "worst",
-          "delta": -40
-        },
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 10
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "拆掉最破舊的設施，零件拿去別處用",
+          "tags": [
+            "industry"
+          ],
+          "effects": [
+            {
+              "type": "CHANGE_FACILITY",
+              "facility": "worst",
+              "delta": -40
+            },
+            {
+              "type": "ADJUST_RESOURCE",
+              "resource": "materials",
+              "amount": 10
+            }
+          ]
         }
       ],
-      "outcome": "{{you}}把能用的零件都拆了下來，那座設施差不多廢了。"
+      "outcome": "拆掉公共的設施是大事。{{you}}把提案交給{{settlement}}決定。"
     }
   ],
   "priority": 4,

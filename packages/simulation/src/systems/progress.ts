@@ -31,7 +31,8 @@ export function development(ctx: TickContext): void {
     if (s.level >= maxLevel || s.expanding !== undefined) continue;
     const pop = population(st, s.id);
     const cost = developmentCost(s, hasTech(st, "workshop"));
-    if (pop < s.capacity * 0.7 || s.resources.materials < cost + 10) continue;
+    // Room for more people needs materials to build it and food to feed them.
+    if (pop < s.capacity * 0.7 || s.resources.materials < cost + 10 || s.resources.food < pop) continue;
     const before = s.resources.materials;
     s.resources.materials = round2(before - cost);
     s.expanding = st.tick * 4 + 4;

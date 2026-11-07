@@ -71,6 +71,10 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   );
   ctx.state = resolved.state;
   ctx.events.push(...resolved.events);
+  // A proposal whose vote could not be held (everyone who decides it died, its place is gone) is closed, not left blocking.
+  for (const p of ctx.state.proposals ?? []) {
+    if (p.status === "open" && !(ctx.state.pendingDecisions ?? []).some((d) => d.proposalId === p.id)) { p.status = "failed"; p.resolvedTick = ctx.state.tick; }
+  }
   ctx.deaths += countDeaths(resolved.events);
 
   councilDecisions(ctx);

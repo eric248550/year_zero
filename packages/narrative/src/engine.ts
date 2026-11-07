@@ -16,7 +16,8 @@ import { causesFor, evaluateAll } from "./conditions";
 import { applyEffects, canAfford, newRecorder, spendResources, transact, worstFacility, type EffectContext } from "./effects";
 import type { Effect } from "@genesis/schemas";
 import { EffectError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, rivalOf, round2 } from "./queries";
+import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, nearestUnknown, rivalOf, round2 } from "./queries";
+import { proposalKey } from "./authority";
 import { candidatesForRole, resolveRoles, rolesSatisfiable } from "./roles";
 import { renderTemplate } from "./template";
 import { DECISION_WINDOW_TICKS, decidersFor, isPlayerControlled, participantsFor } from "./decisions";
@@ -116,7 +117,7 @@ export function choiceAvailability(
     const missing = choice.requiresRoles.find((r) => roles[r] === undefined);
     if (missing) return { available: false, reason: `Nobody available for role "${missing}"` };
   }
-  const blocked = choice.effects.map((e) => effectBlocker(state, e, settlement)).find((x) => x);
+  const blocked = choice.effects.map((e) => effectBlocker(state, e, settlement, roles)).find((x) => x);
   if (blocked) return { available: false, reason: blocked };
   return { available: true, reason: null };
 }
@@ -126,7 +127,7 @@ export function choiceAvailability(
  * promises it is not offered (the story never claims a trade, a claim or a
  * repair that did not happen).
  */
-export function effectBlocker(state: WorldState, e: Effect, s: Settlement | null): string | null {
+export function effectBlocker(state: WorldState, e: Effect, s: Settlement | null, roles: Record<string, string> | null = null): string | null {
   switch (e.type) {
     case "EXCHANGE": {
       const rival = s ? rivalOf(state, s) : null;
@@ -165,9 +166,24 @@ export function effectBlocker(state: WorldState, e: Effect, s: Settlement | null
       return s && !s.laws?.includes(e.law) ? "That law is not in force" : null;
     case "SET_FARM_PLAN":
       return s && (s.farm?.plan ?? "seedsave") === e.plan ? "Already farming that way" : null;
-    case "AFTER":
-      // An outcome that takes time is checked when it arrives; the trip itself can always start.
-      return null;
+    case "PROPOSE": {
+      if (!s) return "A proposal needs a settlement";
+      const key = proposalKey(e.effects as Effect[]);
+      if (state.proposals?.some((p) => p.status === "open" && p.settlementId === s.id && p.key === key)) return "Someone has already proposed this";
+      return (e.effects as Effect[]).map((x) => effectBlocker(state, x, s, roles)).find((x) => x) ?? null;
+    }
+    case "SPEND":
+      return s && !canAfford(s, e.costs) ? "Not enough to pay for it" : null;
+    case "DISCOVER_LOCATION":
+      return e.location === "nearest" && !nearestUnknown(state) ? "Nowhere left to find" : null;
+    case "AFTER": {
+      // The outcome is checked when it arrives. But nobody can be on two trips at once.
+      const busy = (e.away ?? []).map((r) => roles?.[r]).find((id) => {
+        const c = id ? getCharacter(state, id) : undefined;
+        return c?.awayUntil !== undefined && c.awayUntil >= state.tick * 4;
+      });
+      return busy ? "Already away on another trip" : null;
+    }
     default:
       return null;
   }

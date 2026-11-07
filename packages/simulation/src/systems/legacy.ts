@@ -57,8 +57,9 @@ export function level(s: Settlement | undefined, f: FacilityId): number {
 export function land(ctx: TickContext): void {
   for (const l of ctx.state.locations) {
     const cap = LAND.wildCap(LOCATION_BY_ID[l.id]?.features ?? []);
-    if (cap <= 0) continue;
-    l.wild = round2(Math.min(cap, (l.wild ?? 0) + cap * LAND.wildRegrowth));
+    if (cap > 0) l.wild = round2(Math.min(cap, (l.wild ?? 0) + cap * LAND.wildRegrowth));
+    const forest = LAND.timberCap[l.id] ?? 0;
+    if (forest > 0) l.timber = round2(Math.min(forest, (l.timber ?? 0) + forest * LAND.timberRegrowth));
   }
 }
 
@@ -75,13 +76,15 @@ export function infrastructure(ctx: TickContext): void {
     for (const [f, info] of Object.entries(INFRASTRUCTURE) as [FacilityId, NonNullable<(typeof INFRASTRUCTURE)[FacilityId]>][]) {
       if (!st.technologies.includes(info.tech) || (info.needs && !features.includes(info.needs))) continue;
       if (info.after && facilityLevel(s, info.after) <= 0) continue; // a generator needs a water mill to turn it
+      const here = st.locations.find((l) => l.id === s.locationId);
+      if (info.deposit && !((here?.[info.deposit] ?? 0) > 0)) continue; // nothing to cut or dig here
       const cond = s.facilities?.[f] ?? 0;
       // Worn below 60: repair it (half the cost). Missing or broken: build it.
       const repair = cond >= FACILITY_WORKING && cond < 60;
       if (cond >= FACILITY_WORKING && !repair) continue;
       const cost = repair ? Math.ceil(info.materials / 2) : info.materials;
-      // Keep enough for a year of upkeep and emergencies.
-      if (s.resources.materials < cost + 20) continue;
+      // Keep enough for a year of upkeep and emergencies, except for the camps and mines that will make more.
+      if (s.resources.materials < cost + (info.deposit ? 0 : 20)) continue;
       const before = s.resources.materials;
       s.resources.materials = round2(before - cost);
       const due = st.tick * 4 + (repair ? 1 : info.seasons);

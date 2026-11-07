@@ -30,9 +30,6 @@
         "growth",
         "community"
       ],
-      "costs": {
-        "materials": 20
-      },
       "requires": [
         {
           "type": "facility",
@@ -42,12 +39,29 @@
       ],
       "effects": [
         {
-          "type": "BUILD_FACILITY",
-          "facility": "clinic",
-          "seasons": 2
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "蓋一間診所（20 份物資，兩季）",
+          "tags": [
+            "growth",
+            "community"
+          ],
+          "effects": [
+            {
+              "type": "SPEND",
+              "costs": {
+                "materials": 20
+              }
+            },
+            {
+              "type": "BUILD_FACILITY",
+              "facility": "clinic",
+              "seasons": 2
+            }
+          ]
         }
       ],
-      "outcome": "大家動手蓋一間診所，兩季後完工。"
+      "outcome": "{{you}}提議蓋一間診所，交給{{settlement}}決定。"
     },
     {
       "id": "sanitation",
@@ -58,11 +72,22 @@
       ],
       "effects": [
         {
-          "type": "ENACT_LAW",
-          "law": "sanitation"
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "訂立衛生規範：煮水、廁所、隔離",
+          "tags": [
+            "cautious",
+            "community"
+          ],
+          "effects": [
+            {
+              "type": "ENACT_LAW",
+              "law": "sanitation"
+            }
+          ]
         }
       ],
-      "outcome": "{{settlement}}從此有了衛生規範：每一口水都要煮過，病人要隔開。每年要花一點物資維持。"
+      "outcome": "{{you}}提議訂衛生規範，交給{{settlement}}決定。"
     },
     {
       "id": "triage",

@@ -31,11 +31,22 @@
       ],
       "effects": [
         {
-          "type": "PRIORITIZE_BRANCH",
-          "branch": "medicine"
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "議會先發起醫療方面的專案",
+          "tags": [
+            "community",
+            "science"
+          ],
+          "effects": [
+            {
+              "type": "PRIORITIZE_BRANCH",
+              "branch": "medicine"
+            }
+          ]
         }
       ],
-      "outcome": "議會接下來會先發起醫療方面的專案。"
+      "outcome": "{{you}}把建議交給{{settlement}}決定。"
     },
     {
       "id": "farming",
@@ -45,11 +56,21 @@
       ],
       "effects": [
         {
-          "type": "PRIORITIZE_BRANCH",
-          "branch": "farming"
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "議會先發起農業方面的專案",
+          "tags": [
+            "growth"
+          ],
+          "effects": [
+            {
+              "type": "PRIORITIZE_BRANCH",
+              "branch": "farming"
+            }
+          ]
         }
       ],
-      "outcome": "議會接下來會先發起農業方面的專案。"
+      "outcome": "{{you}}把建議交給{{settlement}}決定。"
     },
     {
       "id": "energy",
@@ -60,11 +81,22 @@
       ],
       "effects": [
         {
-          "type": "PRIORITIZE_BRANCH",
-          "branch": "energy"
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "議會先發起能源方面的專案",
+          "tags": [
+            "industry",
+            "science"
+          ],
+          "effects": [
+            {
+              "type": "PRIORITIZE_BRANCH",
+              "branch": "energy"
+            }
+          ]
         }
       ],
-      "outcome": "議會接下來會先發起能源方面的專案。"
+      "outcome": "{{you}}把建議交給{{settlement}}決定。"
     },
     {
       "id": "knowledge",
@@ -74,11 +106,21 @@
       ],
       "effects": [
         {
-          "type": "PRIORITIZE_BRANCH",
-          "branch": "knowledge"
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "議會先發起知識方面的專案",
+          "tags": [
+            "science"
+          ],
+          "effects": [
+            {
+              "type": "PRIORITIZE_BRANCH",
+              "branch": "knowledge"
+            }
+          ]
         }
       ],
-      "outcome": "議會接下來會先發起知識方面的專案。"
+      "outcome": "{{you}}把建議交給{{settlement}}決定。"
     },
     {
       "id": "as_planned",

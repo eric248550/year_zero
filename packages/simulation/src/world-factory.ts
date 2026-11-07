@@ -96,6 +96,8 @@ export function createWorld(options: CreateWorldOptions): WorldState {
       settlementId: l.id === "haven_deep" ? "s-haven" : null,
       salvage: LAND.salvage(l.features),
       wild: LAND.wildCap(l.features),
+      timber: LAND.timberCap[l.id] ?? 0,
+      ore: LAND.ore[l.id] ?? 0,
     })),
     characters: [],
     technologies: [],

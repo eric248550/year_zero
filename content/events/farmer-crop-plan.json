@@ -35,11 +35,23 @@
       ],
       "effects": [
         {
-          "type": "SET_FARM_PLAN",
-          "plan": "staple"
+          "type": "PROPOSE",
+          "kind": "domain",
+          "title": "往後全種高產的主糧",
+          "tags": [
+            "growth",
+            "bold"
+          ],
+          "effects": [
+            {
+              "type": "SET_FARM_PLAN",
+              "plan": "staple"
+            }
+          ],
+          "domain": "Farmer"
         }
       ],
-      "outcome": "往後{{settlement}}的田全種主糧：收成多一成半，但土一年比一年瘦。"
+      "outcome": "{{you}}提出了這個種法。由聚落裡帶頭的農人決定；如果{{you}}自己就是，就照這樣種。"
     },
     {
       "id": "rotation",
@@ -49,11 +61,22 @@
       ],
       "effects": [
         {
-          "type": "SET_FARM_PLAN",
-          "plan": "rotation"
+          "type": "PROPOSE",
+          "kind": "domain",
+          "title": "往後輪作，跟豆子輪著種",
+          "tags": [
+            "cautious"
+          ],
+          "effects": [
+            {
+              "type": "SET_FARM_PLAN",
+              "plan": "rotation"
+            }
+          ],
+          "domain": "Farmer"
         }
       ],
-      "outcome": "往後輪作：每次收成少一成，但土會慢慢變肥。"
+      "outcome": "{{you}}提出了這個種法。由聚落裡帶頭的農人決定；如果{{you}}自己就是，就照這樣種。"
     },
     {
       "id": "seedsave",
@@ -64,11 +87,23 @@
       ],
       "effects": [
         {
-          "type": "SET_FARM_PLAN",
-          "plan": "seedsave"
+          "type": "PROPOSE",
+          "kind": "domain",
+          "title": "往後每次多留一成五的種子",
+          "tags": [
+            "cautious",
+            "community"
+          ],
+          "effects": [
+            {
+              "type": "SET_FARM_PLAN",
+              "plan": "seedsave"
+            }
+          ],
+          "domain": "Farmer"
         }
       ],
-      "outcome": "往後每次收成多留一成五當種子：吃的少一點，但壞年頭也不怕沒種可播。"
+      "outcome": "{{you}}提出了這個種法。由聚落裡帶頭的農人決定；如果{{you}}自己就是，就照這樣種。"
     }
   ],
   "priority": 4,
@@ -79,7 +114,7 @@
   "importance": "minor",
   "narrative": {
     "headline": "{{you}}要決定田怎麼種",
-    "text": "春耕前，大家問{{you}}：今年的田要怎麼種？這會影響往後好幾年的收成和土。"
+    "text": "春耕前，大家問{{you}}：今年的田要怎麼種？這會影響往後好幾年的收成和土。種法由聚落裡帶頭的農人拍板。"
   },
   "version": 1,
   "status": "published",

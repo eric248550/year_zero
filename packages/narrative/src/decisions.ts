@@ -118,6 +118,12 @@ export function resolvePendingDecisions(
   definitions: readonly EventDefinition[],
   rng: Rng,
   isAvailable: (state: WorldState, choice: Choice, settlementId: string | null) => boolean,
+  /**
+   * Season index the outcomes happen in. Inside a tick that is spring of the
+   * year being simulated; between ticks (a player deciding now) it is spring
+   * of the coming year, so a trip of N seasons comes back N seasons from now.
+   */
+  season?: number,
 ): { state: WorldState; events: HistoricalEvent[]; rejections: DecisionRejection[] } {
   const due = (state.pendingDecisions ?? []).filter((p) => p.resolveTick <= state.tick);
   if (due.length === 0) return { state, events: [], rejections: [] };
@@ -155,7 +161,10 @@ export function resolvePendingDecisions(
         picks.push({ characterId: id, choiceId: valid.id, decidedBy: "player" });
         continue;
       }
-      const auto = rng.weighted(choices, (ch) => Math.pow(personalScore(ch, current.policy, c.traits), 4));
+      // On a proposal, someone left to their nature weighs what is proposed (its tags), not the word "approve".
+      const proposal = p.proposalId ? current.proposals?.find((x) => x.id === p.proposalId) : undefined;
+      const weigh = (ch: Choice) => (proposal && ch.id === "approve" ? { ...ch, tags: proposal.tags as Choice["tags"] } : ch);
+      const auto = rng.weighted(choices, (ch) => Math.pow(personalScore(weigh(ch), current.policy, c.traits), 4));
       picks.push({ characterId: id, choiceId: auto.id, decidedBy: c.controllerId ? "autopilot" : "npc" });
     }
     if (picks.length === 0) {
@@ -164,7 +173,7 @@ export function resolvePendingDecisions(
     }
 
     if (def.resolution === "vote") {
-      const result = resolveVote(current, def, p, choices, picks, rng);
+      const result = resolveVote(current, def, p, choices, picks, rng, season);
       if ("error" in result) {
         rejections.push({ definitionId: def.id, reason: result.error });
         continue;
@@ -177,7 +186,7 @@ export function resolvePendingDecisions(
     for (const choice of choices) {
       const members = picks.filter((x) => x.choiceId === choice.id);
       if (members.length === 0) continue;
-      const result = resolveGroup(current, def, p, choice, members, rng);
+      const result = resolveGroup(current, def, p, choice, members, rng, false, season);
       if ("error" in result) {
         rejections.push({ definitionId: def.id, reason: `${choice.label}: ${result.error}` });
         continue;
@@ -221,12 +230,13 @@ function resolveVote(
   choices: readonly Choice[],
   picks: Pick[],
   rng: Rng,
+  season?: number,
 ): { state: WorldState; event: HistoricalEvent; childEvents: HistoricalEvent[] } | { error: string } {
   const tally = tallyVotes(choices, picks);
   const winner = tally.reduce((best, t) => (t.votes > best.votes ? t : best)).choice;
   const winners = picks.filter((x) => x.choiceId === winner.id);
   // The winning side carries it out, so its risk is the choice's own, rolled once.
-  const result = resolveGroup(state, def, p, winner, winners.length ? winners : picks, rng, true);
+  const result = resolveGroup(state, def, p, winner, winners.length ? winners : picks, rng, true, season);
   if ("error" in result) return { error: `${winner.label}: ${result.error}` };
   let next = result.state;
   const event = result.event;
@@ -237,8 +247,8 @@ function resolveVote(
       try {
         const rec = newRecorder();
         next = transact(next, (draft) => applyEffects(draft, choice.memberEffects!, {
-          tick: draft.tick, settlementId: p.settlementId, roles: { ...p.roles, actor: m.characterId }, historyId: event.id,
-          title: def.title, scope: def.scope, category: def.category, storylineIds: def.storylineIds,
+          tick: draft.tick, settlementId: p.settlementId, roles: { ...p.roles, actor: m.characterId }, historyId: event.id, ...(p.proposalId ? { proposalId: p.proposalId } : {}),
+          title: def.title, scope: def.scope, category: def.category, storylineIds: def.storylineIds, season,
         }, rec)).state;
         event.changes.push(...rec.changes);
       } catch (err) {
@@ -253,6 +263,13 @@ function resolveVote(
   }).filter((x): x is [string, string] => !!x);
   event.text = [say(state).voteResult(counts, winner.label), ...(players.length ? [say(state).voteVoices(players)] : []), ...event.text.split("\n\n").slice(1)].join("\n\n");
   event.characterIds = [...new Set([...event.characterIds, ...picks.map((x) => x.characterId)])];
+  // A proposal remembers who said yes and who said no.
+  const prop = p.proposalId ? next.proposals?.find((x) => x.id === p.proposalId) : undefined;
+  if (prop) {
+    const yes = choices.find((c) => c.id === "approve");
+    prop.approvedBy = picks.filter((x) => x.choiceId === yes?.id).map((x) => x.characterId);
+    prop.rejectedBy = picks.filter((x) => x.choiceId !== yes?.id).map((x) => x.characterId);
+  }
   if (event.trigger) event.trigger.summary = `Vote: ${counts.map(([l, n]) => `${l} ${n}`).join(", ")} (weights player ${VOTING.player}, absent ${VOTING.absentPlayer}, npc ${VOTING.npc})`;
   for (const m of picks) {
     if (winners.some((w) => w.characterId === m.characterId)) continue;
@@ -270,6 +287,7 @@ function resolveGroup(
   members: Pick[],
   rng: Rng,
   collective = false,
+  season?: number,
 ): { state: WorldState; event: HistoricalEvent; childEvents: HistoricalEvent[] } | { error: string } {
   const settlement = p.settlementId ? state.settlements.find((s) => s.id === p.settlementId) ?? null : null;
   // A collective decision has one risk roll, borne by whoever carries it out first.
@@ -280,11 +298,13 @@ function resolveGroup(
     tick: draft.tick,
     settlementId: p.settlementId,
     roles: { ...p.roles, actor },
+    ...(p.proposalId ? { proposalId: p.proposalId } : {}),
     historyId,
     title: def.title,
     scope: def.scope,
     category: def.category,
     storylineIds: def.storylineIds,
+    season,
   });
 
   // Group-level part: costs + choice effects, once. Atomic.
@@ -332,7 +352,7 @@ function resolveGroup(
   });
 
   const names = (ids: readonly string[]) => ids.map((id) => getCharacter(state, id)).filter((c): c is Character => !!c).map(fullName);
-  const values = { ...templateValues(state, settlement, { ...p.roles, actor: members[0]!.characterId }), choice: choice.label };
+  const values = { ...templateValues(state, settlement, { ...p.roles, actor: members[0]!.characterId }), choice: choice.label, proposal: state.proposals?.find((x) => x.id === p.proposalId)?.title ?? "" };
 
   const memberNames = names(members.map((m) => m.characterId));
   const parts = [say(state).chose(listNames(state, memberNames), choice.label)];

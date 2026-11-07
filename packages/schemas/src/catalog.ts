@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-1.0.0";
+export const RULES_VERSION = "rules-1.1.0";
 
 export const START_YEAR = 2131;
 
@@ -130,7 +130,7 @@ export const TECH_IDS = TECHNOLOGIES.map((t) => t.id);
  * it up, neglect, storms and raids wear it down; below 30 it is broken and does
  * nothing until repaired.
  */
-export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall", "fields", "watermill", "generator", "solar_array", "battery_bank", "power_lines"] as const;
+export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall", "fields", "watermill", "generator", "solar_array", "battery_bank", "power_lines", "lumber_camp", "mine"] as const;
 export type FacilityId = (typeof FACILITIES)[number];
 export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }> = {
   granary: { name: "Granary", effect: "Food spoils half as fast." },
@@ -148,6 +148,8 @@ export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }>
   solar_array: { name: "Solar Array", effect: "Electric power by day; half of it without a battery bank to carry it through the night." },
   battery_bank: { name: "Battery Bank", effect: "Stores the solar array's power for the night." },
   power_lines: { name: "Power Lines", effect: "Joins the power grid: shares electricity with every other connected settlement." },
+  lumber_camp: { name: "Lumber Camp", effect: "Cuts the site's timber into materials; the forest grows back." },
+  mine: { name: "Mine", effect: "Digs the site's ore; half of it is usable unless a forge smelts it." },
 };
 export const FACILITY_WORKING = 30;
 /** Finishing these technologies raises a building in the settlement that built them. */
@@ -157,7 +159,10 @@ export const TECH_FACILITY: Partial<Record<string, FacilityId>> = {
   water_wheel: "watermill", solar_power: "solar_array", power_grid: "power_lines",
 };
 /** Technologies whose benefit needs the building on site; knowing them elsewhere lets a settlement build it. */
-export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; materials: number; seasons: number; needs?: LocationFeature; after?: FacilityId }>> = {
+export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; materials: number; seasons: number; needs?: LocationFeature; after?: FacilityId; deposit?: "timber" | "ore" }>> = {
+  // Extraction first: a settlement that can make its own materials can build everything else.
+  lumber_camp: { tech: "salvage_tools", materials: 10, seasons: 1, deposit: "timber" },
+  mine: { tech: "workshop", materials: 30, seasons: 2, deposit: "ore" },
   watermill: { tech: "water_wheel", materials: 25, seasons: 2, needs: "river" },
   solar_array: { tech: "solar_power", materials: 40, seasons: 2 },
   battery_bank: { tech: "metallurgy", materials: 30, seasons: 2, after: "solar_array" },
@@ -198,9 +203,13 @@ export const SPECIALTY_INFO: Record<SpecialtyId, { name: string; branch: BranchI
  * the claimed site.
  */
 export const LAND = {
-  salvage: (features: readonly LocationFeature[]) => (features.includes("ruins") ? 800 : features.includes("bunker") ? 250 : 250),
+  salvage: (features: readonly LocationFeature[]) => (features.includes("ruins") ? 2000 : features.includes("bunker") ? 4000 : 400),
   wildCap: (features: readonly LocationFeature[]) => (features.includes("fertile") ? 80 : features.includes("bunker") ? 0 : 40),
   wildRegrowth: 0.15,
+  /** Standing timber per site (it grows back) and ore in the ground (it does not). */
+  timberCap: { greenhollow: 400, ashford_crossing: 200, old_reservoir: 100 } as Partial<Record<string, number>>,
+  timberRegrowth: 0.1,
+  ore: { old_reservoir: 1500, cinder_flats: 800, greenhollow: 400, signal_tower: 1500 } as Partial<Record<string, number>>,
 } as const;
 
 /** Farm plans a settlement can follow (chosen by its farmers). */

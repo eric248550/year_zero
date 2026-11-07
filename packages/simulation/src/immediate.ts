@@ -55,9 +55,10 @@ function resolveIfEveryoneChose(ctx: TickContext, decisionId: string, events: re
   });
   if (waiting) return;
   p.resolveTick = st.tick;
+  // Between ticks, "now" is the coming year: whatever takes seasons counts from its spring.
   const resolved = resolvePendingDecisions(st, events, ctx.rng, (s, choice, settlementId) =>
     choiceAvailability(s, choice, settlementId ? s.settlements.find((x) => x.id === settlementId) ?? null : null, null).available,
-  );
+  (st.tick + 1) * 4);
   ctx.state = resolved.state;
   ctx.events.push(...resolved.events);
 }

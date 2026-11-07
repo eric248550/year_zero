@@ -124,7 +124,9 @@ export function facilityLevel(s: Settlement | undefined, f: string): number {
 /** Power a settlement makes itself: the generator, plus the solar array (half of it without batteries). */
 export function ownPower(s: Settlement): number {
   const solar = facilityLevel(s, "solar_array") * (facilityLevel(s, "battery_bank") > 0 ? 1 : 0.5);
-  return Math.min(1, facilityLevel(s, "generator") + solar);
+  // A generator only turns while its water mill does.
+  const dynamo = facilityLevel(s, "generator") * (facilityLevel(s, "watermill") > 0 ? 1 : 0);
+  return Math.min(1, dynamo + solar);
 }
 
 /**
@@ -137,6 +139,13 @@ export function powerLevel(state: WorldState, s: Settlement): number {
   if (!lines || !state.technologies.includes("power_grid")) return own;
   const grid = Math.max(0, ...activeSettlements(state).filter((o) => facilityLevel(o, "power_lines") > 0).map(ownPower));
   return Math.max(own, Math.min(1, grid * lines));
+}
+
+/** The nearest site not yet found (hidden ones only come through the story). */
+export function nearestUnknown(state: WorldState): LocationState | undefined {
+  return state.locations
+    .filter((l) => !l.discovered && !LOCATION_BY_ID[l.id]?.hidden)
+    .sort((a, b) => (LOCATION_BY_ID[a.id]?.distance ?? 9) - (LOCATION_BY_ID[b.id]?.distance ?? 9) || (a.id < b.id ? -1 : 1))[0];
 }
 
 /** The nearest discovered site nobody lives on or has claimed. */

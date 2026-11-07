@@ -31,22 +31,33 @@
       ],
       "effects": [
         {
-          "type": "AFTER",
-          "seasons": 1,
-          "away": [
-            "you"
+          "type": "PROPOSE",
+          "kind": "settlement",
+          "title": "派人去最近的空地立牌子，佔下來",
+          "tags": [
+            "bold",
+            "growth"
           ],
-          "title": "{{you}}回來了：據點守下來了",
-          "text": "{{you}}在那裡立了牌子、搭了棚子。往後那裡的出產歸{{settlement}}。",
           "effects": [
             {
-              "type": "CLAIM_SITE",
-              "location": "nearest"
+              "type": "AFTER",
+              "seasons": 1,
+              "away": [
+                "you"
+              ],
+              "title": "{{you}}回來了：據點守下來了",
+              "text": "{{you}}在那裡立了牌子、搭了棚子。往後那裡的出產歸{{settlement}}。",
+              "effects": [
+                {
+                  "type": "CLAIM_SITE",
+                  "location": "nearest"
+                }
+              ]
             }
           ]
         }
       ],
-      "outcome": "{{you}}帶著工具出發去立牌子了。"
+      "outcome": "佔地是整個聚落的事。{{you}}把提案交給{{settlement}}決定；通過的話就由{{you}}去。"
     },
     {
       "id": "salvage",
@@ -86,6 +97,49 @@
         }
       ],
       "outcome": "{{you}}往廢墟出發了。"
+    },
+    {
+      "id": "explore",
+      "label": "往沒去過的方向走",
+      "tags": [
+        "bold",
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "AFTER",
+          "seasons": 2,
+          "away": [
+            "you"
+          ],
+          "title": "{{you}}從沒去過的地方回來了",
+          "text": "{{you}}走了半年，帶回一張新的地圖。",
+          "effects": [
+            {
+              "type": "DISCOVER_LOCATION",
+              "location": "nearest"
+            },
+            {
+              "type": "ADD_LIFE_EVENT",
+              "role": "you",
+              "text": "走到了沒有人去過的地方"
+            }
+          ],
+          "risk": {
+            "chance": 0.15,
+            "text": "{{you}}在路上受了傷，拖著腿回來。",
+            "effects": [
+              {
+                "type": "ADJUST_ATTRIBUTE",
+                "role": "you",
+                "attribute": "health",
+                "delta": -15
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": "{{you}}往地圖上的空白處出發了。"
     },
     {
       "id": "routes",
