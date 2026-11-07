@@ -22,7 +22,7 @@ function Meter({ icon, label, word, value, color, why, danger }: { icon: React.R
     <div className="min-w-0 space-y-1">
       <div className="flex items-center justify-between gap-2 text-sm">
         <span className="flex items-center gap-1.5 text-ink-2"><span className="text-ink-3">{icon}</span>{label}</span>
-        <span className={clsx("text-xs font-medium", danger ? "text-danger" : "text-ink")}>{word}</span>
+        <span className={clsx("num text-sm font-semibold", danger ? "text-danger" : "text-ink")} title={word}>{value}</span>
       </div>
       <ProgressBar value={value} max={100} color={color} />
       <p className="text-[11px] leading-snug text-ink-3">{why}</p>
