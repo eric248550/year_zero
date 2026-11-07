@@ -8,7 +8,7 @@ export * from "./immediate";
 export * from "./batch";
 export { validateAction, applyAction } from "./systems/agents";
 export { currentResearchTarget, developmentCost } from "./systems/progress";
-export { PROJECTS, activeProjects, projectBlocker, projectFor, startableTechs, workEstimate } from "./systems/projects";
+export { PROJECTS, activeProjects, projectBlocker, projectFor, proposableBranches, startableTechs, workEstimate } from "./systems/projects";
 export { workforce, ECONOMY } from "./systems/economy";
 export { baseMortality } from "./systems/demographics";
 export { FOUNDING_MATERIALS } from "./systems/settlements";

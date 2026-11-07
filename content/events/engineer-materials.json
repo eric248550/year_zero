@@ -1,0 +1,101 @@
+{
+  "id": "engineer-materials",
+  "title": "新料還是舊料",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "工程師要決定零件用什麼做。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Engineer",
+      "onProject": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "new",
+      "label": "用新料，做好一點",
+      "tags": [
+        "industry"
+      ],
+      "costs": {
+        "materials": 15
+      },
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.2
+        }
+      ],
+      "outcome": "新料又硬又直，裝上去一次就對了。倉庫空了一角。"
+    },
+    {
+      "id": "salvage",
+      "label": "拆舊貨回收",
+      "tags": [
+        "cautious",
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.05,
+          "approach": "frugal"
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "survival",
+          "delta": 1
+        }
+      ],
+      "outcome": "{{you}}帶人把舊機器一件件拆開，挑出還能用的。慢，但不花什麼。"
+    },
+    {
+      "id": "prototype",
+      "label": "先做一個樣品試試",
+      "tags": [
+        "science",
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": -0.03,
+          "approach": "careful"
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "knowledge",
+          "delta": 3
+        }
+      ],
+      "outcome": "樣品裝上去第二天就裂了。幸好只是樣品，大家知道問題在哪了。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.35,
+  "cooldown": 4,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}要決定用什麼材料",
+    "text": "「{{project}}」需要一批零件。倉庫裡有新熔的金屬，也有一堆拆下來的舊貨。{{you}}得做決定。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

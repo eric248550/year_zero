@@ -1,0 +1,112 @@
+{
+  "id": "medic-trial",
+  "title": "誰來試新方法",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "醫護要決定新療法先在誰身上試。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Medic",
+      "onProject": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "self",
+      "label": "先在自己身上試",
+      "tags": [
+        "bold",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.2
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "you",
+          "text": "為了新療法，先在自己身上試"
+        }
+      ],
+      "risk": {
+        "chance": 0.3,
+        "description": "{{you}}病了好幾個星期才慢慢恢復。",
+        "effects": [
+          {
+            "type": "ADJUST_ATTRIBUTE",
+            "role": "you",
+            "attribute": "health",
+            "delta": -15
+          }
+        ]
+      },
+      "outcome": "{{you}}捲起袖子。結果記錄得清清楚楚，大家也更願意相信了。"
+    },
+    {
+      "id": "volunteers",
+      "label": "找自願的人",
+      "tags": [
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.1
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -2
+        }
+      ],
+      "outcome": "有三個人舉手。有人說這是拿別人的命冒險，私底下議論了很久。"
+    },
+    {
+      "id": "safe",
+      "label": "只用確定安全的做法",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0,
+          "approach": "careful"
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "knowledge",
+          "delta": 2
+        }
+      ],
+      "outcome": "{{you}}把風險高的步驟全部拿掉。進度慢下來了，但沒有人受傷。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.35,
+  "cooldown": 4,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}要決定先在誰身上試",
+    "text": "「{{project}}」做出了第一批成果，但沒有人知道它安不安全。總得有人先試。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

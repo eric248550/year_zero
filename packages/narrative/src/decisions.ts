@@ -163,6 +163,17 @@ export function resolvePendingDecisions(
       continue;
     }
 
+    if (def.resolution === "vote") {
+      const result = resolveVote(current, def, p, choices, picks, rng);
+      if ("error" in result) {
+        rejections.push({ definitionId: def.id, reason: result.error });
+        continue;
+      }
+      current = result.state;
+      events.push(result.event, ...result.childEvents);
+      continue;
+    }
+
     for (const choice of choices) {
       const members = picks.filter((x) => x.choiceId === choice.id);
       if (members.length === 0) continue;
@@ -178,6 +189,70 @@ export function resolvePendingDecisions(
   return { state: current, events, rejections };
 }
 
+/** A player who speaks up brings this many neighbours round to their side. */
+export const VOTE_PERSUASION = 3;
+
+/** Weighted tally: one vote each, plus the neighbours each player talks round. Ties go to the earlier choice. */
+export function tallyVotes(choices: readonly Choice[], picks: readonly { choiceId: string; decidedBy: string }[]): { choice: Choice; votes: number }[] {
+  return choices.map((choice) => ({
+    choice,
+    votes: picks.filter((x) => x.choiceId === choice.id).reduce((n, x) => n + 1 + (x.decidedBy === "player" ? VOTE_PERSUASION : 0), 0),
+  }));
+}
+
+/**
+ * One collective decision. The winning choice runs once (costs, effects, one
+ * risk roll); each participant's memberEffects follow their own vote. One
+ * history event records the tally.
+ */
+function resolveVote(
+  state: WorldState,
+  def: EventDefinition,
+  p: PendingDecision,
+  choices: readonly Choice[],
+  picks: Pick[],
+  rng: Rng,
+): { state: WorldState; event: HistoricalEvent; childEvents: HistoricalEvent[] } | { error: string } {
+  const tally = tallyVotes(choices, picks);
+  const winner = tally.reduce((best, t) => (t.votes > best.votes ? t : best)).choice;
+  const winners = picks.filter((x) => x.choiceId === winner.id);
+  // The winning side carries it out, so its risk is the choice's own, rolled once.
+  const result = resolveGroup(state, def, p, winner, winners.length ? winners : picks, rng, true);
+  if ("error" in result) return { error: `${winner.label}: ${result.error}` };
+  let next = result.state;
+  const event = result.event;
+  // Losing voters still live with what they said.
+  for (const choice of choices) {
+    if (choice.id === winner.id || !choice.memberEffects?.length) continue;
+    for (const m of picks.filter((x) => x.choiceId === choice.id)) {
+      try {
+        const rec = newRecorder();
+        next = transact(next, (draft) => applyEffects(draft, choice.memberEffects!, {
+          tick: draft.tick, settlementId: p.settlementId, roles: { ...p.roles, actor: m.characterId }, historyId: event.id,
+          title: def.title, scope: def.scope, category: def.category, storylineIds: def.storylineIds,
+        }, rec)).state;
+        event.changes.push(...rec.changes);
+      } catch (err) {
+        if (!(err instanceof EffectError)) throw err;
+      }
+    }
+  }
+  const counts = tally.filter((t) => t.votes > 0).map((t) => [t.choice.label, t.votes] as [string, number]);
+  const players = picks.filter((x) => x.decidedBy === "player").map((x) => {
+    const c = getCharacter(state, x.characterId);
+    return c ? [fullName(c), choices.find((ch) => ch.id === x.choiceId)?.label ?? ""] as [string, string] : null;
+  }).filter((x): x is [string, string] => !!x);
+  event.text = [say(state).voteResult(counts, winner.label), ...(players.length ? [say(state).voteVoices(players)] : []), ...event.text.split("\n\n").slice(1)].join("\n\n");
+  event.characterIds = [...new Set([...event.characterIds, ...picks.map((x) => x.characterId)])];
+  if (event.trigger) event.trigger.summary = `Vote: ${counts.map(([l, n]) => `${l} ${n}`).join(", ")} (players count ${1 + VOTE_PERSUASION})`;
+  for (const m of picks) {
+    if (winners.some((w) => w.characterId === m.characterId)) continue;
+    const c = next.characters.find((x) => x.id === m.characterId);
+    if (c && c.deathTick === null) c.lifeEvents.push({ tick: next.tick, text: event.title, historyId: event.id });
+  }
+  return { state: next, event, childEvents: result.childEvents };
+}
+
 function resolveGroup(
   state: WorldState,
   def: EventDefinition,
@@ -185,10 +260,12 @@ function resolveGroup(
   choice: Choice,
   members: Pick[],
   rng: Rng,
+  collective = false,
 ): { state: WorldState; event: HistoricalEvent; childEvents: HistoricalEvent[] } | { error: string } {
   const settlement = p.settlementId ? state.settlements.find((s) => s.id === p.settlementId) ?? null : null;
-  const riskChance = choice.risk ? round2(choice.risk.chance / Math.sqrt(members.length)) : 0;
-  const riskRolls = members.map(() => (choice.risk ? rng.next() : 1));
+  // A collective decision has one risk roll, borne by whoever carries it out first.
+  const riskChance = choice.risk ? round2(collective ? choice.risk.chance : choice.risk.chance / Math.sqrt(members.length)) : 0;
+  const riskRolls = members.map((_, i) => (choice.risk && (!collective || i === 0) ? rng.next() : 1));
 
   const baseCtx = (draft: WorldState, historyId: string, actor: string): EffectContext => ({
     tick: draft.tick,

@@ -1,0 +1,110 @@
+{
+  "id": "farmer-seed-plan",
+  "title": "試種的方法",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "農人要決定新作物怎麼試種。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Farmer",
+      "onProject": "farming"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "rotate",
+      "label": "分區輪作，一塊一塊試",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.05,
+          "approach": "careful"
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "survival",
+          "delta": 2
+        }
+      ],
+      "outcome": "{{you}}把苗圃分成四塊，每塊種不同的東西。進度慢，但每一塊都看得清楚。"
+    },
+    {
+      "id": "all_in",
+      "label": "全部種最高產的品種",
+      "tags": [
+        "bold",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.15,
+          "approach": "bold"
+        }
+      ],
+      "risk": {
+        "chance": 0.3,
+        "description": "一場病害掃過整片單一作物，{{you}}只救回一小部分。",
+        "effects": [
+          {
+            "type": "ADJUST_RESOURCE",
+            "resource": "food",
+            "amount": -12
+          },
+          {
+            "type": "CHANGE_PROJECT",
+            "role": "you",
+            "progress": -0.1
+          }
+        ]
+      },
+      "outcome": "整片苗圃都是同一種綠。長得很快，也長得很一致。"
+    },
+    {
+      "id": "seed_stock",
+      "label": "把留著的種子拿出來試",
+      "tags": [
+        "growth"
+      ],
+      "costs": {
+        "food": 8
+      },
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.2
+        }
+      ],
+      "outcome": "{{you}}從存糧裡撥出一袋留種。少吃了一點，試種卻快了一大截。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.35,
+  "cooldown": 4,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}要決定怎麼試種",
+    "text": "「{{project}}」的苗圃整好了，種子也分好了。大家看著{{you}}：這一季要怎麼種？"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

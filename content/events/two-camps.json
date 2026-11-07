@@ -107,5 +107,6 @@
     "conflict"
   ],
   "participation": "everyone",
-  "maxOccurrences": 1
+  "maxOccurrences": 1,
+  "resolution": "vote"
 }

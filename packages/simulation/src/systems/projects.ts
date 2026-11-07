@@ -1,6 +1,9 @@
 import {
   ADULT_AGE,
+  APPROACH_INFO,
   BRANCH_INFO,
+  type PolicyId,
+  type ProjectApproach,
   ELDER_AGE,
   POLICY_INFO,
   TECHNOLOGIES,
@@ -80,6 +83,14 @@ export function projectBlocker(st: WorldState, techId: string, s: Settlement | u
   return null;
 }
 
+/** Branches someone of this profession can propose projects in. */
+export function proposableBranches(profession: Character["profession"]): string[] {
+  return Object.entries(BRANCH_INFO).filter(([, b]) => b.profession === profession).map(([id]) => id);
+}
+
+/** How the council runs the projects it starts. */
+const COUNCIL_APPROACH: Record<PolicyId, ProjectApproach> = { balanced: "steady", expansionist: "bold", scholarly: "frugal", cautious: "careful" };
+
 /** Technologies a project could be started for anywhere (ignores materials). */
 export function startableTechs(st: WorldState): TechnologyInfo[] {
   return TECHNOLOGIES.filter((t) => {
@@ -121,6 +132,7 @@ export function startProject(ctx: TickContext, tech: TechnologyInfo, s: Settleme
     progress: 0,
     lastGain: 0,
     idleYears: 0,
+    approach: by === "council" ? COUNCIL_APPROACH[st.policy] : "steady",
   };
   st.projects.push(project);
   const name = techText(st, tech.id).name;
@@ -245,9 +257,11 @@ export function projects(ctx: TickContext): void {
     p.crewIds = npcs.map((c) => c.id);
     const members = p.memberIds.map((id) => getCharacter(st, id)!);
 
+    const approach = APPROACH_INFO[p.approach ?? "steady"];
     let work = npcs.reduce((n, c) => n + workOf(st, c, tech), 0) + members.reduce((n, c) => n + workOf(st, c, tech) * PROJECTS.playerFocus, 0);
+    work *= approach.work;
     if (s.shortage.food > 0 || s.shortage.water > 0) work *= PROJECTS.hungerFactor;
-    const perWork = PROJECTS.knowledgePerWork * (hasTech(st, "research_institute") ? 0.7 : 1);
+    const perWork = PROJECTS.knowledgePerWork * approach.knowledge * (hasTech(st, "research_institute") ? 0.7 : 1);
     if (work > 0) {
       const spent = spendKnowledge(st, work * perWork);
       work = Math.min(work, spent / perWork);
@@ -274,7 +288,7 @@ export function projects(ctx: TickContext): void {
 
     p.progress = round2(p.progress + work);
     if (work > 0 && people.length > 0) {
-      if (ctx.rng.chance(PROJECTS.setbackChance)) {
+      if (ctx.rng.chance(PROJECTS.setbackChance * approach.setback)) {
         const who = ctx.rng.pick(people);
         const before = p.progress;
         p.progress = round2(Math.max(0, p.progress - tech.cost * (0.1 + 0.1 * ctx.rng.next())));
@@ -289,7 +303,7 @@ export function projects(ctx: TickContext): void {
         });
       } else {
         const gifted = people.filter((c) => (c.attributes?.[attr] ?? 0) >= 70);
-        if (gifted.length > 0 && ctx.rng.chance(PROJECTS.breakthroughChance)) {
+        if (gifted.length > 0 && ctx.rng.chance(PROJECTS.breakthroughChance * approach.breakthrough)) {
           const who = ctx.rng.pick(gifted);
           const before = p.progress;
           p.progress = round2(p.progress + tech.cost * 0.15);

@@ -38,17 +38,22 @@
       ],
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 6
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "food",
+            "amount": 10
+          },
+          "give": {
+            "resource": "materials",
+            "amount": 10
+          }
         },
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 6
+          "type": "CHANGE_TENSION",
+          "delta": -5
         }
       ],
-      "outcome": "商隊帶著工具出發，帶著種子和食物回來。",
+      "outcome": "商隊扛著廢料和工具去了{{rival}}，換回了一車糧食。兩邊的人第一次坐下來討價還價。",
       "memberEffects": [
         {
           "type": "ADJUST_ATTRIBUTE",

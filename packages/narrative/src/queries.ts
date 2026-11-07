@@ -2,6 +2,7 @@ import {
   ADULT_AGE,
   type Character,
   type ResourceId,
+  type Project,
   type Settlement,
   type WorldState,
 } from "@genesis/schemas";
@@ -105,4 +106,9 @@ export function rivalOf(state: WorldState, s: Settlement): Settlement | null {
     if (t > bestT || (t === bestT && best && o.id < best.id)) { best = o; bestT = t; }
   }
   return best;
+}
+
+/** The active project a character leads or has joined. */
+export function projectOf(state: WorldState, characterId: string): Project | undefined {
+  return (state.projects ?? []).find((p) => p.memberIds.includes(characterId) || p.leadId === characterId);
 }

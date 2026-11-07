@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { POLICIES, PROFESSIONS } from "./catalog";
+import { POLICIES, PROFESSIONS, PROJECT_APPROACHES } from "./catalog";
 
 export const ResourceSetSchema = z.object({
   food: z.number().min(0),
@@ -162,6 +162,8 @@ export const ProjectSchema = z.object({
   lastGain: z.number().min(0),
   /** Consecutive years with nobody working on it. */
   idleYears: z.number().int().min(0),
+  /** How it is being run (chosen by its lead). Absent = steady. */
+  approach: z.enum(PROJECT_APPROACHES).optional(),
 });
 export type Project = z.infer<typeof ProjectSchema>;
 

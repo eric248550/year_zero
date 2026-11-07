@@ -8,6 +8,8 @@ import {
   PROFESSIONS,
   RESOURCES,
   SETTLEMENT_STATS,
+  BRANCHES,
+  PROJECT_APPROACHES,
 } from "./catalog";
 import { ATTRIBUTES, FlagValueSchema } from "./world";
 
@@ -50,6 +52,10 @@ export const ConditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("shortage"), resource: z.enum(["food", "water"]), active: z.boolean() }).strict(),
   /** Tension between the target settlement and its rival (the settlement it is most at odds with). Fails when there is no other settlement. */
   z.object({ type: z.literal("tension"), op: ComparisonOpSchema, value: z.number() }).strict(),
+  /** Years since the target settlement was founded (a field has to be sown before it is harvested). */
+  z.object({ type: z.literal("settlement_age"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
+  /** Someone is (or is not) building this technology right now. */
+  z.object({ type: z.literal("project"), tech: z.string(), active: z.boolean() }).strict(),
 ]);
 export type Condition = z.infer<typeof ConditionSchema>;
 export type ConditionInput = z.input<typeof ConditionSchema>;
@@ -75,6 +81,8 @@ export const RoleSchema = z.object({
    * role (friends and enemies alike), so relationships keep developing.
    */
   familiarWith: z.string().optional(),
+  /** Only characters working on an active project (optionally of this branch). Fills {{project}}. */
+  onProject: z.union([z.literal(true), z.enum(BRANCHES)]).optional(),
   /** Minimum attribute values (worlds without attributes treat everyone as 50). */
   minAttributes: z.object({ health: z.number(), social: z.number(), knowledge: z.number(), survival: z.number() }).partial().strict().optional(),
 }).strict();
@@ -101,6 +109,8 @@ export const EFFECT_TYPES = [
   "ADJUST_ATTRIBUTE",
   "ADD_CARETAKER",
   "CHANGE_TENSION",
+  "EXCHANGE",
+  "CHANGE_PROJECT",
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -142,6 +152,27 @@ export const EffectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ADD_CARETAKER"), caretaker: z.string(), ward: z.string() }).strict(),
   /** Change tension between the target settlement and its rival ({{rival}}). */
   z.object({ type: z.literal("CHANGE_TENSION"), delta: z.number().int().min(-50).max(50) }).strict(),
+  /**
+   * Goods move between the target settlement and its rival ({{rival}}): `get`
+   * comes out of the rival's stores (only what it has), `give` goes the other
+   * way, scaled down by the same share. Nothing is created.
+   */
+  z.object({
+    type: z.literal("EXCHANGE"),
+    get: z.object({ resource: ResourceIdSchema, amount: z.number().positive().max(200) }).strict(),
+    give: z.object({ resource: ResourceIdSchema, amount: z.number().positive().max(200) }).strict().optional(),
+  }).strict(),
+  /**
+   * Change a project: the one `role` is working on, or the active one building `tech`.
+   * `progress` is a share of its total work (0.2 = a fifth). No project: nothing happens.
+   */
+  z.object({
+    type: z.literal("CHANGE_PROJECT"),
+    role: z.string().optional(),
+    tech: z.string().optional(),
+    progress: z.number().min(-0.5).max(0.5).optional(),
+    approach: z.enum(PROJECT_APPROACHES).optional(),
+  }).strict(),
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
 export type EffectInput = z.input<typeof EffectSchema>;
@@ -209,6 +240,13 @@ export const EventDefinitionSchema = z.object({
    * themselves (e.g. some join an expedition, some stay home).
    */
   participation: z.enum(["roles", "everyone"]).optional(),
+  /**
+   * How several deciders' answers combine. "each" (default): every group does
+   * what it chose (some go on the caravan, some stay). "vote": one collective
+   * decision. Every answer is collected first, then the winning choice's effects
+   * run once; memberEffects still follow what each person voted for.
+   */
+  resolution: z.enum(["each", "vote"]).optional(),
   priority: z.number().int().min(1).max(10).default(5),
   /** Probability per tick of firing while eligible. */
   chance: z.number().min(0).max(1).default(0.3),

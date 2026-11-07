@@ -28,12 +28,7 @@
     }
   ],
   "roles": [],
-  "effects": [
-    {
-      "type": "ADD_WORLD_FLAG",
-      "flag": "governance.assembly"
-    }
-  ],
+  "effects": [],
   "choices": [
     {
       "id": "assembly",
@@ -47,6 +42,10 @@
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 6
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "governance.assembly"
         }
       ],
       "outcome": "第一次居民大會，有人吵到拍桌，但最後每個人都舉了手。",
@@ -70,6 +69,10 @@
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 1
+        },
+        {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "governance.elder_council"
         }
       ],
       "outcome": "長者們點了點頭。有些年輕人不太服氣。"
@@ -77,8 +80,7 @@
   ],
   "priority": 3,
   "chance": 0.4,
-  "cooldown": 4,
-  "maxOccurrences": 1,
+  "cooldown": 10,
   "storylineIds": [
     "first-charter"
   ],
@@ -93,5 +95,6 @@
   "participation": "everyone",
   "tags": [
     "rebuild"
-  ]
+  ],
+  "resolution": "vote"
 }

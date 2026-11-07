@@ -15,6 +15,8 @@ export interface DecisionView {
   others: number;
   /** Only this player decides, and the outcome shows as soon as they choose. */
   instant: boolean;
+  /** One collective decision: the majority wins, and a player's voice brings a few neighbours along. */
+  vote?: boolean;
   /** Hidden until this time (ISO), so a year's events arrive one by one. */
   appearAt: string | null;
 }
@@ -78,7 +80,7 @@ export function DecisionCard({ d }: { d: DecisionView }) {
       </div>
       <p className="text-xs text-ink-3">
         {d.instant ? t("play.decisions.instant") : mine ? t("play.decisions.chosen", { choice: mine.label }) : t("play.decisions.autopilot")}
-        {d.others > 0 && <> · {t("play.decisions.others", { n: d.others })}</>}
+        {d.vote ? <> · {t("play.decisions.vote", { n: d.others + 1 })}</> : d.others > 0 && <> · {t("play.decisions.others", { n: d.others })}</>}
       </p>
       {error && <p role="alert" className="text-sm text-danger">{t("play.error", { message: error })}</p>}
     </article>

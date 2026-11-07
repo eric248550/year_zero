@@ -62,6 +62,14 @@ rejectedEvents, metrics }`. Phases:
    unhappy settlements of 40+ can split (`schisms`). Content reads it through the
    `tension` condition, changes it with `CHANGE_TENSION`, and names the other side
    `{{rival}}` (the settlement it is most at odds with).
+   Decisions: `participation: "everyone"` events either let each group act
+   (`resolution: "each"`, default) or hold one vote (`resolution: "vote"`): all
+   answers are collected, tallied once (players count 1 + `VOTE_PERSUASION`), and
+   only the winner's effects run. Validation rejects "each" events whose choices
+   change world flags. Goods move between settlements with `EXCHANGE` (capped by
+   what the other side has); projects change with `CHANGE_PROJECT`; projects have
+   an `approach` (steady/careful/bold/frugal) chosen by their lead; players can
+   only START projects in their own profession's branches.
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

@@ -52,6 +52,10 @@ export function describeCondition(c: Condition): string {
       return `Settlement ${c.resource} shortage is ${c.active ? "active" : "not active"}`;
     case "tension":
       return `Tension with rival settlement ${c.op} ${c.value}`;
+    case "project":
+      return `A project for ${TECH_BY_ID[c.tech]?.name ?? c.tech} is ${c.active ? "under way" : "not under way"}`;
+    case "settlement_age":
+      return `Settlement founded ${c.op} ${c.value} years ago`;
   }
 }
 
@@ -134,6 +138,15 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
       if (!s || !rival) return result(null, false);
       const t = tensionBetween(state, s.id, rival.id);
       return result(t, compare(t, c.op, c.value));
+    }
+    case "project": {
+      const active = (state.projects ?? []).some((p) => p.techId === c.tech);
+      return result(active, active === c.active);
+    }
+    case "settlement_age": {
+      if (!s) return result(null, false);
+      const age = state.tick - s.foundedTick;
+      return result(age, compare(age, c.op, c.value));
     }
   }
 }

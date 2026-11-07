@@ -1,5 +1,5 @@
 import { BRANCH_INFO, LOCATION_BY_ID, TECH_BY_ID, ZH_CATALOG, type BranchId, type Profession, type ResourceId, type Settlement, type WorldState } from "@genesis/schemas";
-import { currentYear, fullName, getCharacter, rivalOf } from "./queries";
+import { currentYear, fullName, getCharacter, projectOf, rivalOf } from "./queries";
 
 /**
  * Text the engine writes into history and life stories, in the world's
@@ -139,6 +139,8 @@ const EN = {
   tellText: () => "Most laugh it off. A few lean closer and ask what it said.",
   keptStatic: () => "Heard a voice in the radio static and told no one",
   renamed: (before: string, after: string) => `${before} now goes by ${after}`,
+  voteResult: (counts: [string, number][], winner: string) => `The vote: ${counts.map(([l, n]) => `${l} ${n}`).join(", ")}. Decided: ${winner}.`,
+  voteVoices: (players: [string, string][]) => players.map(([n, l]) => `${n} spoke for "${l}"`).join("; ") + ".",
   raidTitle: (raider: string, victim: string) => `${raider} raids ${victim}`,
   raidText: (leader: string, raider: string, victim: string, n: number, r: string) => `Out of patience, people from ${raider} led by ${leader} broke into ${victim}'s stores and carried off ${n} ${r}.`,
   raidLife: (victim: string) => `Led a raid on ${victim}`,
@@ -261,6 +263,8 @@ const ZH: typeof EN = {
   tellText: () => "大多數人笑笑就算了。有幾個人湊過來，問它說了什麼。",
   keptStatic: () => "聽見收音機雜訊裡的人聲，沒有告訴任何人",
   renamed: (before, after) => `${before}改名為${after}`,
+  voteResult: (counts, winner) => `表決結果：${counts.map(([l, n]) => `「${l}」${n} 票`).join("、")}。決定：${winner}。`,
+  voteVoices: (players) => players.map(([n, l]) => `${n}支持「${l}」`).join("，") + "。",
   raidTitle: (raider, victim) => `${raider}搶了${victim}`,
   raidText: (leader, raider, victim, n, r) => `忍無可忍的${raider}居民，在${leader}帶頭下闖進${victim}的倉庫，搬走了 ${n} 份${r}。`,
   raidLife: (victim) => `帶頭搶了${victim}`,
@@ -308,6 +312,8 @@ export function templateValues(state: WorldState, settlement: Settlement | null,
   };
   for (const [role, id] of Object.entries(roles)) {
     const c = getCharacter(state, id);
+    const p = c && values.project === undefined ? projectOf(state, c.id) : undefined;
+    if (p) values.project = techText(state, p.techId).name;
     if (c) {
       values[role] = fullName(c);
       values[`${role}.profession`] = professionName(state, c.profession);

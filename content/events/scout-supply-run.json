@@ -1,0 +1,127 @@
+{
+  "id": "scout-supply-run",
+  "title": "去哪裡找材料",
+  "scope": "settlement",
+  "category": "technology",
+  "description": "斥候要決定去哪裡替專案找東西。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    }
+  ],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Scout",
+      "onProject": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "ruins",
+      "label": "穿過廢墟",
+      "tags": [
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.15
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 6
+        }
+      ],
+      "risk": {
+        "chance": 0.25,
+        "description": "{{you}}在倒塌的樓梯間摔傷了，被同伴扛了回來。",
+        "effects": [
+          {
+            "type": "ADJUST_ATTRIBUTE",
+            "role": "you",
+            "attribute": "health",
+            "delta": -20
+          }
+        ]
+      },
+      "outcome": "{{you}}從廢墟深處拖回了一整袋零件。"
+    },
+    {
+      "id": "long_way",
+      "label": "繞遠路",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.05
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "you",
+          "attribute": "survival",
+          "delta": 2
+        }
+      ],
+      "outcome": "多走了三天，帶回來的東西不多，但人都平安。"
+    },
+    {
+      "id": "trade",
+      "label": "去鄰近聚落交換",
+      "tags": [
+        "openness",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "materials",
+            "amount": 8
+          },
+          "give": {
+            "resource": "food",
+            "amount": 8
+          }
+        },
+        {
+          "type": "CHANGE_PROJECT",
+          "role": "you",
+          "progress": 0.1
+        },
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -3
+        }
+      ],
+      "outcome": "{{you}}帶著糧食去{{rival}}，換回了需要的東西，還帶回一些消息。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.35,
+  "cooldown": 4,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}要決定往哪裡走",
+    "text": "「{{project}}」缺一批東西。{{you}}知道幾個地方：一片危險的廢墟、一條遠但安全的路，還有一個願意交易的聚落。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

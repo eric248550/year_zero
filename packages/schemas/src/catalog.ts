@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-0.5.0";
+export const RULES_VERSION = "rules-0.6.0";
 
 export const START_YEAR = 2131;
 
@@ -46,6 +46,20 @@ export const BRANCH_INFO: Record<BranchId, { name: string; profession: Professio
   medicine: { name: "Medicine & Population", profession: "Medic", attribute: "knowledge" },
   knowledge: { name: "Knowledge & Education", profession: "Scientist", attribute: "knowledge" },
   society: { name: "Exploration & Society", profession: "Scout", attribute: "social" },
+};
+
+/**
+ * How a project is run. steady: as is. careful: slower, rarely goes wrong.
+ * bold: faster, goes wrong more (and sometimes leaps). frugal: spends less
+ * knowledge, a little slower.
+ */
+export const PROJECT_APPROACHES = ["steady", "careful", "bold", "frugal"] as const;
+export type ProjectApproach = (typeof PROJECT_APPROACHES)[number];
+export const APPROACH_INFO: Record<ProjectApproach, { work: number; setback: number; breakthrough: number; knowledge: number }> = {
+  steady: { work: 1, setback: 1, breakthrough: 1, knowledge: 1 },
+  careful: { work: 0.85, setback: 0.3, breakthrough: 0.7, knowledge: 1 },
+  bold: { work: 1.25, setback: 2.5, breakthrough: 1.6, knowledge: 1 },
+  frugal: { work: 0.9, setback: 1, breakthrough: 1, knowledge: 0.65 },
 };
 
 export interface TechnologyInfo {

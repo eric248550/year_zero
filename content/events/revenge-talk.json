@@ -37,9 +37,11 @@
           "delta": 15
         },
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 10
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "food",
+            "amount": 12
+          }
         }
       ],
       "risk": {
@@ -111,5 +113,6 @@
   "tags": [
     "conflict"
   ],
-  "participation": "everyone"
+  "participation": "everyone",
+  "resolution": "vote"
 }

@@ -88,6 +88,10 @@ function plain(c: Condition, i18n: I18n): string {
       return zh ? `${c.occurred ? "要先發生" : "不能已經發生"}「${c.event}」` : `"${c.event}" must ${c.occurred ? "" : "not "}have happened`;
     case "shortage":
       return zh ? `聚落${c.active ? "正在缺" : "沒有缺"}${term.resource(c.resource)}` : `Settlement ${c.active ? "is short of" : "has enough"} ${term.resource(c.resource)}`;
+    case "project":
+      return zh ? `${c.active ? "正在" : "沒有在"}做「${term.techName(c.tech)}」` : `${term.techName(c.tech)} must ${c.active ? "" : "not "}be under way`;
+    case "settlement_age":
+      return zh ? `聚落建立 ${c.value} 年以上` : `Settlement at least ${c.value} years old`;
     case "tension":
       return zh ? `和鄰近聚落的緊張度要${op(c.op)} ${c.value}` : `Tension with a neighbour must be ${op(c.op)} ${c.value}`;
   }

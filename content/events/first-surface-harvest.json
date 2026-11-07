@@ -13,12 +13,23 @@
       "type": "flag",
       "flag": "food.surface_farming",
       "present": false
+    },
+    {
+      "type": "settlement_age",
+      "op": ">=",
+      "value": 1
+    },
+    {
+      "type": "technology",
+      "tech": "hydroponics",
+      "has": true
     }
   ],
   "roles": [
     {
       "id": "farmer",
-      "minAge": 16
+      "minAge": 16,
+      "profession": "Farmer"
     }
   ],
   "effects": [

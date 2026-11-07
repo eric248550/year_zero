@@ -17,6 +17,8 @@ export function describeEffect(e: Effect): string {
     case "CHARACTER_DEATH": return `${e.role} dies (${e.cause})`;
     case "ADJUST_ATTRIBUTE": return `${e.role} ${e.attribute} ${e.delta >= 0 ? "+" : ""}${e.delta}`;
     case "ADD_CARETAKER": return `${e.caretaker} starts looking after ${e.ward}`;
+    case "EXCHANGE": return `Exchange with rival: get ${e.get.amount} ${e.get.resource}${e.give ? `, give ${e.give.amount} ${e.give.resource}` : ""}`;
+    case "CHANGE_PROJECT": return `Project of ${e.role ?? e.tech}: ${[e.progress !== undefined ? `${e.progress >= 0 ? "+" : ""}${Math.round(e.progress * 100)}% work` : "", e.approach ? `run ${e.approach}` : ""].filter(Boolean).join(", ")}`;
     case "CHANGE_TENSION": return `Tension with rival ${e.delta >= 0 ? "+" : ""}${e.delta}`;
   }
 }

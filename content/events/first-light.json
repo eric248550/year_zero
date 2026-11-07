@@ -57,17 +57,17 @@
       ],
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 6
-        },
-        {
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 4
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 4
         }
       ],
-      "outcome": "大家圍著那一盞燈坐了很久，誰都沒說話。"
+      "outcome": "大家圍著那一盞燈坐了很久。之後每天晚上，燈下都有人在抄檔案、算帳、教孩子認字。"
     }
   ],
   "priority": 3,
@@ -88,5 +88,6 @@
   "participation": "everyone",
   "tags": [
     "rebuild"
-  ]
+  ],
+  "resolution": "vote"
 }

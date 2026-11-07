@@ -15,7 +15,7 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { EffectError, InsufficientResourcesError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
+import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, projectOf, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
 import { say } from "./texts";
 
 /** Collects every transition made inside a transaction. */
@@ -156,6 +156,47 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
         const after = effect.stat === "capacity" ? Math.max(0, Math.round(raw)) : Math.min(100, Math.max(0, raw));
         s[effect.stat] = after;
         record(rec, `settlements.${s.id}.${effect.stat}`, `${s.name} ${effect.stat}`, before, after);
+      }
+      return;
+    }
+    case "EXCHANGE": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const rival = rivalOf(state, s!);
+      if (!rival) return;
+      // Only what the other side actually has changes hands.
+      const got = Math.min(effect.get.amount, rival.resources[effect.get.resource]);
+      if (got <= 0) return;
+      const share = got / effect.get.amount;
+      const move = (from: Settlement, to: Settlement, r: ResourceId, n: number) => {
+        const amount = Math.min(round2(n), from.resources[r]);
+        if (amount <= 0) return;
+        const fb = from.resources[r];
+        from.resources[r] = round2(fb - amount);
+        record(rec, `settlements.${from.id}.resources.${r}`, `${from.name} ${r}`, fb, from.resources[r]);
+        const tb = to.resources[r];
+        to.resources[r] = round2(tb + amount);
+        record(rec, `settlements.${to.id}.resources.${r}`, `${to.name} ${r}`, tb, to.resources[r]);
+      };
+      move(rival, s!, effect.get.resource, got);
+      if (effect.give) move(s!, rival, effect.give.resource, effect.give.amount * share);
+      return;
+    }
+    case "CHANGE_PROJECT": {
+      const holder = effect.role ? roleCharacter(state, effect.role, ctx) : null;
+      const p = effect.role
+        ? (holder ? projectOf(state, holder.id) : undefined)
+        : (state.projects ?? []).find((x) => x.techId === effect.tech);
+      if (!p) return; // nobody is building it: the moment passes
+      const tech = TECH_BY_ID[p.techId]!;
+      if (effect.progress !== undefined) {
+        const before = p.progress;
+        p.progress = round2(Math.max(0, Math.min(tech.cost - 0.01, p.progress + tech.cost * effect.progress)));
+        record(rec, `projects.${p.id}.progress`, `Project ${tech.name}`, before, p.progress);
+      }
+      if (effect.approach) {
+        const before = p.approach ?? "steady";
+        p.approach = effect.approach;
+        record(rec, `projects.${p.id}.approach`, `Project ${tech.name} approach`, before, effect.approach);
       }
       return;
     }

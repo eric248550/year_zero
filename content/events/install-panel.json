@@ -36,11 +36,6 @@
       ],
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 3
-        },
-        {
           "type": "CHANGE_RELATIONSHIP",
           "a": "you",
           "b": "lead",
@@ -50,6 +45,11 @@
           "type": "ADJUST_ATTRIBUTE",
           "role": "you",
           "attribute": "knowledge",
+          "delta": 2
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
           "delta": 2
         }
       ],

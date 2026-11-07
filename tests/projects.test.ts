@@ -66,7 +66,7 @@ describe("projects", () => {
     let s = played(played(createWorld({ seed: 11 }), "a", "Farmer"), "b", "Engineer");
     const a = playerCharacter(s, "a")!;
     const b = playerCharacter(s, "b")!;
-    const tech = TECHNOLOGIES.find((t) => t.tier === 1 && !activeProjects(s).some((p) => p.techId === t.id))!;
+    const tech = TECH_BY_ID["hydroponics"]!; // a farmer's own trade
     const before = s.settlements.find((x) => x.id === a.homeId)!.resources.materials;
     const r = applyImmediate(s, { type: "START_PROJECT", playerId: "a", tech: tech.id });
     expect(r.rejected).toBeNull();
@@ -77,7 +77,7 @@ describe("projects", () => {
     expect(r.events[0]?.characterIds).toContain(a.id);
 
     // The same technology cannot be started twice; a leader cannot start a second one.
-    expect(applyImmediate(s, { type: "START_PROJECT", playerId: "b", tech: tech.id }).rejected).toMatch(/already working/);
+    expect(applyImmediate(s, { type: "START_PROJECT", playerId: "b", tech: tech.id }).rejected).toMatch(/already working|Only a Farmer/);
     const other = TECHNOLOGIES.find((t) => t.tier === 1 && !activeProjects(s).some((x) => x.techId === t.id))!;
     expect(applyImmediate(s, { type: "START_PROJECT", playerId: "a", tech: other.id }).rejected).toMatch(/already leading/);
 

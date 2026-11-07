@@ -14,6 +14,11 @@
       "type": "technology",
       "tech": "hydroponics",
       "has": false
+    },
+    {
+      "type": "project",
+      "tech": "hydroponics",
+      "active": true
     }
   ],
   "roles": [
@@ -37,16 +42,17 @@
       },
       "effects": [
         {
-          "type": "UNLOCK_TECHNOLOGY",
-          "tech": "hydroponics"
-        },
-        {
           "type": "ADD_LIFE_EVENT",
           "role": "scientist",
           "text": "研發出傳家種水耕法"
+        },
+        {
+          "type": "CHANGE_PROJECT",
+          "tech": "hydroponics",
+          "progress": 0.4
         }
       ],
-      "outcome": "{{scientist}}讓傳家種在生長燈下結出了果實。水耕技術重生了。"
+      "outcome": "{{scientist}}讓傳家種在生長燈下結出了果實。「種子與水耕」的試驗一下子往前跳了一大截。"
     },
     {
       "id": "wait",

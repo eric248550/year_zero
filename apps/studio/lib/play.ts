@@ -3,9 +3,9 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
-import { characterAge, fullName, getCharacter, population, relationshipKey, renderTemplate, rivalOf, tensionBetween } from "@genesis/narrative";
+import { characterAge, fullName, getCharacter, population, relationshipKey, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
 import { BRANCH_INFO, TECH_BY_ID } from "@genesis/schemas";
-import { activeProjects, projectBlocker, startableTechs, workEstimate } from "@genesis/simulation";
+import { activeProjects, projectBlocker, proposableBranches, startableTechs, workEstimate } from "@genesis/simulation";
 import type { ProjectsView } from "@/components/play/projects";
 import type { DecisionView } from "@/components/play/decision-card";
 import { db } from "./server";
@@ -149,6 +149,8 @@ export function decisionViews(ctx: PlayContext): DecisionView[] {
       const values: Record<string, string> = { settlement: settlement?.name ?? "the settlements", rival: (settlement && rivalOf(state, settlement)?.name) || "", year: String(state.startYear + p.firedTick), world: state.worldName };
       for (const [role, id] of Object.entries(p.roles)) {
         const c = getCharacter(state, id);
+        const proj = c && values.project === undefined ? projectOf(state, c.id) : undefined;
+        if (proj) values.project = techText(state, proj.techId).name;
         if (c) {
           values[role] = fullName(c);
           values[`${role}.profession`] = c.profession ?? "youth";
@@ -162,6 +164,7 @@ export function decisionViews(ctx: PlayContext): DecisionView[] {
         myChoice: p.responses[character.id] ?? null,
         others: p.participants.length - 1,
         instant: p.participants.length === 1,
+        vote: def?.resolution === "vote",
         appearAt: appearAt(ctx, p.id, p.firedTick),
       };
     });
@@ -244,6 +247,7 @@ export function projectsFor(state: WorldState, c: Character, term: Term): Projec
       mine: p.memberIds.includes(c.id),
       myWork: workEstimate(state, c, p.techId, true),
       fits: c.profession === BRANCH_INFO[tech.branch].profession,
+      approach: p.approach ?? "steady",
       place: state.settlements.find((s) => s.id === p.settlementId)?.name ?? "",
     };
   };
@@ -252,7 +256,7 @@ export function projectsFor(state: WorldState, c: Character, term: Term): Projec
     leading: all.some((p) => p.leadId === c.id),
     here: all.filter((p) => p.settlementId === c.homeId).map(view),
     elsewhere: all.filter((p) => p.settlementId !== c.homeId).map(view),
-    startable: startableTechs(state).map((t) => ({
+    startable: startableTechs(state).filter((t) => proposableBranches(c.profession).includes(t.branch)).map((t) => ({
       tech: t.id,
       name: term.techName(t.id),
       branch: term.branch(t.branch),

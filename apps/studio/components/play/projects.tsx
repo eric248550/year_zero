@@ -24,8 +24,11 @@ export interface ProjectItem {
   myWork: number;
   /** The character's profession is the one this branch needs. */
   fits: boolean;
+  approach: "steady" | "careful" | "bold" | "frugal";
   place: string;
 }
+
+const APPROACHES = ["steady", "careful", "bold", "frugal"] as const;
 
 export interface ProjectsView {
   canWork: boolean;
@@ -66,6 +69,19 @@ export function Projects({ v }: { v: ProjectsView }) {
                 {p.yearsLeft !== null && <> · {t("play.proj.years", { n: p.yearsLeft })}</>}
               </p>
               <p className="text-[11px] leading-snug text-ink-2">{p.effect}</p>
+              {p.leadIsMe ? (
+                <div className="space-y-1 pt-1">
+                  <div className="text-[11px] text-ink-3">{t("play.proj.how")}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {APPROACHES.map((a) => (
+                      <button key={a} type="button" disabled={busy || p.approach === a} onClick={() => act({ type: "PROJECT_APPROACH", approach: a })} title={t(`play.proj.approach.${a}.hint`)} className={clsx("min-h-8 rounded-lg border px-2.5 text-xs", p.approach === a ? "border-signal bg-signal/15 text-signal" : "border-line hover:bg-surface-2")}>
+                        {t(`play.proj.approach.${a}`)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-ink-3">{t(`play.proj.approach.${p.approach}.hint`)}</p>
+                </div>
+              ) : p.approach !== "steady" && <p className="text-[11px] text-ink-3">{t("play.proj.runAs", { how: t(`play.proj.approach.${p.approach}`) })}</p>}
               {v.canWork && (
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   {p.mine ? (
@@ -92,7 +108,7 @@ export function Projects({ v }: { v: ProjectsView }) {
             <button type="button" onClick={() => setPicking(true)} className="min-h-10 w-full rounded-xl border border-dashed border-line-strong text-sm text-ink-2 hover:bg-surface-2">{t("play.proj.start")}</button>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-ink-3">{t("play.proj.startHint", { n: v.materials })}</p>
+              <p className="text-xs text-ink-3">{t("play.proj.startHint", { n: v.materials })} {t("play.proj.onlyMine")}</p>
               <ul className="space-y-2">
                 {v.startable.map((o) => (
                   <li key={o.tech} className="flex items-start justify-between gap-3 rounded-xl border border-line p-3">

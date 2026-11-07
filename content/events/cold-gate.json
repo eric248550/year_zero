@@ -37,9 +37,15 @@
           "delta": -10
         },
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 4
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "materials",
+            "amount": 5
+          },
+          "give": {
+            "resource": "food",
+            "amount": 5
+          }
         }
       ],
       "outcome": "大門拉開了。交易很冷淡，但至少做成了。"
@@ -74,17 +80,21 @@
       "effects": [
         {
           "type": "CHANGE_TENSION",
-          "delta": 3
+          "delta": 6
         },
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 5
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "food",
+            "amount": 5
+          }
         },
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 5
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "materials",
+            "amount": 5
+          }
         }
       ],
       "outcome": "{{rival}}的人付了過路費，臉色很難看。"

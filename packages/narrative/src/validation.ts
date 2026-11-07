@@ -158,9 +158,18 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
         bool.set(k, c.active);
         break;
       }
+      case "settlement_age":
+        key = "settlement_age"; label = "settlement age"; domain = { lo: 0, loInc: true, hi: Infinity, hiInc: false };
+        break;
       case "tension":
         key = "tension"; label = "tension"; domain = { lo: 0, loInc: true, hi: 100, hiInc: true };
         break;
+      case "project": {
+        const k = `project:${c.tech}`;
+        if (bool.has(k) && bool.get(k) !== c.active) errors.push({ path, code: "precondition.contradiction", message: `A project for ${c.tech} is required to be both active and inactive` });
+        bool.set(k, c.active);
+        break;
+      }
       case "event_occurred":
         break;
     }
@@ -187,7 +196,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 
   if (scope === "world") {
     conds.forEach((c, i) => {
-      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension"
+      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age"
         || ((c.type === "resource" || c.type === "population") && c.scope === "target");
       if (settlementOnly) {
         errors.push({ path: `${basePath}.${i}`, code: "scope.mismatch", message: `World-scoped events have no target settlement; use scope "world" on this condition or change the event scope` });
@@ -199,6 +208,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 function checkConditionRefs(conds: readonly Condition[], basePath: string, ctx: ValidationContext, selfId: string, errors: ValidationIssue[], warnings: ValidationIssue[]) {
   conds.forEach((c, i) => {
     const path = `${basePath}.${i}`;
+    if (c.type === "project" && !TECH_BY_ID[c.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${c.tech}"` });
     if (c.type === "technology" && !TECH_BY_ID[c.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${c.tech}"` });
     if (c.type === "location" && !LOCATION_BY_ID[c.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${c.location}"` });
     if (c.type === "secret" && !SECRET_BY_ID[c.secret]) errors.push({ path, code: "ref.secret", message: `Unknown secret "${c.secret}"` });
@@ -237,6 +247,13 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
       case "ADJUST_ATTRIBUTE":
         if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
         break;
+      case "CHANGE_PROJECT":
+        if ((e.role === undefined) === (e.tech === undefined)) errors.push({ path, code: "effect.invalid", message: "CHANGE_PROJECT needs exactly one of role or tech" });
+        if (e.role !== undefined && !roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
+        if (e.tech !== undefined && !TECH_BY_ID[e.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${e.tech}"` });
+        if (e.progress === undefined && e.approach === undefined) errors.push({ path, code: "effect.invalid", message: "CHANGE_PROJECT changes nothing" });
+        break;
+      case "EXCHANGE":
       case "CHANGE_TENSION":
         if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Tension needs a target settlement; world-scoped events cannot change it" });
         break;
@@ -347,7 +364,15 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
   });
 
   // Templates
-  const allowedPlaceholders = new Set(["settlement", "rival", "year", "world", "choice", ...[...roleIds, "actor"].flatMap((r) => [r, `${r}.profession`])]);
+  // Several people deciding for themselves must not be able to set rival outcomes at once.
+  if ((def.participation ?? "roles") === "everyone" && def.resolution !== "vote") {
+    const setters = def.choices.filter((c) => c.effects.some((e) => e.type === "ADD_WORLD_FLAG" || e.type === "REMOVE_WORLD_FLAG"));
+    if (setters.length >= 2) {
+      errors.push({ path: "resolution", code: "decision.conflict", message: `Choices ${setters.map((c) => c.id).join(", ")} change world flags and everyone decides; groups would all apply. Use "resolution": "vote" for a collective decision` });
+    }
+  }
+
+  const allowedPlaceholders = new Set(["settlement", "rival", "project", "year", "world", "choice", ...[...roleIds, "actor"].flatMap((r) => [r, `${r}.profession`])]);
   const templates: [string, string][] = [["narrative.headline", def.narrative.headline], ["narrative.text", def.narrative.text]];
   def.choices.forEach((c, i) => {
     if (c.outcome) templates.push([`choices.${i}.outcome`, c.outcome]);
