@@ -24,7 +24,7 @@ export function buildSystemPrompt(ctx: GenerationContext): string {
   const catalog = {
     resources: RESOURCES,
     professions: PROFESSIONS,
-    technologies: TECHNOLOGIES.map((t) => ({ id: t.id, name: t.name, prerequisites: t.prerequisites })),
+    technologies: TECHNOLOGIES.map((t) => ({ id: t.id, name: t.name, branch: t.branch, tier: t.tier, prerequisites: t.prerequisites })),
     locations: LOCATIONS.map((l) => ({ id: l.id, name: l.name, settleable: l.settleable, hiddenUntilRevealedByEvent: l.hidden })),
     secrets: SECRETS.map((s) => ({ id: s.id, title: s.title })),
     choiceTags: CHOICE_TAGS,

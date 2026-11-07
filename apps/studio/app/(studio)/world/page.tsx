@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Building2, Clock, Globe2, Lock, MapPin, Unlock } from "lucide-react";
-import { LOCATION_BY_ID, PROFESSIONS, RESOURCES, SECRET_BY_ID, TECHNOLOGIES, Rng, type WorldState } from "@genesis/schemas";
+import { BRANCHES, BRANCH_INFO, LOCATION_BY_ID, PROFESSIONS, RESOURCES, SECRET_BY_ID, TECHNOLOGIES, Rng, type WorldState } from "@genesis/schemas";
 import { characterAge, fullName, population, residents } from "@genesis/narrative";
 import { TickContext, currentResearchTarget, developmentCost } from "@genesis/simulation";
 import { reconstructState } from "@genesis/database";
@@ -180,30 +180,44 @@ async function People({ state, sp, tickParam }: { state: WorldState; sp: SP; tic
 async function Tech({ state }: { state: WorldState }) {
   const { t, term } = await getI18n();
   const target = currentResearchTarget(new TickContext(structuredClone(state), new Rng(0)));
+  const projects = new Map((state.projects ?? []).map((p) => [p.techId, p]));
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {TECHNOLOGIES.map((tech) => {
-        const has = state.technologies.includes(tech.id);
-        const ready = !has && tech.prerequisites.every((p) => state.technologies.includes(p));
-        const popBlocked = tech.minPopulation && population(state) < tech.minPopulation;
-        return (
-          <Card key={tech.id} className={has ? "border-knowledge/40" : ""}>
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold">{term.techName(tech.id)}</h3>
-                {has ? <Pill tone="knowledge"><Unlock size={11} /> {state.startYear + (state.techUnlockedAt[tech.id] ?? 0)}</Pill> : target?.id === tech.id ? <Pill tone="signal">{t("world.researching")}</Pill> : ready ? <Pill tone="water">{t("world.available")}</Pill> : <Pill><Lock size={11} /> {t("world.locked")}</Pill>}
-              </div>
-              <p className="mt-1 text-[13px] text-ink-2">{term.techDescription(tech.id)}</p>
-              <p className="mt-1 text-[12px] text-ink-3">{term.techEffect(tech.id)}</p>
-              <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
-                <Pill>{t("world.cost", { n: tech.cost })}</Pill>
-                {tech.prerequisites.map((p) => <Pill key={p} tone={state.technologies.includes(p) ? "ok" : "neutral"}>{t("world.needs", { tech: term.techName(p) })}</Pill>)}
-                {tech.minPopulation && <Pill tone={popBlocked ? "warn" : "ok"}>{t("world.minPop", { n: tech.minPopulation })}</Pill>}
-              </div>
-            </div>
-          </Card>
-        );
-      })}
+    <div className="space-y-5">
+      {BRANCHES.map((branch) => (
+        <section key={branch}>
+          <h3 className="label-xs mb-2">{term.branch(branch)} · {term.profession(BRANCH_INFO[branch].profession)}</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {TECHNOLOGIES.filter((x) => x.branch === branch).map((tech) => {
+              const has = state.technologies.includes(tech.id);
+              const ready = !has && tech.prerequisites.every((p) => state.technologies.includes(p));
+              const popBlocked = tech.minPopulation && population(state) < tech.minPopulation;
+              const project = projects.get(tech.id);
+              return (
+                <Card key={tech.id} className={has ? "border-knowledge/40" : project ? "border-signal/40" : ""}>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-semibold"><span className="num mr-1 text-xs text-ink-3">{tech.tier}</span>{term.techName(tech.id)}</h4>
+                      {has ? <Pill tone="knowledge"><Unlock size={11} /> {state.startYear + (state.techUnlockedAt[tech.id] ?? 0)}</Pill>
+                        : project ? <Pill tone="signal">{t("world.building", { n: Math.round((project.progress / tech.cost) * 100) })}</Pill>
+                        : target?.id === tech.id ? <Pill tone="signal">{t("world.researching")}</Pill>
+                        : ready ? <Pill tone="water">{t("world.available")}</Pill>
+                        : <Pill><Lock size={11} /> {t("world.locked")}</Pill>}
+                    </div>
+                    <p className="mt-1 text-[13px] text-ink-2">{term.techDescription(tech.id)}</p>
+                    <p className="mt-1 text-[12px] text-ink-3">{term.techEffect(tech.id)}</p>
+                    <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
+                      <Pill>{t("world.cost", { n: tech.cost })}</Pill>
+                      <Pill>{t("world.materialsCost", { n: tech.materials })}</Pill>
+                      {tech.prerequisites.map((p) => <Pill key={p} tone={state.technologies.includes(p) ? "ok" : "neutral"}>{t("world.needs", { tech: term.techName(p) })}</Pill>)}
+                      {tech.minPopulation && <Pill tone={popBlocked ? "warn" : "ok"}>{t("world.minPop", { n: tech.minPopulation })}</Pill>}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

@@ -58,7 +58,7 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
     level: 1,
     morale: round2(Math.min(100, from.morale + 5)),
     health: from.health,
-    capacity: 40 + (hasTech(st, "power_grid") ? 10 : 0),
+    capacity: 40 + (hasTech(st, "power_grid") ? 10 : 0) + (hasTech(st, "homesteading") ? 10 : 0) + (hasTech(st, "metallurgy") ? 5 : 0),
     supportedBy: from.id,
     resources: transfer,
     shortage: { food: 0, water: 0 },

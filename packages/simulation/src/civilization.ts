@@ -35,8 +35,8 @@ export const CIV_STAGES: readonly CivStage[] = [
     id: "root",
     milestones: [
       { id: "harvest", check: { kind: "flag", flag: "food.surface_farming" } },
-      { id: "tools", check: { kind: "tech", tech: "salvage_tools" } },
-      { id: "medicine", check: { kind: "tech", tech: "field_medicine" } },
+      { id: "irrigation", check: { kind: "tech", tech: "irrigation" } },
+      { id: "workshop", check: { kind: "tech", tech: "workshop" } },
       { id: "school", check: { kind: "flag", flag: "culture.school" } },
       { id: "people", check: { kind: "population", min: 140 } },
     ],
@@ -44,18 +44,20 @@ export const CIV_STAGES: readonly CivStage[] = [
   {
     id: "connect",
     milestones: [
-      { id: "radio", check: { kind: "tech", tech: "radio" } },
       { id: "caravan", check: { kind: "flag", flag: "trade.caravan" } },
       { id: "network", check: { kind: "settlements", min: 3 } },
-      { id: "irrigation", check: { kind: "tech", tech: "irrigation" } },
+      { id: "homesteading", check: { kind: "tech", tech: "homesteading" } },
+      { id: "radio", check: { kind: "tech", tech: "radio" } },
+      { id: "clinic", check: { kind: "tech", tech: "field_medicine" } },
     ],
   },
   {
     id: "order",
     milestones: [
       { id: "assembly", check: { kind: "flag", flag: "governance.assembly" } },
-      { id: "charter", check: { kind: "tech", tech: "civic_charter" } },
+      { id: "schooling", check: { kind: "tech", tech: "schooling" } },
       { id: "antibiotics", check: { kind: "tech", tech: "antibiotics" } },
+      { id: "trade", check: { kind: "tech", tech: "trade_routes" } },
       { id: "people", check: { kind: "population", min: 200 } },
     ],
   },
@@ -64,8 +66,9 @@ export const CIV_STAGES: readonly CivStage[] = [
     milestones: [
       { id: "light", check: { kind: "flag", flag: "power.first_light" } },
       { id: "grid", check: { kind: "tech", tech: "power_grid" } },
-      { id: "genetics", check: { kind: "tech", tech: "crop_genetics" } },
-      { id: "people", check: { kind: "population", min: 280 } },
+      { id: "institute", check: { kind: "tech", tech: "research_institute" } },
+      { id: "charter", check: { kind: "tech", tech: "civic_charter" } },
+      { id: "people", check: { kind: "population", min: 300 } },
     ],
   },
 ];

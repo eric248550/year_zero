@@ -1,9 +1,11 @@
 import {
+  BRANCH_INFO,
   LOCATION_BY_ID,
   POLICY_INFO,
   RESOURCE_INFO,
   SECRET_BY_ID,
   TECH_BY_ID,
+  type BranchId,
   type PolicyId,
   type ResourceId,
 } from "@genesis/schemas";
@@ -80,6 +82,7 @@ export function createI18n(locale: Locale) {
     /** Short policy id label (balanced, scholarly …). */
     policy: (id: string) => pick(ZH_TERMS.policy, id, id),
     techName: (id: string) => pick(ZH_TERMS.techName, id, TECH_BY_ID[id]?.name ?? id),
+    branch: (id: string) => pick(ZH_TERMS.branch, id, BRANCH_INFO[id as BranchId]?.name ?? id),
     techDescription: (id: string) => pick(ZH_TERMS.techDescription, id, TECH_BY_ID[id]?.description ?? ""),
     techEffect: (id: string) => pick(ZH_TERMS.techEffect, id, TECH_BY_ID[id]?.effect ?? ""),
     /** Place names are proper nouns and stay as written; descriptions are translated. */

@@ -1,4 +1,5 @@
-import { LOCATION_BY_ID, POLICY_INFO, TECHNOLOGIES, TECH_BY_ID, type Settlement, type TechnologyInfo } from "@genesis/schemas";
+import { LOCATION_BY_ID, type Settlement, type TechnologyInfo } from "@genesis/schemas";
+import { councilCandidates } from "./projects";
 import {
   activeSettlements,
   characterAge,
@@ -9,72 +10,17 @@ import {
   population,
   residents,
   round2,
-  totalResource,
-  unlockTechnology,
 } from "@genesis/narrative";
 import type { TickContext } from "../context";
-import { placeDescription, placeName, say, techText } from "@genesis/narrative";
+import { placeDescription, placeName, say } from "@genesis/narrative";
 
-export function researchable(ctx: TickContext, tech: TechnologyInfo): boolean {
-  const st = ctx.state;
-  if (hasTech(st, tech.id)) return false;
-  if (!tech.prerequisites.every((p) => hasTech(st, p))) return false;
-  if (tech.minPopulation && population(st) < tech.minPopulation) return false;
-  return true;
-}
-
-/** The technology currently being researched: developer focus, else policy preference. */
+/** The technology the council would start a project for next (developer focus first). */
 export function currentResearchTarget(ctx: TickContext): TechnologyInfo | null {
-  const st = ctx.state;
-  if (st.researchFocus) {
-    const focus = TECH_BY_ID[st.researchFocus];
-    if (focus && researchable(ctx, focus)) return focus;
-  }
-  for (const id of POLICY_INFO[st.policy].researchOrder) {
-    const t = TECH_BY_ID[id];
-    if (t && researchable(ctx, t)) return t;
-  }
-  return TECHNOLOGIES.find((t) => researchable(ctx, t)) ?? null;
+  return councilCandidates(ctx.state)[0] ?? null;
 }
 
-/** Spend knowledge across settlements (richest first). Fails without side effects if insufficient. */
-function spendKnowledge(ctx: TickContext, amount: number): boolean {
-  if (totalResource(ctx.state, "knowledge") + 1e-9 < amount) return false;
-  let remaining = amount;
-  const pool = [...activeSettlements(ctx.state)].sort((a, b) => b.resources.knowledge - a.resources.knowledge);
-  for (const s of pool) {
-    const take = Math.min(s.resources.knowledge, remaining);
-    s.resources.knowledge = round2(s.resources.knowledge - take);
-    remaining -= take;
-    if (remaining <= 1e-9) break;
-  }
-  return true;
-}
-
-export function research(ctx: TickContext): void {
-  const st = ctx.state;
-  const target = currentResearchTarget(ctx);
-  if (!target) return;
-  const before = round2(totalResource(st, "knowledge"));
-  if (!spendKnowledge(ctx, target.cost)) return;
-  const rec = newRecorder();
-  unlockTechnology(st, target.id, rec);
-  if (st.researchFocus === target.id) st.researchFocus = null;
-  if (target.id === "power_grid") {
-    for (const s of activeSettlements(st)) s.capacity += 10;
-  }
-  ctx.system({
-    category: "technology",
-    importance: "major",
-    title: say(st).techTitle(techText(st, target.id).name),
-    text: say(st).techBody(techText(st, target.id).name, techText(st, target.id).description, techText(st, target.id).effect),
-    changes: [{ path: "knowledge.total", label: "Total knowledge", before, after: round2(totalResource(st, "knowledge")) }, ...rec.changes],
-    summary: `Accumulated knowledge reached the research cost (${target.cost}); prerequisites ${target.prerequisites.length ? target.prerequisites.join(", ") : "none"} satisfied`,
-  });
-}
-
-export function developmentCost(s: Settlement): number {
-  return 40 * s.level + 20;
+export function developmentCost(s: Settlement, workshop = false): number {
+  return Math.round((40 * s.level + 20) * (workshop ? 0.75 : 1));
 }
 
 export function development(ctx: TickContext): void {
@@ -82,7 +28,7 @@ export function development(ctx: TickContext): void {
     const maxLevel = s.kind === "bunker" ? 3 : 5;
     if (s.level >= maxLevel) continue;
     const pop = population(ctx.state, s.id);
-    const cost = developmentCost(s);
+    const cost = developmentCost(s, hasTech(ctx.state, "workshop"));
     if (pop < s.capacity * 0.7 || s.resources.materials < cost + 10) continue;
     const before = { level: s.level, capacity: s.capacity, materials: s.resources.materials };
     s.resources.materials = round2(s.resources.materials - cost);
@@ -112,6 +58,7 @@ export function attemptExploration(ctx: TickContext, s: Settlement, bonus: numbe
   const undiscovered = st.locations.filter((l) => !l.discovered && !LOCATION_BY_ID[l.id]!.hidden);
   if (scouts.length === 0 || undiscovered.length === 0) return false;
   let p = (1 - Math.pow(0.88, scouts.length)) * 0.35 + bonus;
+  if (hasTech(st, "pathfinding")) p *= 1.3;
   if (hasTech(st, "radio")) p *= 1.5;
   if (!ctx.rng.chance(Math.min(0.95, p))) return false;
   const loc = ctx.rng.weighted(undiscovered, (l) => 1 / LOCATION_BY_ID[l.id]!.distance);

@@ -1,5 +1,5 @@
 import { ADULT_AGE, LOCATION_BY_ID, PROFESSIONS, type Character, type Settlement } from "@genesis/schemas";
-import { activeSettlements, characterAge, getSettlement, placeName, population, residents, round2, say } from "@genesis/narrative";
+import { activeSettlements, characterAge, getSettlement, hasTech, placeName, population, residents, round2, say } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
@@ -35,7 +35,7 @@ export function supplyOutposts(ctx: TickContext): void {
     const age = st.tick - s.foundedTick;
     const pop = population(st, s.id);
     const fed = s.shortage.food === 0 && s.shortage.water === 0;
-    if (!parent || parent.status !== "active" || age >= CONTINUITY.outpostMaxYears || (age >= CONTINUITY.outpostMinYears && pop >= CONTINUITY.outpostIndependentPop && fed)) {
+    if (!parent || parent.status !== "active" || age >= CONTINUITY.outpostMaxYears || (age >= CONTINUITY.outpostMinYears - (hasTech(st, "homesteading") ? 2 : 0) && pop >= CONTINUITY.outpostIndependentPop && fed)) {
       s.supportedBy = null;
       ctx.system({
         category: "settlement",

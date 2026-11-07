@@ -7,9 +7,10 @@ import { resourceName, say } from "@genesis/narrative";
 /** Tunable economic constants. Changing these changes RULES_VERSION semantics. */
 export const ECONOMY = {
   foodPerLabor: 1.0,
-  waterPerLabor: 0.96,
+  foodPerFarmer: 1.5,
+  waterPerLabor: 1.3,
   forageFoodPerScout: 0.6,
-  materialsPerEngineer: 2.2,
+  materialsPerEngineer: 1.5,
   materialsPerLabor: 0.25,
   knowledgePerScientist: 2.0,
   knowledgePerLabor: 0.1,
@@ -31,11 +32,12 @@ export interface Workforce {
   engineers: number;
   medics: number;
   scouts: number;
+  farmers: number;
 }
 
 export function workforce(ctx: TickContext, s: Settlement): Workforce {
   const people = residents(ctx.state, s.id);
-  const w: Workforce = { residents: people.length, adults: 0, children: 0, labor: 0, scientists: 0, engineers: 0, medics: 0, scouts: 0 };
+  const w: Workforce = { residents: people.length, adults: 0, children: 0, labor: 0, scientists: 0, engineers: 0, medics: 0, scouts: 0, farmers: 0 };
   for (const c of people) {
     const age = characterAge(ctx.state, c);
     if (age < ADULT_AGE) {
@@ -49,6 +51,7 @@ export function workforce(ctx: TickContext, s: Settlement): Workforce {
     if (c.profession === "Engineer") w.engineers += effort;
     if (c.profession === "Medic") w.medics += effort;
     if (c.profession === "Scout") w.scouts += effort;
+    if (c.profession === "Farmer") w.farmers += effort;
   }
   return w;
 }
@@ -56,26 +59,36 @@ export function workforce(ctx: TickContext, s: Settlement): Workforce {
 function multipliers(ctx: TickContext, s: Settlement) {
   const features = LOCATION_BY_ID[s.locationId]?.features ?? [];
   const t = (id: string) => hasTech(ctx.state, id);
-  const grid = t("power_grid") ? 1.1 : 1;
+  const grid = (t("power_grid") ? 1.1 : 1) * (t("machining") ? 1.1 : 1);
   let food = s.kind === "bunker" ? 0.95 : 1.05;
   if (features.includes("fertile")) food *= 1.25;
   if (t("hydroponics")) food *= 1.25;
   if (t("irrigation") && s.kind !== "bunker") food *= 1.3;
-  if (t("crop_genetics")) food *= 1.3;
+  if (t("crop_genetics")) food *= 1.2;
+  if (t("mass_farming")) food *= 1.2;
   food *= grid;
   if (ctx.state.flags["food.heirloom_seeds"]) food *= 1.1;
   let water = 1;
   if (t("water_purification")) water *= 1.3;
   if (features.includes("clean_aquifer")) water *= 1.3;
   if (features.includes("river")) water *= 1.15;
+  if (t("water_wheel")) water *= 1.1;
   water *= grid;
   let materials = 1;
   if (features.includes("ruins")) materials *= 1.4;
   if (t("salvage_tools")) materials *= 1.4;
   if (t("solar_power")) materials *= 1.1;
+  if (t("water_wheel")) materials *= 1.1;
+  if (t("mechanical_power")) materials *= 1.1;
+  if (t("workshop")) materials *= 1.2;
+  if (t("metallurgy")) materials *= 1.2;
   materials *= grid;
   let knowledge = 1;
   if (t("solar_power")) knowledge *= 1.2;
+  if (t("archives")) knowledge *= 1.15;
+  if (t("apprenticeship")) knowledge *= 1.1;
+  if (t("schooling")) knowledge *= 1.25;
+  if (t("research_institute")) knowledge *= 1.3;
   if (ctx.state.flags["mystery.halcyon_archive"]) knowledge *= 1.15;
   return { food, water, materials, knowledge };
 }
@@ -90,7 +103,7 @@ export function produce(ctx: TickContext): void {
     // One shared "season" roll per settlement per tick: drought years hit food and water together.
     const season = Math.min(1.3, Math.max(0.65, ctx.rng.gaussian(1, 0.12)));
     const out: Record<ResourceId, number> = {
-      food: (w.labor * ECONOMY.foodPerLabor * m.food * season + w.scouts * ECONOMY.forageFoodPerScout) * efficiency,
+      food: ((w.labor * ECONOMY.foodPerLabor + w.farmers * ECONOMY.foodPerFarmer) * m.food * season + w.scouts * ECONOMY.forageFoodPerScout) * efficiency,
       water: (w.labor * ECONOMY.waterPerLabor * m.water * season) * efficiency + (s.kind === "bunker" ? ECONOMY.bunkerWaterReclaimer : 0),
       materials: (w.engineers * ECONOMY.materialsPerEngineer + w.labor * ECONOMY.materialsPerLabor) * m.materials * efficiency,
       knowledge: (w.scientists * ECONOMY.knowledgePerScientist + w.labor * ECONOMY.knowledgePerLabor) * m.knowledge * efficiency,
@@ -112,7 +125,7 @@ export function consume(ctx: TickContext): void {
       const unmet = Math.max(0, need - available);
       s.resources[r] = round2(Math.max(0, available - need));
       deficit[r] = need > 0 ? unmet / need : 0;
-      const loss = r === "food" ? ECONOMY.foodSpoilage : ECONOMY.waterLoss;
+      const loss = r === "food" ? ECONOMY.foodSpoilage * (hasTech(ctx.state, "mass_farming") ? 0.5 : 1) : ECONOMY.waterLoss;
       s.resources[r] = round2(s.resources[r] * (1 - loss));
 
       if (deficit[r] > 0.02) {
@@ -164,6 +177,7 @@ export function wellbeing(ctx: TickContext): void {
 
     let morale = 52 + s.level * 2;
     if (hasTech(st, "civic_charter")) morale += 10;
+    if (hasTech(st, "trade_routes")) morale += 3;
     if (foodPerCapita > 3) morale += 5;
     morale -= d.food * 40 + d.water * 45;
     if (crowded) morale -= 15;

@@ -1,7 +1,7 @@
 import { LOCATION_BY_ID, PLAYER_ACTION_TYPES, POLICY_INFO, PlayerActionSchema, TECH_BY_ID, type PlayerAction, type ResourceId } from "@genesis/schemas";
 import { activeSettlements, characterAge, fullName, getSettlement, newRecorder, population, professionName, residents, resourceName, round2, say, spendResources } from "@genesis/narrative";
 import type { TickContext } from "../context";
-import { attemptExploration, researchable } from "./progress";
+import { attemptExploration } from "./progress";
 import { foundSettlement, foundingBlocker } from "./settlements";
 import { applyPlayerAction, validatePlayerAction, type IndividualAction } from "./players";
 
@@ -161,7 +161,7 @@ export function councilDecisions(ctx: TickContext): void {
         .filter((d) => d.id !== needy.id && d.shortage[r] === 0)
         .sort((a, b) => b.resources[r] / Math.max(1, population(st, b.id)) - a.resources[r] / Math.max(1, population(st, a.id)))[0];
       if (!donor) continue;
-      const surplus = donor.resources[r] - population(st, donor.id) * 1.5;
+      const surplus = donor.resources[r] - population(st, donor.id) * (st.technologies.includes("trade_routes") ? 1 : 1.5);
       if (surplus < 5) continue;
       const amount = round2(Math.min(surplus * 0.5, population(st, needy.id) * 1.5));
       const rec = newRecorder();
@@ -186,6 +186,5 @@ export function councilDecisions(ctx: TickContext): void {
   if (st.researchFocus) {
     const t = TECH_BY_ID[st.researchFocus];
     if (!t || st.technologies.includes(t.id)) st.researchFocus = null;
-    else if (!researchable(ctx, t) && !t.prerequisites.every((p) => st.technologies.includes(p))) st.researchFocus = null;
   }
 }

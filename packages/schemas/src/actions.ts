@@ -17,7 +17,7 @@ export const ORIGIN_IDS = ["haven_deep", "surface_born", "wanderer", "vault12"] 
 export type OriginId = (typeof ORIGIN_IDS)[number];
 
 /** Actions taken by individual players (as opposed to developer/council directives). */
-export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME"] as const;
+export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME", "START_PROJECT", "JOIN_PROJECT"] as const;
 
 /** The first-session prologue: three small choices whose results show at once. Order matters. */
 export const PROLOGUE_STEPS = {
@@ -70,6 +70,10 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
     step: z.enum(["first_climb", "water", "static"]),
     choiceId: z.string(),
   }).strict(),
+  /** Start a project in your own settlement and lead it. */
+  z.object({ type: z.literal("START_PROJECT"), playerId: PlayerIdSchema, tech: z.string() }).strict(),
+  /** Join a project in your settlement; null leaves the one you are on. */
+  z.object({ type: z.literal("JOIN_PROJECT"), playerId: PlayerIdSchema, projectId: z.string().nullable() }).strict(),
   z.object({ type: z.literal("SET_POLICY"), policy: PolicySchema }).strict(),
   z.object({ type: z.literal("SET_RESEARCH_FOCUS"), tech: z.string().nullable() }).strict(),
   z.object({

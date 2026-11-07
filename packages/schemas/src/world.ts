@@ -140,6 +140,31 @@ export const InviteSchema = z.object({
 });
 export type Invite = z.infer<typeof InviteSchema>;
 
+/**
+ * A shared undertaking that turns into a technology when its work is done:
+ * a water wheel, a school, a charter. Started by the council or by a player;
+ * the people working on it are what move it forward.
+ */
+export const ProjectSchema = z.object({
+  id: z.string(),
+  techId: z.string(),
+  settlementId: z.string(),
+  startedTick: z.number().int(),
+  startedBy: z.enum(["council", "player"]),
+  /** Character leading the work. */
+  leadId: z.string(),
+  /** Player characters who joined. They stay on it until they leave, move or die. */
+  memberIds: z.array(z.string()),
+  /** Non-player characters working on it this year (recomputed each year). */
+  crewIds: z.array(z.string()),
+  progress: z.number().min(0),
+  /** Work gained last year, for display. */
+  lastGain: z.number().min(0),
+  /** Consecutive years with nobody working on it. */
+  idleYears: z.number().int().min(0),
+});
+export type Project = z.infer<typeof ProjectSchema>;
+
 export const WORLD_LOCALES = ["en", "zh-TW"] as const;
 export type WorldLocale = (typeof WORLD_LOCALES)[number];
 
@@ -175,7 +200,7 @@ export const WorldStateSchema = z.object({
     counts: z.record(z.string(), z.number().int()),
     lastHistoryId: z.record(z.string(), z.string()),
   }),
-  counters: z.object({ nextCharacter: z.number().int(), nextHistory: z.number().int(), nextSettlement: z.number().int() }),
+  counters: z.object({ nextCharacter: z.number().int(), nextHistory: z.number().int(), nextSettlement: z.number().int(), nextProject: z.number().int().optional() }),
   milestones: z.array(z.string()),
   stats: z.object({ births: z.number().int(), deaths: z.number().int(), peakPopulation: z.number().int() }),
   /**
@@ -185,5 +210,6 @@ export const WorldStateSchema = z.object({
   players: z.record(z.string(), PlayerSchema).optional(),
   pendingDecisions: z.array(PendingDecisionSchema).optional(),
   invites: z.record(z.string(), InviteSchema).optional(),
+  projects: z.array(ProjectSchema).optional(),
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;

@@ -1,4 +1,4 @@
-import { LOCATION_BY_ID, TECH_BY_ID, ZH_CATALOG, type Profession, type ResourceId, type Settlement, type WorldState } from "@genesis/schemas";
+import { BRANCH_INFO, LOCATION_BY_ID, TECH_BY_ID, ZH_CATALOG, type BranchId, type Profession, type ResourceId, type Settlement, type WorldState } from "@genesis/schemas";
 import { currentYear, fullName, getCharacter } from "./queries";
 
 /**
@@ -33,6 +33,10 @@ export function techText(state: Pick<WorldState, "locale">, id: string) {
   if (!isZh(state)) return { name: t.name, description: t.description, effect: t.effect };
   const z = ZH_CATALOG as unknown as Record<"techName" | "techDescription" | "techEffect", Record<string, string>>;
   return { name: z.techName[id] ?? t.name, description: z.techDescription[id] ?? t.description, effect: z.techEffect[id] ?? t.effect };
+}
+
+export function branchName(state: Pick<WorldState, "locale">, b: BranchId): string {
+  return isZh(state) ? ZH_CATALOG.branch[b] : BRANCH_INFO[b].name;
 }
 
 /** Join names the way the language does. */
@@ -135,6 +139,22 @@ const EN = {
   tellText: () => "Most laugh it off. A few lean closer and ask what it said.",
   keptStatic: () => "Heard a voice in the radio static and told no one",
   renamed: (before: string, after: string) => `${before} now goes by ${after}`,
+  projectStartTitle: (lead: string, tech: string) => `${lead} starts work on ${tech}`,
+  projectStartCouncil: (lead: string, tech: string, place: string) => `The council asks ${lead} to lead work on ${tech} in ${place}. Anyone who can help is welcome.`,
+  projectStartPlayer: (lead: string, tech: string, place: string) => `${lead} calls on ${place} to build ${tech} together.`,
+  projectStartedLife: (tech: string) => `Started work on ${tech}`,
+  projectJoinedLife: (tech: string) => `Joined the work on ${tech}`,
+  projectSetbackTitle: (tech: string) => `Setback on ${tech}`,
+  projectSetbackText: (who: string, tech: string, place: string, variant: number) =>
+    [`Part of the work ${who} was responsible for failed. ${tech} in ${place} slips back.`, `A storm, a bad batch, a wrong measurement. ${who} and the others in ${place} lose months of work on ${tech}.`, `An argument over how to do it properly stops work on ${tech} in ${place}. ${who} gets it going again, but time is lost.`][variant % 3]!,
+  projectBreakthroughTitle: (tech: string) => `Breakthrough on ${tech}`,
+  projectBreakthroughText: (who: string, tech: string) => `${who} works out what had everyone stuck. ${tech} leaps forward.`,
+  projectStalledTitle: (tech: string) => `${tech} is set aside`,
+  projectStalledText: (tech: string, place: string) => `No one in ${place} has worked on ${tech} for years. The tools go back in their crates for whoever comes next.`,
+  projectDoneTitle: (tech: string, place: string) => `${place} completes ${tech}`,
+  projectDoneText: (lead: string, n: number, tech: string, desc: string, effect: string) => `Led by ${lead}, ${n} people finished ${tech}. ${desc} Effect: ${effect}`,
+  ledProject: (tech: string) => `Led the work that completed ${tech}`,
+  workedProject: (tech: string) => `Helped complete ${tech}`,
 };
 
 const ZH: typeof EN = {
@@ -229,6 +249,22 @@ const ZH: typeof EN = {
   tellText: () => "大多數人笑笑就算了。有幾個人湊過來，問它說了什麼。",
   keptStatic: () => "聽見收音機雜訊裡的人聲，沒有告訴任何人",
   renamed: (before, after) => `${before}改名為${after}`,
+  projectStartTitle: (lead, tech) => `${lead}發起「${tech}」`,
+  projectStartCouncil: (lead, tech, place) => `議會請${lead}在${place}帶頭推動「${tech}」。願意幫忙的人都可以加入。`,
+  projectStartPlayer: (lead, tech, place) => `${lead}號召${place}的人一起做「${tech}」。`,
+  projectStartedLife: (tech) => `發起了「${tech}」`,
+  projectJoinedLife: (tech) => `加入了「${tech}」`,
+  projectSetbackTitle: (tech) => `「${tech}」出了差錯`,
+  projectSetbackText: (who, tech, place, variant) =>
+    [`${who}負責的那一段出了問題，${place}的「${tech}」倒退了一截。`, `一場暴風、一批壞掉的材料、一次量錯的尺寸。${who}和${place}的其他人在「${tech}」上白做了好幾個月。`, `大家為了怎樣才算做對吵了起來，${place}的「${tech}」停工了。${who}讓工作重新動起來，但時間已經耽誤了。`][variant % 3]!,
+  projectBreakthroughTitle: (tech) => `「${tech}」有了突破`,
+  projectBreakthroughText: (who, tech) => `${who}想通了卡住大家很久的地方，「${tech}」一下子往前跳了一大步。`,
+  projectStalledTitle: (tech) => `「${tech}」被擱置了`,
+  projectStalledText: (tech, place) => `${place}已經好幾年沒人在做「${tech}」了。工具收回箱子裡，留給以後的人。`,
+  projectDoneTitle: (tech, place) => `${place}完成了「${tech}」`,
+  projectDoneText: (lead, n, tech, desc, effect) => `在${lead}的帶領下，${n} 個人完成了「${tech}」。${desc}效果：${effect}`,
+  ledProject: (tech) => `帶領大家完成了「${tech}」`,
+  workedProject: (tech) => `參與完成了「${tech}」`,
 };
 
 export type TextKey = keyof typeof EN;

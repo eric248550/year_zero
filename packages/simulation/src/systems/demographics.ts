@@ -36,13 +36,14 @@ export function mortality(ctx: TickContext): void {
     let mult = Math.min(2.5, Math.max(0.5, 1 + (60 - s.health) / 50));
     if (hasTech(st, "field_medicine")) mult *= 0.8;
     if (hasTech(st, "antibiotics")) mult *= 0.75;
+    const childCare = hasTech(st, "maternal_care") ? 0.5 : 1;
     mult *= Math.max(0.7, 1 - 0.04 * medics);
     const starvation = d.food * 0.15;
     const thirst = d.water * 0.25;
 
     for (const c of people) {
       const age = characterAge(st, c);
-      const natural = baseMortality(age) * mult * healthMortality(c);
+      const natural = baseMortality(age) * mult * healthMortality(c) * (age < 5 ? childCare : 1);
       const accident = c.profession === "Scout" ? 0.006 : 0;
       const p = natural + accident + starvation + thirst;
       const roll = ctx.rng.next();
@@ -120,7 +121,7 @@ export function births(ctx: TickContext): void {
     const morale = Math.min(1.2, Math.max(0.4, s.morale / 65));
     // Someone to deliver the baby: medics (and field medicine) make families more willing to try.
     const care = people.some((c) => c.profession === "Medic") ? (hasTech(st, "field_medicine") ? 1.1 : 1) : 0.8;
-    const p = DEMOGRAPHY.birthChancePerPair * morale * care * marginFactor(s, people.length) * housingFactor(people.length, s.capacity);
+    const p = DEMOGRAPHY.birthChancePerPair * (hasTech(st, "maternal_care") ? 1.3 : 1) * morale * care * marginFactor(s, people.length) * housingFactor(people.length, s.capacity);
 
     for (let i = 0; i < pairs; i++) {
       if (!ctx.rng.chance(p)) continue;
@@ -179,6 +180,11 @@ export function comingOfAge(ctx: TickContext): void {
     const s = st.settlements.find((x) => x.id === c.homeId);
     if (!s) continue;
     c.profession = chooseProfession(ctx, s);
+    // Apprenticeship: the young come of age already taught a trade.
+    if (hasTech(st, "apprenticeship") && c.attributes) {
+      c.attributes.knowledge = Math.min(100, c.attributes.knowledge + 8);
+      c.attributes.survival = Math.min(100, c.attributes.survival + 8);
+    }
     c.lifeEvents.push({ tick: st.tick, text: say(st).cameOfAge(professionName(st, c.profession)), historyId: null });
   }
 }

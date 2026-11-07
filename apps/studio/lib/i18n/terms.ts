@@ -23,6 +23,7 @@ export const ZH_TERMS = {
     cautious: "守護現有的一切。囤積、療傷，避免不必要的風險。",
   },
   techName: ZH_CATALOG.techName,
+  branch: ZH_CATALOG.branch,
   techDescription: ZH_CATALOG.techDescription,
   techEffect: ZH_CATALOG.techEffect,
   locationDescription: ZH_CATALOG.locationDescription,

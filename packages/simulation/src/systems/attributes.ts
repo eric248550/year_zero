@@ -9,6 +9,7 @@ const PROFESSION_BONUS: Record<string, Partial<Attributes>> = {
   Engineer: { knowledge: 10, survival: 10 },
   Medic: { knowledge: 10, social: 10 },
   Scout: { survival: 20, health: 5 },
+  Farmer: { survival: 15, health: 5 },
 };
 
 const TRAIT_BONUS: Record<string, Partial<Attributes>> = {
@@ -72,7 +73,7 @@ export function attributeDrift(ctx: TickContext): void {
     } else if (age >= ADULT_AGE && age < 65) {
       if (c.profession === "Scientist") a.knowledge += 2;
       if (c.profession === "Medic" || c.profession === "Engineer") a.knowledge += 1;
-      if (c.profession === "Scout") a.survival += 2;
+      if (c.profession === "Scout" || c.profession === "Farmer") a.survival += c.profession === "Scout" ? 2 : 1;
       if (c.profession === "Engineer") a.survival += 1;
     }
     if (age >= 60) a.survival -= 1;

@@ -4,6 +4,13 @@ import { RESOURCES, TECH_BY_ID, type HistoricalEvent, type WorldState } from "@g
 export function checkInvariants(state: WorldState, history: readonly HistoricalEvent[] = []): string[] {
   const v: string[] = [];
   if (!Number.isInteger(state.tick) || state.tick < 0) v.push(`Invalid tick ${state.tick}`);
+  const techProjects = new Set<string>();
+  for (const p of state.projects ?? []) {
+    if (techProjects.has(p.techId)) v.push(`Two projects for ${p.techId}`);
+    techProjects.add(p.techId);
+    if (!TECH_BY_ID[p.techId]) v.push(`Project ${p.id} builds unknown technology ${p.techId}`);
+    if (!Number.isFinite(p.progress) || p.progress < 0) v.push(`Project ${p.id} has invalid progress ${p.progress}`);
+  }
   const ids = new Set<string>();
   for (const s of state.settlements) {
     if (ids.has(s.id)) v.push(`Duplicate settlement id ${s.id}`);

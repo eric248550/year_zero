@@ -48,7 +48,13 @@ rejectedEvents, metrics }`. Phases:
 5. wellbeing (morale/health drift)
 6. mortality (age curve × health × medicine; starvation/dehydration deaths link to the shortage event)
 7. births → coming of age (profession by policy mix)
-8. research (prerequisites + min population enforced), development, exploration
+8. projects, development, exploration. Technologies are built, not researched:
+   a project (`systems/projects.ts`) is started by the council (one per ~40 people,
+   max 5, preferring untouched branches and early tiers) or by a player
+   (`START_PROJECT`). Each year the settlement's people of the branch's profession
+   work on it, joined players (`JOIN_PROJECT`, once) add more, knowledge is spent
+   per unit of work, and setbacks/breakthroughs roll. Six branches × four tiers in
+   `catalog.ts` (`BRANCHES`, `BRANCH_INFO`, `TECHNOLOGIES`).
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

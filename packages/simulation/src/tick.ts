@@ -6,7 +6,8 @@ import { computeMetrics, type TickMetrics } from "./metrics";
 import { applyAction, councilDecisions, validateAction } from "./systems/agents";
 import { consume, produce, wellbeing } from "./systems/economy";
 import { births, comingOfAge, mortality } from "./systems/demographics";
-import { development, exploration, research } from "./systems/progress";
+import { development, exploration } from "./systems/progress";
+import { councilProjects, projects } from "./systems/projects";
 import { abandonment, milestones } from "./systems/settlements";
 import { playerUpkeep } from "./systems/players";
 import { attributeDrift } from "./systems/attributes";
@@ -40,7 +41,7 @@ export interface TickResult {
  *  2. developer actions  6. mortality/aging 10. exploration
  *  3. council (agent)    7. births          11. narrative storylets
  *  4. production/use     8. coming of age   12. abandonment & milestones
- *                        + research
+ *                        + projects
  */
 export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   const state = structuredClone(prev);
@@ -78,7 +79,8 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   mortality(ctx);
   births(ctx);
   comingOfAge(ctx);
-  research(ctx);
+  councilProjects(ctx);
+  projects(ctx);
   development(ctx);
   exploration(ctx);
 

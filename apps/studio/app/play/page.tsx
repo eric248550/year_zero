@@ -9,8 +9,9 @@ import { Onboarding, type InviteInfo } from "@/components/play/onboarding";
 import { Prologue } from "@/components/play/prologue";
 import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
+import { Projects } from "@/components/play/projects";
 import { redirect } from "next/navigation";
-import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, projectsFor } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -104,6 +105,8 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
 
       <SectionTitle>{t("play.decisions.title")}</SectionTitle>
       <DecisionList decisions={decisions} />
+
+      <div className="mt-6"><Projects v={projectsFor(state, character, term)} /></div>
 
       <SectionTitle>{t("play.report.title")}</SectionTitle>
       {story.length === 0 ? (

@@ -3,6 +3,7 @@ import {
   PROFESSIONS,
   PROLOGUE_ORDER,
   PROLOGUE_STEPS,
+  TECH_BY_ID,
   type Character,
   type InviteKind,
   type OriginId,
@@ -16,9 +17,10 @@ import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { initAttributes } from "./attributes";
+import { activeProjects, joinProject, projectBlocker, projectFor, startProject } from "./projects";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "START_PROJECT" | "JOIN_PROJECT">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -235,6 +237,24 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (!(PROLOGUE_STEPS[a.step] as readonly string[]).includes(a.choiceId)) return `Unknown choice ${a.choiceId}`;
       return null;
     }
+    case "START_PROJECT": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      if (characterAge(st, me) < ADULT_AGE) return "You are too young to lead a project";
+      if (activeProjects(st).some((p) => p.leadId === me.id)) return "You are already leading a project";
+      return projectBlocker(st, a.tech, getSettlement(st, me.homeId));
+    }
+    case "JOIN_PROJECT": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      if (a.projectId === null) return projectFor(st, me.id) ? null : "You are not on a project";
+      const p = activeProjects(st).find((x) => x.id === a.projectId);
+      if (!p) return "That project is finished or does not exist";
+      if (p.settlementId !== me.homeId) return "You can only work on projects where you live";
+      if (characterAge(st, me) < ADULT_AGE) return "You are too young to work on a project";
+      if (p.memberIds.includes(me.id)) return "You are already working on it";
+      return null;
+    }
   }
 }
 
@@ -446,6 +466,17 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
     case "PROLOGUE":
       prologue(ctx, a);
       return;
+    case "START_PROJECT": {
+      const me = playerCharacter(st, a.playerId)!;
+      joinProject(st, me, null);
+      startProject(ctx, TECH_BY_ID[a.tech]!, getSettlement(st, me.homeId)!, me, "player");
+      return;
+    }
+    case "JOIN_PROJECT": {
+      const me = playerCharacter(st, a.playerId)!;
+      joinProject(st, me, a.projectId);
+      return;
+    }
     case "RENAME": {
       const me = playerCharacter(st, a.playerId)!;
       const before = fullName(me);

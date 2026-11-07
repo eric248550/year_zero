@@ -89,6 +89,11 @@ The game itself, phone-first: open `http://localhost:3000/play` (or
   events you are part of. Each participant decides for
   themselves and can change their mind until the year ends; unanswered ones
   are decided by your character's nature), your story, and news from home.
+- **Projects.** Every technology is built as a project in a settlement (six
+  branches × four tiers, each pushed by one profession: farmer, engineer, medic,
+  scientist, scout). Join one once and you add to it every year, most in your
+  own profession; or start one and lead it. Setbacks and breakthroughs happen,
+  and the people who built it are named when it is done.
 - **People.** Family, people you care for, bonds (grown through events); invite a
   friend as your child, ward, close friend, or next child (`/play?invite=CODE`).
 - **Death.** Continue as a child, ward or close friend, or be reborn at random.
@@ -178,7 +183,7 @@ replay and AI pipeline fit together.
 
 Working and covered by tests: deterministic seeded worlds; 12-phase tick pipeline
 (production, consumption, shortages, wellbeing, aging/mortality, births, coming of
-age, research with prerequisites, development, exploration, founding/abandonment,
+age, projects that build technologies, development, exploration, founding/abandonment,
 storylets); typed effect pipeline with atomic rollback; append-only history
 enforced by SQLite triggers; snapshots every 10 ticks; replay verification;
 reconstruction of any past tick; forking; run comparison; content workflow; AI draft

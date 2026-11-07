@@ -21,6 +21,8 @@ export function describeAction(a: PlayerAction, { t, term }: Pick<I18n, "t" | "t
     case "LEAVE_WORLD": return t("action.desc.leave", { player: a.playerId });
     case "RENAME": return t("action.desc.rename", { player: a.playerId, name: `${a.familyName} ${a.givenName}`.trim() });
     case "PROLOGUE": return t("action.desc.prologue", { player: a.playerId, step: a.step, choice: a.choiceId });
+    case "START_PROJECT": return t("action.desc.startProject", { player: a.playerId, tech: term.techName(a.tech) });
+    case "JOIN_PROJECT": return a.projectId ? t("action.desc.joinProject", { player: a.playerId, project: a.projectId }) : t("action.desc.leaveProject", { player: a.playerId });
     case "TRANSFER_RESOURCES": return t("action.desc.transfer", { amount: a.amount, resource: term.resource(a.resource), from: a.fromSettlementId, to: a.toSettlementId });
   }
 }

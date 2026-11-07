@@ -4,6 +4,9 @@ import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
 import { characterAge, fullName, getCharacter, population, relationshipKey, renderTemplate } from "@genesis/narrative";
+import { BRANCH_INFO, TECH_BY_ID } from "@genesis/schemas";
+import { activeProjects, projectBlocker, startableTechs, workEstimate } from "@genesis/simulation";
+import type { ProjectsView } from "@/components/play/projects";
 import type { DecisionView } from "@/components/play/decision-card";
 import { db } from "./server";
 
@@ -214,5 +217,51 @@ export function conditionOf(state: WorldState, c: Character): ConditionView {
     health: { value: a?.health ?? home?.health ?? 50, personal: !!a },
     mood: { value: mood, morale: Math.round(morale), closest },
     abilities: a ? { knowledge: a.knowledge, social: a.social, survival: a.survival } : null,
+  };
+}
+
+type Term = { techName: (id: string) => string; techEffect: (id: string) => string; branch: (id: string) => string };
+
+/** Projects where this character lives, what they could start, and what is going on elsewhere. */
+export function projectsFor(state: WorldState, c: Character, term: Term): ProjectsView {
+  const name = (id: string) => { const x = getCharacter(state, id); return x ? fullName(x) : null; };
+  const adult = characterAge(state, c) >= 16;
+  const home = state.settlements.find((s) => s.id === c.homeId);
+  const all = activeProjects(state);
+  const view = (p: (typeof all)[number]) => {
+    const tech = TECH_BY_ID[p.techId]!;
+    return {
+      id: p.id,
+      name: term.techName(p.techId),
+      branch: term.branch(tech.branch),
+      effect: term.techEffect(p.techId),
+      percent: Math.min(100, Math.round((p.progress / tech.cost) * 100)),
+      yearsLeft: p.lastGain > 0 ? Math.max(1, Math.ceil((tech.cost - p.progress) / p.lastGain)) : null,
+      lead: p.leadId ? name(p.leadId) : null,
+      leadIsMe: p.leadId === c.id,
+      people: new Set([p.leadId, ...p.crewIds, ...p.memberIds].filter(Boolean)).size,
+      players: p.memberIds.filter((id) => id !== c.id).map((id) => name(id)).filter((x): x is string => !!x),
+      mine: p.memberIds.includes(c.id),
+      myWork: workEstimate(state, c, p.techId, true),
+      fits: c.profession === BRANCH_INFO[tech.branch].profession,
+      place: state.settlements.find((s) => s.id === p.settlementId)?.name ?? "",
+    };
+  };
+  return {
+    canWork: adult,
+    leading: all.some((p) => p.leadId === c.id),
+    here: all.filter((p) => p.settlementId === c.homeId).map(view),
+    elsewhere: all.filter((p) => p.settlementId !== c.homeId).map(view),
+    startable: startableTechs(state).map((t) => ({
+      tech: t.id,
+      name: term.techName(t.id),
+      branch: term.branch(t.branch),
+      effect: term.techEffect(t.id),
+      materials: t.materials,
+      enough: projectBlocker(state, t.id, home) === null,
+      fits: c.profession === BRANCH_INFO[t.branch].profession,
+      myWork: workEstimate(state, c, t.id, true),
+    })).sort((a, b) => Number(b.fits) - Number(a.fits)),
+    materials: Math.floor(home?.resources.materials ?? 0),
   };
 }

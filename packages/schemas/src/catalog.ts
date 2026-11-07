@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-0.3.0";
+export const RULES_VERSION = "rules-0.4.0";
 
 export const START_YEAR = 2131;
 
@@ -18,7 +18,7 @@ export const RESOURCE_INFO: Record<ResourceId, { label: string; description: str
   knowledge: { label: "Knowledge", description: "Recovered and newly produced know-how. Spent to research technologies." },
 };
 
-export const PROFESSIONS = ["Scientist", "Engineer", "Medic", "Scout"] as const;
+export const PROFESSIONS = ["Scientist", "Engineer", "Medic", "Scout", "Farmer"] as const;
 export type Profession = (typeof PROFESSIONS)[number];
 
 export const PROFESSION_INFO: Record<Profession, { description: string; output: string }> = {
@@ -26,34 +26,83 @@ export const PROFESSION_INFO: Record<Profession, { description: string; output: 
   Engineer: { description: "Builders, fixers and salvagers.", output: "+materials, settlement development" },
   Medic: { description: "Healers in a world with almost no medicine.", output: "+health, lower mortality" },
   Scout: { description: "Surface walkers who map the ruins and forage.", output: "+food (foraging), exploration" },
+  Farmer: { description: "Growers who coax food out of racks, seed trays and poisoned ground.", output: "+food" },
 };
 
 export const ADULT_AGE = 16;
 export const ELDER_AGE = 65;
 
+/**
+ * Six branches of rebuilding. Each branch is pushed forward by one profession;
+ * the tree's cross-links make the branches need each other.
+ */
+export const BRANCHES = ["farming", "industry", "energy", "medicine", "knowledge", "society"] as const;
+export type BranchId = (typeof BRANCHES)[number];
+
+export const BRANCH_INFO: Record<BranchId, { name: string; profession: Profession; attribute: "health" | "social" | "knowledge" | "survival" }> = {
+  farming: { name: "Farming", profession: "Farmer", attribute: "survival" },
+  industry: { name: "Materials & Industry", profession: "Engineer", attribute: "survival" },
+  energy: { name: "Energy & Infrastructure", profession: "Engineer", attribute: "knowledge" },
+  medicine: { name: "Medicine & Population", profession: "Medic", attribute: "knowledge" },
+  knowledge: { name: "Knowledge & Education", profession: "Scientist", attribute: "knowledge" },
+  society: { name: "Exploration & Society", profession: "Scout", attribute: "social" },
+};
+
 export interface TechnologyInfo {
   id: string;
   name: string;
+  branch: BranchId;
+  /** 1–4: how far along its branch. */
+  tier: number;
+  /** Work a project needs to finish it. */
   cost: number;
+  /** Materials spent when a project to build it starts. */
+  materials: number;
   prerequisites: string[];
-  /** Minimum living population required before research can complete. */
+  /** Minimum living population required before a project can start. */
   minPopulation?: number;
   description: string;
   effect: string;
 }
 
+/** Work needed per tier, and materials per tier for building-heavy branches. */
+const WORK = [0, 30, 80, 150, 240] as const;
+const tech = (id: string, name: string, branch: BranchId, tier: 1 | 2 | 3 | 4, prerequisites: string[], description: string, effect: string, extra: Partial<TechnologyInfo> = {}): TechnologyInfo => ({
+  id, name, branch, tier, cost: WORK[tier], materials: (branch === "industry" || branch === "energy" ? 40 : 20) * tier, prerequisites, description, effect, ...extra,
+});
+
 export const TECHNOLOGIES: readonly TechnologyInfo[] = [
-  { id: "water_purification", name: "Water Purification", cost: 50, prerequisites: [], description: "Sand-charcoal filters and boiling protocols rebuilt from bunker manuals.", effect: "Water production +30%, reduces contamination events." },
-  { id: "salvage_tools", name: "Salvage Tooling", cost: 45, prerequisites: [], description: "Cutting rigs and hand tools reforged from ruin scrap.", effect: "Materials production +40%." },
-  { id: "field_medicine", name: "Field Medicine", cost: 55, prerequisites: [], description: "Triage, wound care and herbal pharmacology.", effect: "Mortality -20%, health recovers faster." },
-  { id: "hydroponics", name: "Hydroponics", cost: 70, prerequisites: [], description: "Nutrient-loop grow racks that do not depend on poisoned soil.", effect: "Food production +25%." },
-  { id: "irrigation", name: "Irrigation Networks", cost: 150, prerequisites: ["hydroponics", "water_purification"], description: "Channels and pumps that bring clean water to surface fields.", effect: "Surface settlements: food production +30%." },
-  { id: "radio", name: "Shortwave Radio", cost: 120, prerequisites: ["salvage_tools"], description: "Rebuilt transceivers that can hear — and be heard — across the wastes.", effect: "Exploration chance +50%." },
-  { id: "civic_charter", name: "Civic Charter", cost: 160, prerequisites: [], minPopulation: 30, description: "A written compact for councils, justice and shared stores.", effect: "Morale +10 baseline, fewer disputes." },
-  { id: "antibiotics", name: "Antibiotics", cost: 260, prerequisites: ["field_medicine", "water_purification"], description: "Mould cultures coaxed into producing crude penicillin.", effect: "Mortality -25%, outbreaks far less deadly." },
-  { id: "solar_power", name: "Solar Power", cost: 240, prerequisites: ["salvage_tools"], description: "Salvaged photovoltaic panels re-wired into working arrays.", effect: "Knowledge +20%, materials +10%." },
-  { id: "power_grid", name: "Power Grid", cost: 400, prerequisites: ["solar_power", "civic_charter"], description: "A shared electrical grid linking settlements.", effect: "Settlement capacity +10, production +10%." },
-  { id: "crop_genetics", name: "Crop Genetics", cost: 380, prerequisites: ["irrigation", "antibiotics"], description: "Selective breeding of hardy, climate-resilient cultivars.", effect: "Food production +30%." },
+  // Farming: seeds → fields → breeding → large-scale farming
+  tech("hydroponics", "Seed Trays & Hydroponics", "farming", 1, [], "Saved seed and nutrient-loop grow racks that do not depend on poisoned soil.", "Food production +25%."),
+  tech("irrigation", "Irrigated Fields", "farming", 2, ["hydroponics", "water_wheel"], "Channels and wheel-lifted water that turn surface ground into fields.", "Surface settlements: food production +30%."),
+  tech("crop_genetics", "Selective Breeding", "farming", 3, ["irrigation", "schooling"], "Generations of careful selection for hardy, climate-resilient cultivars.", "Food production +30%."),
+  tech("mass_farming", "Large-Scale Agriculture", "farming", 4, ["crop_genetics", "machining"], "Ploughs, seed drills and shared granaries feeding more than one town.", "Food production +30%, food keeps longer."),
+  // Materials & industry: salvage → workshop → metallurgy → machine building
+  tech("salvage_tools", "Salvage Tooling", "industry", 1, [], "Cutting rigs and hand tools reforged from ruin scrap.", "Materials production +40%."),
+  tech("workshop", "Workshops", "industry", 2, ["salvage_tools", "archives"], "Benches, jigs and patterns so things are made, not only found.", "Materials +20%, settlements grow for less."),
+  tech("metallurgy", "Metallurgy", "industry", 3, ["workshop", "mechanical_power"], "Furnaces hot enough to melt scrap into new metal.", "Materials +20%, settlement capacity +5."),
+  tech("machining", "Machine Building", "industry", 4, ["metallurgy", "apprenticeship"], "Lathes and gears made by people who were taught to make them.", "All production +10%."),
+  // Energy & infrastructure: water power → mechanical power → local electricity → grid
+  tech("water_wheel", "Water Power", "energy", 1, [], "Wheels on the river that lift water and turn grindstones.", "Water +10%, materials +10%."),
+  tech("mechanical_power", "Mechanical Power", "energy", 2, ["water_wheel", "workshop"], "Shafts, belts and pumps that carry the river's strength into workshops.", "Food +10%, materials +10%."),
+  tech("solar_power", "Local Electricity", "energy", 3, ["mechanical_power"], "Salvaged panels and a rebuilt dynamo: light after dark in one town.", "Knowledge +20%, materials +10%."),
+  tech("power_grid", "Power Grid", "energy", 4, ["solar_power", "metallurgy"], "A shared electrical grid linking settlements.", "Settlement capacity +10, production +10%."),
+  // Medicine & population: public health → clinics → antibiotics → population growth
+  tech("water_purification", "Public Health", "medicine", 1, [], "Filters, boiling and latrines rebuilt from bunker manuals.", "Water +30%, health +4, fewer contamination events."),
+  tech("field_medicine", "Clinics", "medicine", 2, ["water_purification", "apprenticeship"], "A place to bring the sick, and people trained to treat them.", "Mortality -20%, health recovers faster."),
+  tech("antibiotics", "Antibiotics", "medicine", 3, ["field_medicine", "archives"], "Mould cultures coaxed into producing crude penicillin.", "Mortality -25%, outbreaks far less deadly."),
+  tech("maternal_care", "Mother & Child Care", "medicine", 4, ["antibiotics", "irrigation"], "Midwives, clean births and enough food for the first years.", "More births, far fewer children die."),
+  // Knowledge & education: records → apprenticeship → schools → research institutes
+  tech("archives", "Record Keeping", "knowledge", 1, [], "Copying the bunker's failing drives and books onto things that last.", "Knowledge +15%."),
+  tech("apprenticeship", "Apprenticeship", "knowledge", 2, ["archives"], "Every craft takes on the young and teaches them properly.", "Knowledge +10%, new adults start more skilled."),
+  tech("schooling", "Schools", "knowledge", 3, ["apprenticeship", "homesteading"], "Children everywhere learn to read, count and ask why.", "Knowledge +25%."),
+  tech("research_institute", "Research Institute", "knowledge", 4, ["schooling", "solar_power"], "A lit building where people's whole job is finding out.", "Knowledge +30%, projects need less knowledge."),
+  // Exploration & society: exploration → settlements → trade → organisation & governance
+  tech("pathfinding", "Pathfinding", "society", 1, [], "Maps, cairns and the safe roads between ruins.", "Exploration chance +30%."),
+  tech("homesteading", "Homesteading", "society", 2, ["pathfinding", "salvage_tools"], "Knowing how to raise a town on open ground and keep it standing.", "New settlements start larger and stand on their own sooner."),
+  tech("radio", "Shortwave Radio", "society", 2, ["pathfinding", "workshop"], "Rebuilt transceivers that can hear — and be heard — across the wastes.", "Exploration chance +50%."),
+  tech("trade_routes", "Trade Routes", "society", 3, ["homesteading", "workshop"], "Regular caravans, fair measures and goods moving between towns.", "Morale +3, settlements share surplus more readily."),
+  tech("civic_charter", "Civic Charter", "society", 4, ["trade_routes", "apprenticeship"], "A written compact for councils, justice and shared stores.", "Morale +10 baseline, fewer disputes.", { minPopulation: 150 }),
 ];
 
 export const TECH_IDS = TECHNOLOGIES.map((t) => t.id);
@@ -121,8 +170,8 @@ export interface PolicyInfo {
   description: string;
   /** Target share of adults per profession when assigning new adults. */
   professionMix: Record<Profession, number>;
-  /** Research preference order; earlier = preferred among available techs. */
-  researchOrder: string[];
+  /** Branches the council prefers to start projects in, most preferred first. */
+  branchOrder: BranchId[];
   /** Fraction of capacity at which the agent tries to found a new settlement. */
   foundingPressure: number;
   /** Weights applied to choice tags when resolving narrative choices. */
@@ -134,8 +183,8 @@ export const POLICY_INFO: Record<PolicyId, PolicyInfo> = {
     id: "balanced",
     name: "Balanced Council",
     description: "A pragmatic council that spreads effort across survival, research and growth.",
-    professionMix: { Scientist: 0.25, Engineer: 0.3, Medic: 0.2, Scout: 0.25 },
-    researchOrder: ["water_purification", "hydroponics", "field_medicine", "salvage_tools", "irrigation", "civic_charter", "radio", "antibiotics", "solar_power", "power_grid", "crop_genetics"],
+    professionMix: { Scientist: 0.2, Engineer: 0.25, Medic: 0.15, Scout: 0.15, Farmer: 0.25 },
+    branchOrder: ["farming", "medicine", "industry", "knowledge", "society", "energy"],
     foundingPressure: 0.72,
     tagWeights: { cautious: 1.1, bold: 0.9, growth: 1.1, science: 1, community: 1.2, industry: 1, secrecy: 0.7, openness: 1.1 },
   },
@@ -143,8 +192,8 @@ export const POLICY_INFO: Record<PolicyId, PolicyInfo> = {
     id: "expansionist",
     name: "Frontier Charter",
     description: "Push outward: scout aggressively, settle new ground early, accept risk.",
-    professionMix: { Scientist: 0.15, Engineer: 0.35, Medic: 0.15, Scout: 0.35 },
-    researchOrder: ["salvage_tools", "hydroponics", "water_purification", "radio", "irrigation", "field_medicine", "solar_power", "civic_charter", "power_grid", "antibiotics", "crop_genetics"],
+    professionMix: { Scientist: 0.12, Engineer: 0.3, Medic: 0.12, Scout: 0.26, Farmer: 0.2 },
+    branchOrder: ["society", "industry", "farming", "energy", "medicine", "knowledge"],
     foundingPressure: 0.55,
     tagWeights: { cautious: 0.6, bold: 1.6, growth: 1.5, science: 0.8, community: 0.9, industry: 1.3, secrecy: 1, openness: 1 },
   },
@@ -152,8 +201,8 @@ export const POLICY_INFO: Record<PolicyId, PolicyInfo> = {
     id: "scholarly",
     name: "Archive Doctrine",
     description: "Knowledge first: recover lost science before expanding.",
-    professionMix: { Scientist: 0.4, Engineer: 0.25, Medic: 0.2, Scout: 0.15 },
-    researchOrder: ["water_purification", "field_medicine", "hydroponics", "salvage_tools", "radio", "solar_power", "antibiotics", "civic_charter", "irrigation", "crop_genetics", "power_grid"],
+    professionMix: { Scientist: 0.32, Engineer: 0.2, Medic: 0.16, Scout: 0.12, Farmer: 0.2 },
+    branchOrder: ["knowledge", "medicine", "farming", "energy", "industry", "society"],
     foundingPressure: 0.8,
     tagWeights: { cautious: 1, bold: 0.9, growth: 0.8, science: 1.8, community: 1, industry: 0.9, secrecy: 0.9, openness: 1.3 },
   },
@@ -161,8 +210,8 @@ export const POLICY_INFO: Record<PolicyId, PolicyInfo> = {
     id: "cautious",
     name: "Steward Protocol",
     description: "Protect what exists. Stockpile, heal, and avoid unnecessary risk.",
-    professionMix: { Scientist: 0.2, Engineer: 0.3, Medic: 0.3, Scout: 0.2 },
-    researchOrder: ["field_medicine", "water_purification", "hydroponics", "antibiotics", "salvage_tools", "civic_charter", "irrigation", "radio", "solar_power", "crop_genetics", "power_grid"],
+    professionMix: { Scientist: 0.16, Engineer: 0.24, Medic: 0.24, Scout: 0.12, Farmer: 0.24 },
+    branchOrder: ["medicine", "farming", "knowledge", "industry", "energy", "society"],
     foundingPressure: 0.8,
     tagWeights: { cautious: 1.8, bold: 0.5, growth: 0.9, science: 1, community: 1.3, industry: 1, secrecy: 1.3, openness: 0.8 },
   },
