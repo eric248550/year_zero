@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { Activity, BookOpen, Gauge, GitCompareArrows, Globe2, ScrollText, Radio } from "lucide-react";
+import { Activity, BookMarked, BookOpen, Gauge, GitCompareArrows, Globe2, ScrollText, Radio } from "lucide-react";
 import { useI18n } from "./i18n";
 import type { MessageKey } from "@/lib/i18n/core";
 
 export const NAV = [
-  { href: "/", label: "nav.overview", icon: Gauge, mobile: true },
-  { href: "/simulate", label: "nav.simulate", icon: Activity, mobile: true },
-  { href: "/history", label: "nav.history", icon: ScrollText, mobile: true },
-  { href: "/world", label: "nav.world", icon: Globe2, mobile: true },
-  { href: "/content", label: "nav.content", icon: BookOpen, mobile: true },
-  { href: "/compare", label: "nav.compare", icon: GitCompareArrows, mobile: false },
+  { href: "/", label: "nav.story", icon: BookMarked, mobile: true, advanced: false },
+  { href: "/history", label: "nav.history", icon: ScrollText, mobile: true, advanced: false },
+  { href: "/world", label: "nav.world", icon: Globe2, mobile: true, advanced: false },
+  { href: "/simulate", label: "nav.simulate", icon: Activity, mobile: true, advanced: false },
+  { href: "/content", label: "nav.content", icon: BookOpen, mobile: true, advanced: true },
+  { href: "/overview", label: "nav.overview", icon: Gauge, mobile: false, advanced: true },
+  { href: "/compare", label: "nav.compare", icon: GitCompareArrows, mobile: false, advanced: true },
 ] as const satisfies readonly { label: MessageKey; [k: string]: unknown }[];
 
 function isActive(pathname: string, href: string) {
@@ -66,8 +67,11 @@ export function SideNav({ footer }: { footer?: React.ReactNode }) {
           <span className="block text-[11px] text-ink-3">{t("nav.tagline")}</span>
         </span>
       </Link>
+      {[false, true].map((advanced) => (
+      <div key={String(advanced)} className={advanced ? "mt-6" : undefined}>
+      {advanced && <div className="label-xs mb-1.5 px-3">{t("nav.advanced")}</div>}
       <ul className="space-y-1">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {NAV.filter((n) => n.advanced === advanced).map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
             <li key={href}>
@@ -83,6 +87,8 @@ export function SideNav({ footer }: { footer?: React.ReactNode }) {
           );
         })}
       </ul>
+      </div>
+      ))}
       <div className="mt-auto">{footer}</div>
     </aside>
   );

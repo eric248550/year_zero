@@ -111,7 +111,12 @@ Bottom navigation on mobile, sidebar on desktop. The UI is available in
 header (mobile) or sidebar (desktop). The choice is stored in a `genesis-locale`
 cookie; without it, browsers that prefer Chinese get Chinese.
 
-- **Overview** — year/tick, status and era, population, settlements, resources
+- **Story** (home) — the active world read as a story: each storyline's
+  chapters (done, next, missed), what an upcoming event still needs in plain
+  words, and what to choose when it happens (a choice override); recent major
+  events; and the big decisions (policy, research, founding settlements,
+  expeditions), queued for the next year. Built in `lib/story.ts`.
+- **Overview** (under Advanced, `/overview`) — year/tick, status and era, population, settlements, resources
   (with per-capita and last-tick deltas), population and resource charts, recent
   important events, technology/exploration/secret/storyline progress, and step
   controls.
