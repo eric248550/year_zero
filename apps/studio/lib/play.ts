@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
-import { characterAge, fullName, getCharacter, population, relationshipKey, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
+import { characterAge, fullName, getCharacter, population, relationshipKey, powerLevel, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
 import { BRANCH_INFO, CLAIM_YIELD, FACILITY_INFO, FACILITY_WORKING, LAW_INFO, SPECIALTY_INFO, TECH_BY_ID, ZH_CATALOG, type FacilityId, type LawId, type SpecialtyId } from "@genesis/schemas";
 import { activeProjects, projectBlocker, proposableBranches, startableTechs, workEstimate } from "@genesis/simulation";
 import type { ProjectsView } from "@/components/play/projects";
@@ -289,6 +289,10 @@ export function neighboursOf(state: WorldState, c: Character): { name: string; t
 }
 
 export interface HomeView {
+  farm: { seeds: number; fertility: number; plan: string; growing: number; readyLabel: string | null; harvests: number } | null;
+  power: number;
+  salvage: number;
+  wild: number;
   facilities: { id: string; name: string; effect: string; condition: number; working: boolean }[];
   laws: { id: string; name: string; effect: string }[];
   claims: { name: string; yields: string }[];
@@ -299,7 +303,19 @@ export function homeOf(state: WorldState, c: Character, zh: boolean): HomeView |
   const home = state.settlements.find((s) => s.id === c.homeId);
   if (!home) return null;
   const res = (r: string) => (zh ? ({ food: "食物", water: "水", materials: "物資", knowledge: "知識" } as Record<string, string>)[r] ?? r : r);
+  const loc = state.locations.find((l) => l.id === home.locationId);
+  const plans = zh ? { staple: "高產主糧", rotation: "輪作", seedsave: "多留種" } : { staple: "staple crops", rotation: "rotation", seedsave: "seed saving" };
+  const seasons = zh ? ["春天", "夏天", "秋天", "冬天"] : ["spring", "summer", "autumn", "winter"];
+  const growing = home.farm?.crops.reduce((n, c) => n + c.seeds, 0) ?? 0;
+  const ready = home.farm?.crops.length ? Math.min(...home.farm.crops.map((c) => c.readySeason)) : null;
   return {
+    farm: home.kind === "bunker" && !home.farm?.seeds ? null : home.farm ? {
+      seeds: Math.round(home.farm.seeds), fertility: Math.round(home.farm.fertility), plan: plans[home.farm.plan ?? "seedsave"], growing: Math.round(growing),
+      readyLabel: ready === null ? null : `${state.startYear + Math.floor(ready / 4)} ${seasons[ready % 4]}`, harvests: home.farm.harvests,
+    } : null,
+    power: Math.round(powerLevel(state, home) * 100),
+    salvage: Math.round(loc?.salvage ?? 0),
+    wild: Math.round(loc?.wild ?? 0),
     facilities: (Object.entries(home.facilities ?? {}) as [FacilityId, number][]).map(([id, condition]) => ({
       id, condition: Math.round(condition), working: condition >= FACILITY_WORKING,
       name: zh ? ZH_CATALOG.facility[id] : FACILITY_INFO[id].name,

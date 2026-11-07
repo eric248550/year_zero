@@ -88,6 +88,11 @@ function plain(c: Condition, i18n: I18n): string {
       return zh ? `${c.occurred ? "要先發生" : "不能已經發生"}「${c.event}」` : `"${c.event}" must ${c.occurred ? "" : "not "}have happened`;
     case "shortage":
       return zh ? `聚落${c.active ? "正在缺" : "沒有缺"}${term.resource(c.resource)}` : `Settlement ${c.active ? "is short of" : "has enough"} ${term.resource(c.resource)}`;
+    case "worn": return zh ? (c.present ? "有設施需要修理" : "沒有設施需要修理") : c.present ? "A building needs repair" : "No building needs repair";
+    case "salvage": return zh ? `聚落周圍可搜刮的東西要${op(c.op)} ${c.value}` : `Salvage left must be ${op(c.op)} ${c.value}`;
+    case "seeds": return zh ? `存種要${op(c.op)} ${c.value} 份` : `Seed in store must be ${op(c.op)} ${c.value}`;
+    case "harvests": return zh ? `收成次數要${op(c.op)} ${c.value}` : `Harvests must be ${op(c.op)} ${c.value}`;
+    case "power": return zh ? `電力要${op(c.op)} ${c.value}` : `Power must be ${op(c.op)} ${c.value}`;
     case "flag_any":
       return zh ? `${c.present ? "需要先發生其中之一" : "不能已經發生"}（${c.flags.join("、")}）` : `${c.present ? "Needs one of" : "Must have none of"} ${c.flags.join(", ")}`;
     case "farmable":

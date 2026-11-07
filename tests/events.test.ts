@@ -34,9 +34,9 @@ describe("event preconditions", () => {
     const w = createWorld({ seed: 3 });
     expect(checkEligibility(w, surge).eligible).toBe(false);
     w.technologies.push("salvage_tools", "solar_power", "civic_charter", "power_grid");
-    // Knowing how is not enough: there must be a generator to surge.
+    // Knowing how is not enough: there must be power lines for the surge to run along.
     expect(checkEligibility(w, surge).eligible).toBe(false);
-    w.settlements[0]!.facilities = { generator: 100 };
+    w.settlements[0]!.facilities = { power_lines: 100 };
     expect(checkEligibility(w, surge).eligible).toBe(true);
   });
 

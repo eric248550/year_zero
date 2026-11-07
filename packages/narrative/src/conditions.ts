@@ -10,7 +10,7 @@ import {
   type Settlement,
   type WorldState,
 } from "@genesis/schemas";
-import { activeSettlements, characterAge, population, residents, rivalOf, round2, tensionBetween, totalResource } from "./queries";
+import { activeSettlements, characterAge, population, powerLevel, residents, rivalOf, round2, tensionBetween, totalResource } from "./queries";
 
 export function compare(actual: number, op: ComparisonOp, expected: number): boolean {
   switch (op) {
@@ -54,6 +54,11 @@ export function describeCondition(c: Condition): string {
       return `Settlement ${c.resource} shortage is ${c.active ? "active" : "not active"}`;
     case "tension":
       return `Tension with rival settlement ${c.op} ${c.value}`;
+    case "worn": return `A building ${c.present ? "needs" : "does not need"} repair`;
+    case "salvage": return `Salvage left on the site ${c.op} ${c.value}`;
+    case "seeds": return `Seed in store ${c.op} ${c.value}`;
+    case "harvests": return `Harvests brought in ${c.op} ${c.value}`;
+    case "power": return `Electric power ${c.op} ${c.value}`;
     case "flag_any":
       return `${c.present ? "One of" : "None of"} flags ${c.flags.join(", ")} ${c.present ? "is set" : "is set"}`;
     case "farmable":
@@ -156,6 +161,31 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
       if (!s || !rival) return result(null, false);
       const t = tensionBetween(state, s.id, rival.id);
       return result(t, compare(t, c.op, c.value));
+    }
+    case "worn": {
+      if (!s) return result(null, false);
+      const worn = (Object.entries(s.facilities ?? {}) as [string, number][]).some(([f, c]) => c < 70 && (s.building as Record<string, number> | undefined)?.[f] === undefined);
+      return result(worn, worn === c.present);
+    }
+    case "salvage": {
+      if (!s) return result(null, false);
+      const n = state.locations.find((l) => l.id === s.locationId)?.salvage ?? 0;
+      return result(n, compare(n, c.op, c.value));
+    }
+    case "seeds": {
+      if (!s) return result(null, false);
+      const n = s.farm?.seeds ?? 0;
+      return result(n, compare(n, c.op, c.value));
+    }
+    case "harvests": {
+      if (!s) return result(null, false);
+      const n = s.farm?.harvests ?? 0;
+      return result(n, compare(n, c.op, c.value));
+    }
+    case "power": {
+      if (!s) return result(null, false);
+      const n = powerLevel(state, s);
+      return result(n, compare(n, c.op, c.value));
     }
     case "flag_any": {
       const any = c.flags.some((f) => state.flags[f] !== undefined && state.flags[f] !== false);

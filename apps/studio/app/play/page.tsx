@@ -145,10 +145,17 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
         </>
       )}
 
-      {place && home && (place.facilities.length + place.laws.length + place.claims.length > 0) && (
+      {place && home && (
         <>
           <SectionTitle>{t("play.home.title", { place: home.name })}</SectionTitle>
           <div className="card divide-y divide-line">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-4 py-3 text-sm sm:grid-cols-4">
+              {place.farm && <span>{t("play.home.seeds")} <b className="num">{place.farm.seeds}</b></span>}
+              {place.farm && <span>{t("play.home.fertility")} <b className="num">{place.farm.fertility}</b></span>}
+              <span>{t("play.home.power")} <b className="num">{place.power}%</b></span>
+              <span>{t("play.home.salvage")} <b className="num">{place.salvage}</b></span>
+              {place.farm && <span className="col-span-2 text-xs text-ink-3 sm:col-span-4">{t("play.home.farm", { plan: place.farm.plan, harvests: place.farm.harvests })}{place.farm.growing > 0 && place.farm.readyLabel ? ` · ${t("play.home.growing", { n: place.farm.growing, when: place.farm.readyLabel })}` : ""}</span>}
+            </div>
             {place.facilities.length > 0 && (
               <div className="px-4 py-3">
                 <h3 className="label-xs mb-2">{t("play.home.facilities")}</h3>

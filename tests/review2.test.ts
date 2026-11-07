@@ -63,52 +63,13 @@ describe("personal events need the right people and projects", () => {
 });
 
 describe("farming", () => {
-  it("there is no harvest without a sown field", () => {
+  it("there is no harvest without fields and sown seed, and no food from the celebration", () => {
     const s = surfaceWorld(72);
     const farm = s.settlements.find((x) => x.kind === "settlement" && x.status === "active")!;
-    const farmer = s.characters.find((c) => c.homeId === farm.id && c.deathTick === null && s.tick - c.birthTick >= 16)!;
-    farmer.profession = "Farmer";
-    s.scheduled = [{ id: "x:harvest", definitionId: "first-surface-harvest", dueSeason: s.tick * 4 + 4, settlementId: farm.id, roles: { farmer: farmer.id }, causeId: "h000001" }];
-    const r = step(s);
-    expect(r.events.some((e) => e.definitionId === "first-surface-harvest")).toBe(false);
-    expect(r.rejectedEvents.some((x) => x.definitionId === "first-surface-harvest")).toBe(true);
-    expect(r.state.flags["food.surface_farming"]).toBeUndefined();
-  });
-
-  it("sowing grows a field over its seasons, then the harvest pays out once", () => {
-    let s = surfaceWorld(73);
-    const farm = s.settlements.find((x) => x.kind === "settlement" && x.status === "active")!;
-    farm.resources.food = 100;
-    const sow = { ...byId("spring-sowing"), chance: 1, cooldown: 0 };
-    const harvest = byId("first-surface-harvest");
-    // Irrigation makes any surface land farmable, so this does not depend on which site was settled first.
-    s.technologies.push("hydroponics", "water_wheel", "irrigation");
-    for (const c of s.characters) if (c.homeId === farm.id && c.deathTick === null && s.tick - c.birthTick >= 16) { c.profession = "Farmer"; break; }
-    expect(checkEligibility(s, sow).anchors.some((x) => x.settlementId === farm.id && x.eligible)).toBe(true);
-    let harvests = 0;
-    for (let i = 0; i < 4; i++) {
-      const r = step(s, [sow, harvest]);
-      harvests += r.events.filter((e) => e.definitionId === "first-surface-harvest" && e.settlementIds.includes(farm.id)).length;
-      s = r.state;
-    }
-    expect(harvests).toBe(1);
-    expect(s.settlements.find((x) => x.id === farm.id)!.facilities?.fields).toBeGreaterThanOrEqual(30);
-  });
-
-  it("a field makes the surface grow more food; waiting a year to improve the soil takes six seasons instead of two", () => {
-    const sow = byId("spring-sowing");
-    const quick = sow.choices.find((c) => c.id === "sow_all")!;
-    const slow = sow.choices.find((c) => c.id === "wait")!;
-    expect(quick.effects).toEqual(expect.arrayContaining([expect.objectContaining({ type: "BUILD_FACILITY", facility: "fields", seasons: 2 })]));
-    expect(slow.effects).toEqual(expect.arrayContaining([expect.objectContaining({ type: "BUILD_FACILITY", facility: "fields", seasons: 6 })]));
-    expect(quick.costs?.food).toBeGreaterThan(0);
-    expect(slow.costs).toBeUndefined();
-    const s = surfaceWorld(74);
-    const farm = s.settlements.find((x) => x.kind === "settlement" && x.status === "active")!;
-    const withField = structuredClone(s);
-    withField.settlements.find((x) => x.id === farm.id)!.facilities = { fields: 100 };
-    const food = (w: WorldState) => step(w, []).state.settlements.find((x) => x.id === farm.id)!.resources.food;
-    expect(food(withField)).toBeGreaterThan(food(s));
+    const r = step(s, []);
+    const f = r.state.settlements.find((x) => x.id === farm.id)!;
+    expect(f.farm?.harvests ?? 0).toBe(0);
+    expect(f.farm?.crops ?? []).toEqual([]);
   });
 });
 
@@ -223,16 +184,17 @@ describe("ownership, governance and buildings", () => {
     for (let i = 0; i < 3; i++) w = step(w, []).state;
     expect(w.settlements[0]!.facilities?.watermill).toBeUndefined();
     s.settlements[0]!.building = { generator: s.tick * 4 + 40 };
+    s.settlements[0]!.facilities = { watermill: 100 };
     s.technologies.push("salvage_tools", "archives", "workshop", "mechanical_power", "solar_power");
     const k = (x: WorldState) => step(x, []).state.settlements[0]!.resources.knowledge;
-    const done = structuredClone(s); delete done.settlements[0]!.building; done.settlements[0]!.facilities = { generator: 100 };
+    const done = structuredClone(s); delete done.settlements[0]!.building; done.settlements[0]!.facilities = { generator: 100, watermill: 100 };
     expect(k(done)).toBeGreaterThan(k(s));
   });
 
-  it("an electrical surge damages the generator instead of taking generic materials", () => {
+  it("an electrical surge damages the power lines instead of taking generic materials", () => {
     const d = byId("grid-surge");
-    expect(d.effects).toEqual([{ type: "CHANGE_FACILITY", facility: "generator", delta: -45 }]);
-    expect(d.preconditions).toEqual(expect.arrayContaining([{ type: "facility", facility: "generator", working: true }]));
+    expect(d.effects).toEqual([{ type: "CHANGE_FACILITY", facility: "power_lines", delta: -45 }]);
+    expect(d.preconditions).toEqual(expect.arrayContaining([{ type: "facility", facility: "power_lines", working: true }]));
   });
 });
 

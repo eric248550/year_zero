@@ -20,7 +20,8 @@
     {
       "type": "ADJUST_RESOURCE",
       "resource": "materials",
-      "amount": 4
+      "amount": 4,
+      "from": "salvage"
     },
     {
       "type": "CHANGE_RELATIONSHIP",

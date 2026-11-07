@@ -2,6 +2,8 @@ import {
   ADULT_AGE,
   type Character,
   type ResourceId,
+  LOCATION_BY_ID,
+  type LocationState,
   type Project,
   type Settlement,
   type WorldState,
@@ -111,4 +113,35 @@ export function rivalOf(state: WorldState, s: Settlement): Settlement | null {
 /** The active project a character leads or has joined. */
 export function projectOf(state: WorldState, characterId: string): Project | undefined {
   return (state.projects ?? []).find((p) => p.memberIds.includes(characterId) || p.leadId === characterId);
+}
+
+/** How much of its effect a building gives: 0 when missing or broken (below 30), else its condition as a share. */
+export function facilityLevel(s: Settlement | undefined, f: string): number {
+  const c = (s?.facilities as Record<string, number> | undefined)?.[f] ?? 0;
+  return c >= 30 ? c / 100 : 0;
+}
+
+/** Power a settlement makes itself: the generator, plus the solar array (half of it without batteries). */
+export function ownPower(s: Settlement): number {
+  const solar = facilityLevel(s, "solar_array") * (facilityLevel(s, "battery_bank") > 0 ? 1 : 0.5);
+  return Math.min(1, facilityLevel(s, "generator") + solar);
+}
+
+/**
+ * Electric power available to a settlement (0–1): its own, or the grid's best
+ * source through its power lines once the power grid is known.
+ */
+export function powerLevel(state: WorldState, s: Settlement): number {
+  const own = ownPower(s);
+  const lines = facilityLevel(s, "power_lines");
+  if (!lines || !state.technologies.includes("power_grid")) return own;
+  const grid = Math.max(0, ...activeSettlements(state).filter((o) => facilityLevel(o, "power_lines") > 0).map(ownPower));
+  return Math.max(own, Math.min(1, grid * lines));
+}
+
+/** The nearest discovered site nobody lives on or has claimed. */
+export function nearestClaimable(state: WorldState): LocationState | undefined {
+  return state.locations
+    .filter((l) => l.discovered && !l.settlementId && !l.claimedBy && l.id !== "haven_deep" && !LOCATION_BY_ID[l.id]?.hidden)
+    .sort((a, b) => (LOCATION_BY_ID[a.id]?.distance ?? 9) - (LOCATION_BY_ID[b.id]?.distance ?? 9) || (a.id < b.id ? -1 : 1))[0];
 }

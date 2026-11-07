@@ -1,5 +1,6 @@
 import {
   POLICY_INFO,
+  TECHNOLOGIES,
   type Character,
   type Choice,
   type ConditionTrace,
@@ -12,10 +13,10 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { causesFor, evaluateAll } from "./conditions";
-import { applyEffects, canAfford, newRecorder, spendResources, transact, type EffectContext } from "./effects";
+import { applyEffects, canAfford, newRecorder, spendResources, transact, worstFacility, type EffectContext } from "./effects";
 import type { Effect } from "@genesis/schemas";
 import { EffectError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, round2 } from "./queries";
+import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, rivalOf, round2 } from "./queries";
 import { candidatesForRole, resolveRoles, rolesSatisfiable } from "./roles";
 import { renderTemplate } from "./template";
 import { DECISION_WINDOW_TICKS, decidersFor, isPlayerControlled, participantsFor } from "./decisions";
@@ -115,7 +116,61 @@ export function choiceAvailability(
     const missing = choice.requiresRoles.find((r) => roles[r] === undefined);
     if (missing) return { available: false, reason: `Nobody available for role "${missing}"` };
   }
+  const blocked = choice.effects.map((e) => effectBlocker(state, e, settlement)).find((x) => x);
+  if (blocked) return { available: false, reason: blocked };
   return { available: true, reason: null };
+}
+
+/**
+ * Why an effect could not happen as written right now, so the choice that
+ * promises it is not offered (the story never claims a trade, a claim or a
+ * repair that did not happen).
+ */
+export function effectBlocker(state: WorldState, e: Effect, s: Settlement | null): string | null {
+  switch (e.type) {
+    case "EXCHANGE": {
+      const rival = s ? rivalOf(state, s) : null;
+      if (!s || !rival) return "No other settlement to trade with";
+      if (rival.resources[e.get.resource] < e.get.amount * 0.5) return `${rival.name} does not have the ${e.get.resource}`;
+      if (e.give && s.resources[e.give.resource] < e.give.amount * 0.5) return `Not enough ${e.give.resource} to offer`;
+      return null;
+    }
+    case "CHANGE_PROJECT":
+      return e.tech && !(state.projects ?? []).some((p) => p.techId === e.tech) ? "Nobody is working on that project" : null;
+    case "CLAIM_SITE": {
+      const loc = e.location === "nearest" ? nearestClaimable(state) : state.locations.find((l) => l.id === e.location);
+      return !loc || !loc.discovered || loc.settlementId || loc.claimedBy ? "No site to claim" : null;
+    }
+    case "CEDE_CLAIM":
+      return !s || !rivalOf(state, s) || !state.locations.some((l) => l.claimedBy === s.id && !l.settlementId) ? "Nothing to hand over" : null;
+    case "BUILD_FACILITY":
+      if (!s) return null;
+      if (e.facility === "worst") return worstFacility(s) ? null : "Nothing needs repair";
+      return e.seasons && s.building?.[e.facility] !== undefined ? "Already being built" : null;
+    case "ADJUST_RESOURCE": {
+      if (!e.from || e.amount <= 0 || !s) return null;
+      const pool = state.locations.find((l) => l.id === s.locationId)?.[e.from] ?? 0;
+      return pool <= 0 ? (e.from === "salvage" ? "Nothing left to salvage here" : "Nothing left to gather here") : null;
+    }
+    case "ADD_SEEDS":
+      return e.amount < 0 && (s?.farm?.seeds ?? 0) < -e.amount ? "Not enough seed" : null;
+    case "PRIORITIZE_BRANCH": {
+      const active = new Set((state.projects ?? []).map((p) => p.techId));
+      const any = TECHNOLOGIES.some((t) => t.branch === e.branch && !state.technologies.includes(t.id) && !active.has(t.id) && t.prerequisites.every((p) => state.technologies.includes(p)));
+      return any ? null : "Nothing in that branch can be started now";
+    }
+    case "ENACT_LAW":
+      return s?.laws?.includes(e.law) ? "That law is already in force" : null;
+    case "REPEAL_LAW":
+      return s && !s.laws?.includes(e.law) ? "That law is not in force" : null;
+    case "SET_FARM_PLAN":
+      return s && (s.farm?.plan ?? "seedsave") === e.plan ? "Already farming that way" : null;
+    case "AFTER":
+      // An outcome that takes time is checked when it arrives; the trip itself can always start.
+      return null;
+    default:
+      return null;
+  }
 }
 
 export function scoreChoice(choice: Choice, policy: PolicyId): number {
@@ -525,7 +580,9 @@ export function runScheduledPhase(
     if (item.definitionId && !def) { rejections.push({ definitionId: item.definitionId, reason: "Scheduled event is not in this run's content" }); continue; }
     // Who went must be who comes back: if any of them died meanwhile, nothing is delivered.
     // Only people who were sent away count; a field still ripens if the farmer who sowed it dies.
-    const went = item.inline ? item.inline.away : item.away ?? [];
+    // And a follow-up never hands a dead person's part to somebody else: required roles that were carried over must still be alive.
+    const required = def ? def.roles.filter((r) => !r.optional && item.roles[r.id]).map((r) => r.id) : [];
+    const went = [...new Set([...(item.inline ? item.inline.away : item.away ?? []), ...required])];
     const lost = went.map((r) => item.roles[r]).filter((id): id is string => !!id && !alive(id));
     if (lost.length > 0) {
       events.push(scheduledRecord(current, item, say(current).lostTitle(listNames(current, lost.map((id) => fullName(getCharacter(current, id)!)))), say(current).lostText(), [], lost));

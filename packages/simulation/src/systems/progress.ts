@@ -23,28 +23,27 @@ export function developmentCost(s: Settlement, workshop = false): number {
   return Math.round((60 * s.level + 40) * (workshop ? 0.75 : 1));
 }
 
+/** Settlements that are filling up pay for an expansion; it is built over a year (finished in construction()). */
 export function development(ctx: TickContext): void {
-  for (const s of activeSettlements(ctx.state)) {
+  const st = ctx.state;
+  for (const s of activeSettlements(st)) {
     const maxLevel = s.kind === "bunker" ? 3 : 5;
-    if (s.level >= maxLevel) continue;
-    const pop = population(ctx.state, s.id);
-    const cost = developmentCost(s, hasTech(ctx.state, "workshop"));
+    if (s.level >= maxLevel || s.expanding !== undefined) continue;
+    const pop = population(st, s.id);
+    const cost = developmentCost(s, hasTech(st, "workshop"));
     if (pop < s.capacity * 0.7 || s.resources.materials < cost + 10) continue;
-    const before = { level: s.level, capacity: s.capacity, materials: s.resources.materials };
-    s.resources.materials = round2(s.resources.materials - cost);
-    s.level += 1;
-    s.capacity += s.kind === "bunker" ? 4 : 10;
-    s.morale = Math.min(100, s.morale + 5);
+    const before = s.resources.materials;
+    s.resources.materials = round2(before - cost);
+    s.expanding = st.tick * 4 + 4;
     ctx.system({
       category: "settlement",
-      importance: "notable",
-      title: say(ctx.state).growTitle(s.name, s.level),
-      text: say(ctx.state).growText(s.name, s.capacity),
+      importance: "minor",
+      title: say(st).expandStartTitle(s.name, s.level + 1),
+      text: say(st).expandStartText(s.name),
       settlementIds: [s.id],
       changes: [
-        { path: `settlements.${s.id}.level`, label: `${s.name} level`, before: before.level, after: s.level },
-        { path: `settlements.${s.id}.capacity`, label: `${s.name} capacity`, before: before.capacity, after: s.capacity },
-        { path: `settlements.${s.id}.resources.materials`, label: `${s.name} materials`, before: before.materials, after: s.resources.materials },
+        { path: `settlements.${s.id}.resources.materials`, label: `${s.name} materials`, before, after: s.resources.materials },
+        { path: `settlements.${s.id}.expanding`, label: `${s.name} expansion`, before: null, after: s.expanding },
       ],
       summary: `Population ${pop} ≥ 70% of capacity and materials ≥ ${cost + 10}`,
     });

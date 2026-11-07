@@ -22,6 +22,10 @@
       "flag": "food.heirloom_seeds"
     },
     {
+      "type": "ADD_SEEDS",
+      "amount": 30
+    },
+    {
       "type": "CLAIM_SITE",
       "location": "seed_vault"
     },

@@ -1,5 +1,5 @@
 import { LOCATION_BY_ID, type FacilityId, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
-import { characterAge, hasTech, residents, round2 } from "@genesis/narrative";
+import { characterAge, hasTech, powerLevel, residents, round2 } from "@genesis/narrative";
 import { ADULT_AGE, ELDER_AGE } from "@genesis/schemas";
 import type { TickContext } from "../context";
 import { hasLaw, isAway, level } from "./legacy";
@@ -11,7 +11,7 @@ export const ECONOMY = {
   foodPerFarmer: 1.5,
   waterPerLabor: 1.3,
   forageFoodPerScout: 0.6,
-  materialsPerEngineer: 1.1,
+  materialsPerEngineer: 1.4,
   materialsPerLabor: 0.15,
   knowledgePerScientist: 2.0,
   knowledgePerLabor: 0.1,
@@ -64,15 +64,12 @@ function multipliers(ctx: TickContext, s: Settlement) {
   // Buildings work in proportion to their condition; broken ones (below 30) do nothing.
   const L = (f: FacilityId) => level(s, f);
   // Know-how spreads to everyone; infrastructure only helps where it stands.
-  const grid = (t("power_grid") ? 1 + 0.1 * L("generator") : 1) * (t("machining") ? 1.1 : 1);
+  const grid = (t("power_grid") ? 1 + 0.1 * powerLevel(ctx.state, s) * L("power_lines") : 1) * (t("machining") ? 1.1 : 1);
   let food = s.kind === "bunker" ? 0.95 : 1.05;
   if (features.includes("fertile")) food *= 1.15;
   if (t("hydroponics")) food *= 1.2;
-  if (s.kind !== "bunker") {
-    // Surface food comes from sown fields; until then only forage and kitchen gardens.
-    food *= 0.6 + 0.4 * L("fields");
-    if (t("irrigation")) food *= 1 + 0.25 * L("fields");
-  }
+  // On the surface, everyday labour grows kitchen gardens and keeps a few animals; grain comes from the fields (farming.ts).
+  if (s.kind !== "bunker") food *= 0.6;
   if (t("crop_genetics")) food *= 1.15;
   if (t("mass_farming")) food *= 1.15;
   if (ctx.state.flags["food.heirloom_seeds"]) food *= 1.1;
@@ -88,14 +85,15 @@ function multipliers(ctx: TickContext, s: Settlement) {
   let materials = 1;
   if (features.includes("ruins")) materials *= 1.4;
   if (t("salvage_tools")) materials *= 1.4;
-  materials *= 1 + 0.1 * L("generator");
+  const power = powerLevel(ctx.state, s);
+  materials *= 1 + 0.1 * power;
   materials *= 1 + 0.1 * L("watermill");
   if (t("mechanical_power")) materials *= 1.1;
   materials *= 1 + (t("workshop") ? 0.2 : 0.1) * L("forge");
   if (t("metallurgy")) materials *= 1.2;
   materials *= grid;
   let knowledge = 1;
-  knowledge *= 1 + 0.2 * L("generator");
+  knowledge *= 1 + 0.2 * power;
   if (t("archives")) knowledge *= 1.15;
   if (t("apprenticeship")) knowledge *= 1.1;
   if (t("schooling")) knowledge *= 1.25;
@@ -114,10 +112,15 @@ export function produce(ctx: TickContext): void {
     const efficiency = (0.6 + 0.4 * (s.health / 100)) * (0.75 + 0.35 * (s.morale / 100));
     // One shared "season" roll per settlement per tick: drought years hit food and water together.
     const season = Math.min(1.3, Math.max(0.55, ctx.rng.gaussian(1, 0.16)));
+    // Foraging and everyday salvage come out of the land, which holds only so much.
+    const loc = ctx.state.locations.find((l) => l.id === s.locationId);
+    const forage = Math.min(w.scouts * ECONOMY.forageFoodPerScout * efficiency, loc?.wild ?? 0);
+    const scrap = Math.min(w.labor * ECONOMY.materialsPerLabor * m.materials * efficiency, loc?.salvage ?? 0);
+    if (loc) { loc.wild = round2((loc.wild ?? 0) - forage); loc.salvage = round2((loc.salvage ?? 0) - scrap); }
     const out: Record<ResourceId, number> = {
-      food: ((w.labor * ECONOMY.foodPerLabor + w.farmers * ECONOMY.foodPerFarmer) * m.food * season + w.scouts * ECONOMY.forageFoodPerScout) * efficiency,
+      food: (w.labor * ECONOMY.foodPerLabor + w.farmers * ECONOMY.foodPerFarmer) * m.food * season * efficiency + forage,
       water: (w.labor * ECONOMY.waterPerLabor * m.water * season) * efficiency + (s.kind === "bunker" ? ECONOMY.bunkerWaterReclaimer : 0),
-      materials: (w.engineers * ECONOMY.materialsPerEngineer + w.labor * ECONOMY.materialsPerLabor) * m.materials * efficiency,
+      materials: w.engineers * ECONOMY.materialsPerEngineer * m.materials * efficiency + scrap,
       knowledge: (w.scientists * ECONOMY.knowledgePerScientist + w.labor * ECONOMY.knowledgePerLabor) * m.knowledge * efficiency,
     };
     for (const r of Object.keys(out) as ResourceId[]) s.resources[r] = round2(s.resources[r] + out[r]);
@@ -171,7 +174,7 @@ export function consume(ctx: TickContext): void {
     }
     ctx.deficits.set(s.id, deficit);
 
-    const upkeep = w.residents * ECONOMY.materialsUpkeepPerResident + s.level * ECONOMY.materialsUpkeepPerLevel;
+    const upkeep = w.residents * ECONOMY.materialsUpkeepPerResident + s.level * ECONOMY.materialsUpkeepPerLevel + (hasLaw(s, "sanitation") ? 2 : 0);
     if (s.resources.materials < upkeep) s.morale = Math.max(0, s.morale - 3); // infrastructure decays
     s.resources.materials = round2(Math.max(0, s.resources.materials - upkeep));
   }
@@ -215,6 +218,7 @@ export function wellbeing(ctx: TickContext): void {
     if (hasTech(st, "antibiotics")) health += 10;
     if (hasTech(st, "water_purification")) health += 4;
     health += 5 * level(s, "clinic");
+    if (hasLaw(s, "sanitation")) health += 4;
     health -= d.food * 30 + d.water * 40;
     if (crowded) health -= 10;
 

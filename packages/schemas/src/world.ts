@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FACILITIES, LAWS, POLICIES, PROFESSIONS, PROJECT_APPROACHES, SPECIALTIES } from "./catalog";
+import { FACILITIES, FARM_PLANS, LAWS, POLICIES, PROFESSIONS, PROJECT_APPROACHES, SPECIALTIES } from "./catalog";
 
 export const ResourceSetSchema = z.object({
   food: z.number().min(0),
@@ -35,6 +35,17 @@ export const SettlementSchema = z.object({
   facilities: z.partialRecord(z.enum(FACILITIES), z.number().min(0).max(100)).optional(),
   /** Buildings under construction: facility -> season index it is finished. */
   building: z.partialRecord(z.enum(FACILITIES), z.number().int()).optional(),
+  /** The settlement's farming: seed in store, soil fertility, crops in the ground. */
+  farm: z.object({
+    seeds: z.number().min(0),
+    /** 0–150; 100 = ordinary soil. Falls with hard use, rises with rotation and rest. */
+    fertility: z.number().min(0).max(150),
+    plan: z.enum(FARM_PLANS).optional(),
+    crops: z.array(z.object({ plantedSeason: z.number().int(), readySeason: z.number().int(), seeds: z.number().min(0) })),
+    harvests: z.number().int().min(0),
+  }).optional(),
+  /** A settlement expansion under way: season index it is finished. */
+  expanding: z.number().int().optional(),
   /** Laws in force. */
   laws: z.array(z.enum(LAWS)).optional(),
 });
@@ -47,6 +58,10 @@ export const LocationStateSchema = z.object({
   settlementId: z.string().nullable(),
   /** Settlement that has staked a claim to this site (and takes what it yields). */
   claimedBy: z.string().nullable().optional(),
+  /** Salvage (materials) left to dig out; it does not come back. */
+  salvage: z.number().min(0).optional(),
+  /** Wild food (forage, game) available now; grows back each year. */
+  wild: z.number().min(0).optional(),
 });
 export type LocationState = z.infer<typeof LocationStateSchema>;
 

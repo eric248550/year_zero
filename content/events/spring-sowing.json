@@ -1,9 +1,9 @@
 {
   "id": "spring-sowing",
-  "title": "第一次播種",
+  "title": "開墾田地",
   "scope": "settlement",
   "category": "resource",
-  "description": "地表聚落第一次把種子種進土裡。",
+  "description": "地表聚落第一次把地翻開、整成田。",
   "preconditions": [
     {
       "type": "settlement_kind",
@@ -19,10 +19,9 @@
       "working": false
     },
     {
-      "type": "event_occurred",
-      "event": "spring-sowing",
-      "occurred": false,
-      "withinTicks": 2
+      "type": "seeds",
+      "op": ">=",
+      "value": 6
     }
   ],
   "roles": [
@@ -36,31 +35,23 @@
   "choices": [
     {
       "id": "sow_all",
-      "label": "拿出存糧裡的留種，全部播下去",
+      "label": "把地翻開，今年就整成田",
       "tags": [
         "bold",
         "growth"
       ],
-      "costs": {
-        "food": 6
-      },
       "effects": [
         {
           "type": "BUILD_FACILITY",
           "facility": "fields",
           "seasons": 2
-        },
-        {
-          "type": "SCHEDULE_EVENT",
-          "event": "first-surface-harvest",
-          "seasons": 2
         }
       ],
-      "outcome": "{{farmer}}帶著大家把地翻了一遍，種子一排一排地埋下去。秋天才知道結果。"
+      "outcome": "{{farmer}}帶著大家把地翻了一遍，挖好水溝。秋天田就整好了，明年春天開始用存種播種。"
     },
     {
       "id": "wait",
-      "label": "先種豆子養地，明年秋天再收",
+      "label": "先種豆子養地，一年半後再成田",
       "tags": [
         "cautious"
       ],
@@ -71,12 +62,11 @@
           "seasons": 6
         },
         {
-          "type": "SCHEDULE_EVENT",
-          "event": "first-surface-harvest",
-          "seasons": 6
+          "type": "CHANGE_FERTILITY",
+          "delta": 30
         }
       ],
-      "outcome": "{{farmer}}說土還太酸。今年先種豆子養地，不用動到存糧裡的留種；田要到明年秋天才收得到。"
+      "outcome": "{{farmer}}說土還太酸。先種一年半的豆子養地：田晚一年才能用，但土會肥得多，往後每次收成都更好。"
     }
   ],
   "priority": 3,
@@ -89,7 +79,7 @@
   "importance": "notable",
   "narrative": {
     "headline": "{{settlement}}第一次播種",
-    "text": "{{farmer}}抓起一把灰黑色的土，聞了聞。{{settlement}}的人圍在田邊，等著{{farmer}}決定要不要現在就播種。"
+    "text": "{{farmer}}抓起一把灰黑色的土，聞了聞。{{settlement}}帶來的種子還收在乾燥箱裡，大家等著{{farmer}}決定怎麼開墾。"
   },
   "version": 1,
   "status": "published",

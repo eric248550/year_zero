@@ -1,0 +1,107 @@
+{
+  "id": "engineer-repair-or-strip",
+  "title": "修還是拆",
+  "scope": "settlement",
+  "category": "social",
+  "description": "工程師決定怎麼處理一座磨損的設施。",
+  "preconditions": [
+    {
+      "type": "worn",
+      "present": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Engineer",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "repair",
+      "label": "花一季好好修",
+      "tags": [
+        "cautious",
+        "industry"
+      ],
+      "costs": {
+        "materials": 12
+      },
+      "effects": [
+        {
+          "type": "BUILD_FACILITY",
+          "facility": "worst",
+          "seasons": 1
+        }
+      ],
+      "outcome": "{{you}}把它拆開，換掉磨壞的零件。一季之後，它跟新的一樣。"
+    },
+    {
+      "id": "jury_rig",
+      "label": "先湊合著用",
+      "tags": [
+        "bold"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_FACILITY",
+          "facility": "worst",
+          "delta": 20
+        }
+      ],
+      "risk": {
+        "chance": 0.3,
+        "description": "湊合的零件撐不住，又壞了一次，比原來還糟。",
+        "effects": [
+          {
+            "type": "CHANGE_FACILITY",
+            "facility": "worst",
+            "delta": -30
+          }
+        ]
+      },
+      "outcome": "{{you}}用鐵絲和膠帶讓它先動起來。"
+    },
+    {
+      "id": "strip",
+      "label": "拆了，零件拿去別處用",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_FACILITY",
+          "facility": "worst",
+          "delta": -40
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "materials",
+          "amount": 10
+        }
+      ],
+      "outcome": "{{you}}把能用的零件都拆了下來，那座設施差不多廢了。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.3,
+  "cooldown": 5,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}看著那台磨損的機器",
+    "text": "{{settlement}}有一座設施已經不行了。{{you}}可以好好修、先湊合著用，或乾脆拆了零件拿去別處用。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

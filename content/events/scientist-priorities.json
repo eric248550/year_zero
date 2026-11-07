@@ -1,0 +1,110 @@
+{
+  "id": "scientist-priorities",
+  "title": "先研究什麼",
+  "scope": "settlement",
+  "category": "social",
+  "description": "科學家決定議會下一個要投入的方向。",
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 5
+    }
+  ],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Scientist",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "medicine",
+      "label": "先救人：醫療",
+      "tags": [
+        "community",
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "PRIORITIZE_BRANCH",
+          "branch": "medicine"
+        }
+      ],
+      "outcome": "議會接下來會先發起醫療方面的專案。"
+    },
+    {
+      "id": "farming",
+      "label": "先吃飽：農業",
+      "tags": [
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "PRIORITIZE_BRANCH",
+          "branch": "farming"
+        }
+      ],
+      "outcome": "議會接下來會先發起農業方面的專案。"
+    },
+    {
+      "id": "energy",
+      "label": "先有電：能源",
+      "tags": [
+        "industry",
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "PRIORITIZE_BRANCH",
+          "branch": "energy"
+        }
+      ],
+      "outcome": "議會接下來會先發起能源方面的專案。"
+    },
+    {
+      "id": "knowledge",
+      "label": "先教人：知識",
+      "tags": [
+        "science"
+      ],
+      "effects": [
+        {
+          "type": "PRIORITIZE_BRANCH",
+          "branch": "knowledge"
+        }
+      ],
+      "outcome": "議會接下來會先發起知識方面的專案。"
+    },
+    {
+      "id": "as_planned",
+      "label": "照議會原本的安排",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "{{you}}覺得議會原本的順序沒有問題。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.3,
+  "cooldown": 5,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}要決定研究的方向",
+    "text": "議會問{{you}}：知識和人手有限，下一個要先投入哪一方面？"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

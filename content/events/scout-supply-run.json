@@ -46,7 +46,8 @@
             {
               "type": "ADJUST_RESOURCE",
               "resource": "materials",
-              "amount": 6
+              "amount": 6,
+              "from": "salvage"
             }
           ],
           "risk": {

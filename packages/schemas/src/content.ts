@@ -9,6 +9,7 @@ import {
   RESOURCES,
   SETTLEMENT_STATS,
   BRANCHES,
+  FARM_PLANS,
   PROJECT_APPROACHES,
   FACILITIES,
   LAWS,
@@ -61,6 +62,16 @@ export const ConditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("flag_any"), flags: z.array(z.string().min(1)).min(2), present: z.boolean() }).strict(),
   /** The target settlement's land can be farmed: fertile, by a river, or anywhere once irrigation is known. */
   z.object({ type: z.literal("farmable"), present: z.boolean() }).strict(),
+  /** Salvage left on the target settlement's site. */
+  z.object({ type: z.literal("salvage"), op: ComparisonOpSchema, value: z.number() }).strict(),
+  /** Some building in the target settlement is worn below 70 and not already being repaired. */
+  z.object({ type: z.literal("worn"), present: z.boolean() }).strict(),
+  /** Seed in the target settlement's store. */
+  z.object({ type: z.literal("seeds"), op: ComparisonOpSchema, value: z.number() }).strict(),
+  /** Harvests the target settlement has brought in. */
+  z.object({ type: z.literal("harvests"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
+  /** Electric power available to the target settlement (0–1: own sources and the grid). */
+  z.object({ type: z.literal("power"), op: ComparisonOpSchema, value: z.number() }).strict(),
   /** Someone is (or is not) building this technology right now. */
   z.object({ type: z.literal("project"), tech: z.string(), active: z.boolean() }).strict(),
   /** The target settlement has this building in working order (condition ≥ 30), or not. */
@@ -145,6 +156,11 @@ export const EFFECT_TYPES = [
   "ADD_SPECIALTY",
   "SCHEDULE_EVENT",
   "AFTER",
+  "ADD_SEEDS",
+  "CHANGE_FERTILITY",
+  "SET_FARM_PLAN",
+  "CHANGE_CROPS",
+  "PRIORITIZE_BRANCH",
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -154,6 +170,8 @@ export const EffectSchema = z.discriminatedUnion("type", [
     resource: ResourceIdSchema,
     /** Positive = gain. Negative = loss, clamped at zero (losses never go negative). */
     amount: z.number().finite().min(-500).max(500),
+    /** Where a gain comes from: the site's salvage (used up) or its wild growth (grows back). Only what is there is gained. */
+    from: z.enum(["salvage", "wild"]).optional(),
     target: SettlementTargetSchema,
   }).strict(),
   z.object({
@@ -209,13 +227,21 @@ export const EffectSchema = z.discriminatedUnion("type", [
   }).strict(),
   /** Raise (or fully rebuild) a building in the target settlement. */
   /** Raise a building; with `seasons` it is a construction site until then (and works only once finished). */
-  z.object({ type: z.literal("BUILD_FACILITY"), facility: z.enum(FACILITIES), seasons: z.number().int().min(1).max(12).optional() }).strict(),
+  z.object({ type: z.literal("BUILD_FACILITY"), facility: z.union([z.enum(FACILITIES), z.literal("worst")]), seasons: z.number().int().min(1).max(12).optional() }).strict(),
   /** Wear down or repair a building that exists; "any" picks the one in best shape. */
-  z.object({ type: z.literal("CHANGE_FACILITY"), facility: z.union([z.enum(FACILITIES), z.literal("any")]), delta: z.number().int().min(-100).max(100) }).strict(),
+  z.object({ type: z.literal("CHANGE_FACILITY"), facility: z.union([z.enum(FACILITIES), z.literal("any"), z.literal("worst")]), delta: z.number().int().min(-100).max(100) }).strict(),
   z.object({ type: z.literal("ENACT_LAW"), law: z.enum(LAWS) }).strict(),
   z.object({ type: z.literal("REPEAL_LAW"), law: z.enum(LAWS) }).strict(),
   /** The target settlement stakes a claim to a discovered, unsettled site (taking it from whoever held it). */
   z.object({ type: z.literal("CLAIM_SITE"), location: z.string() }).strict(),
+  /** Seed into (or out of) the target settlement's store. */
+  z.object({ type: z.literal("ADD_SEEDS"), amount: z.number().int().min(-100).max(100) }).strict(),
+  z.object({ type: z.literal("CHANGE_FERTILITY"), delta: z.number().int().min(-50).max(50) }).strict(),
+  z.object({ type: z.literal("SET_FARM_PLAN"), plan: z.enum(FARM_PLANS) }).strict(),
+  /** Damage (negative) the crops now in the ground, as a share of them. */
+  z.object({ type: z.literal("CHANGE_CROPS"), fraction: z.number().min(-1).max(0) }).strict(),
+  /** The council starts the next project in this branch first (sets the research focus). */
+  z.object({ type: z.literal("PRIORITIZE_BRANCH"), branch: z.enum(BRANCHES) }).strict(),
   /** The target settlement hands its oldest claim to its rival. */
   z.object({ type: z.literal("CEDE_CLAIM") }).strict(),
   z.object({ type: z.literal("ADD_SPECIALTY"), role: z.string(), specialty: z.enum(SPECIALTIES) }).strict(),

@@ -1,87 +1,87 @@
 {
   "worlds": 100,
   "years": 150,
-  "msPerYear": 13.25,
+  "msPerYear": 15.87,
   "population": {
     "year 10": {
-      "p10": 122,
-      "median": 132,
-      "p90": 140
+      "p10": 120,
+      "median": 129,
+      "p90": 139
     },
     "year 30": {
-      "p10": 136,
-      "median": 151,
-      "p90": 171
+      "p10": 131,
+      "median": 148,
+      "p90": 170
     },
     "year 60": {
-      "p10": 161,
-      "median": 200,
-      "p90": 240
+      "p10": 155,
+      "median": 189,
+      "p90": 232
     },
     "year 100": {
-      "p10": 284,
-      "median": 369,
-      "p90": 425
+      "p10": 247,
+      "median": 344,
+      "p90": 428
     },
     "year 150": {
-      "p10": 533,
-      "median": 602,
-      "p90": 617
+      "p10": 509,
+      "median": 593,
+      "p90": 615
     }
   },
   "lowestPopulation": {
-    "p10": 118,
-    "median": 123
+    "p10": 117,
+    "median": 122
   },
   "extinction": {
     "worldsExtinctAtEnd": "0/100 (0%)",
     "worldsEverEmpty": "0/100",
-    "settlementCollapses": 3
+    "settlementCollapses": 0
   },
   "conflict": {
-    "raids": 20,
-    "schisms": 353
+    "raids": 56,
+    "schisms": 329
   },
   "survival": {
     "populationAtOrAboveStart": "100/100 (100%)",
-    "surfaceSettlementsFounded": 403,
-    "surfaceSettlementsStillStanding": "400/403 (99.3%)"
+    "surfaceSettlementsFounded": 400,
+    "surfaceSettlementsStillStanding": "400/400 (100%)"
   },
   "civilization": {
     "survive": {
       "reached": "100/100 (100%)",
       "medianYearOfFinishedWorlds": 5,
       "medianYearAllWorlds": 5,
-      "p90Year": 6,
+      "p90Year": 7,
       "stalledOver40Years": 0
     },
     "root": {
       "reached": "100/100 (100%)",
-      "medianYearOfFinishedWorlds": 29,
-      "medianYearAllWorlds": 29,
-      "p90Year": 36,
-      "stalledOver40Years": 1
+      "medianYearOfFinishedWorlds": 27,
+      "medianYearAllWorlds": 27,
+      "p90Year": 49,
+      "stalledOver40Years": 11
     },
     "connect": {
       "reached": "100/100 (100%)",
-      "medianYearOfFinishedWorlds": 44,
-      "medianYearAllWorlds": 44,
-      "p90Year": 59,
-      "stalledOver40Years": 2
+      "medianYearOfFinishedWorlds": 47,
+      "medianYearAllWorlds": 47,
+      "p90Year": 78,
+      "stalledOver40Years": 10
     },
     "order": {
       "reached": "100/100 (100%)",
-      "medianYearOfFinishedWorlds": 64,
-      "medianYearAllWorlds": 64,
-      "p90Year": 79,
-      "stalledOver40Years": 2
+      "medianYearOfFinishedWorlds": 68,
+      "medianYearAllWorlds": 68,
+      "p90Year": 91,
+      "stalledOver40Years": 7
     },
     "renewal": {
       "reached": "100/100 (100%)",
-      "medianYearOfFinishedWorlds": 93,
-      "medianYearAllWorlds": 93,
-      "p90Year": 106,
-      "stalledOver40Years": 4
+      "medianYearOfFinishedWorlds": 95,
+      "medianYearAllWorlds": 95,
+      "p90Year": 117,
+      "stalledOver40Years": 5
     }
   },
   "medianNote": "medianYearOfFinishedWorlds leaves out worlds that never reached the stage; medianYearAllWorlds counts them as not reached.",
@@ -113,22 +113,55 @@
   "unfinishedCivilizations": "0/100",
   "commonBlockers": [],
   "events": {
-    "total": 71,
+    "total": 76,
     "neverFired": [],
     "firedInUnder5PercentOfWorlds": [],
     "mostRepeated": [
-      "shared-meal: 29.6 per world",
-      "night-watch: 26.7 per world",
-      "elder-stories: 25.2 per world",
-      "quarrel: 25 per world",
-      "injured-neighbour: 24.5 per world",
-      "child-question: 23.5 per world",
-      "lesson-offer: 22.5 per world",
-      "scavenge-invite: 22.3 per world"
+      "shared-meal: 46.2 per world",
+      "quarrel: 40 per world",
+      "night-watch: 39.7 per world",
+      "injured-neighbour: 39 per world",
+      "scavenge-invite: 37.2 per world",
+      "elder-stories: 37.1 per world",
+      "lesson-offer: 35.8 per world",
+      "extra-shift: 35.1 per world"
     ]
   },
+  "scarcity": {
+    "foodOrWaterShortage": "0.1% of settlement-years",
+    "materialsBelow15": "3.2% of settlement-years",
+    "farmsWithoutSeed": "0.1% of settlement-years",
+    "harvestFailuresPerWorld": 28.1,
+    "salvageExhaustedSitesPerWorld": 4.98,
+    "averageSurfaceFertilityAtEnd": 88
+  },
+  "successVsSlow": {
+    "split": "renewal by year 95 vs later or never",
+    "fast": {
+      "worlds": 52,
+      "populationAtEnd": 600.4,
+      "settlements": 5,
+      "raids": 0.4,
+      "schisms": 3.4,
+      "harvestFailures": 28.8,
+      "shortage": "0.1%",
+      "materialsStarved": "3.2%",
+      "seedless": "0%"
+    },
+    "slow": {
+      "worlds": 48,
+      "populationAtEnd": 549,
+      "settlements": 5,
+      "raids": 0.7,
+      "schisms": 3.2,
+      "harvestFailures": 27.4,
+      "shortage": "0.1%",
+      "materialsStarved": "3.2%",
+      "seedless": "0.1%"
+    }
+  },
   "topRejections": [
-    "1× dust-caught: Every participant died before deciding"
+    "1× medic-allocation: Every participant died before deciding"
   ],
   "invariantFailures": 0
 }

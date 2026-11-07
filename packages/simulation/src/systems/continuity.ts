@@ -120,6 +120,8 @@ export function wanderers(ctx: TickContext): void {
       shortage: { food: 0, water: 0 },
       shortageOrigin: { food: null, water: null },
       supportedBy: null,
+      // They bring the little seed they carried with them.
+      farm: { seeds: 8, fertility: 100, crops: [], harvests: 0 },
     };
     st.settlements.push(home);
     loc.settlementId = id;

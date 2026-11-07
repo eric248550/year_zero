@@ -25,12 +25,7 @@
     }
   ],
   "roles": [],
-  "effects": [
-    {
-      "type": "ADD_WORLD_FLAG",
-      "flag": "governance.charter_signed"
-    }
-  ],
+  "effects": [],
   "choices": [
     {
       "id": "sign",
@@ -40,12 +35,16 @@
       ],
       "effects": [
         {
+          "type": "ADD_WORLD_FLAG",
+          "flag": "governance.charter_signed"
+        },
+        {
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 8
         }
       ],
-      "outcome": "一張張歪歪扭扭的簽名，填滿了那張紙。",
+      "outcome": "一張張歪歪扭扭的簽名，填滿了那張紙。 多數人簽了：憲章正式生效。",
       "memberEffects": [
         {
           "type": "ADJUST_ATTRIBUTE",
@@ -68,13 +67,13 @@
           "delta": -2
         }
       ],
-      "outcome": "有些人沒有簽。他們說，紙上的字保護不了任何人。"
+      "outcome": "有些人沒有簽。他們說，紙上的字保護不了任何人。 簽名的人不夠，憲章被擱了下來，以後還會再拿出來。"
     }
   ],
   "priority": 3,
   "chance": 0.7,
-  "cooldown": 4,
-  "maxOccurrences": 1,
+  "cooldown": 6,
+  "maxOccurrences": null,
   "storylineIds": [
     "first-charter"
   ],
@@ -89,5 +88,6 @@
   "participation": "everyone",
   "tags": [
     "rebuild"
-  ]
+  ],
+  "resolution": "vote"
 }

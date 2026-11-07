@@ -5,6 +5,7 @@ import {
   RESERVED_FLAG_PREFIXES,
   SECRET_BY_ID,
   TECH_BY_ID,
+  TECHNOLOGIES,
   RESOURCES,
   type Character,
   type Effect,
@@ -18,7 +19,7 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { EffectError, InsufficientResourcesError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, projectOf, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
+import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, projectOf, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
 import { say } from "./texts";
 
 /** Collects every transition made inside a transaction. */
@@ -132,6 +133,13 @@ export function discoverLocation(state: WorldState, locationId: string, rec: Cha
   return true;
 }
 
+/** The building in the worst shape that is not already being repaired. */
+export function worstFacility(s: Settlement): FacilityId | undefined {
+  return (Object.entries(s.facilities ?? {}) as [FacilityId, number][])
+    .filter(([f, c]) => c < 100 && s.building?.[f] === undefined)
+    .sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0];
+}
+
 export const INHERIT = { share: 0.5, min: 40 } as const;
 
 /** When someone dies, their children inherit their strongest bonds, friend and foe, at half strength. */
@@ -176,7 +184,53 @@ export function changeTension(state: WorldState, a: string, b: string, delta: nu
 export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContext, rec: ChangeRecorder): void {
   switch (effect.type) {
     case "ADJUST_RESOURCE": {
-      for (const s of targetSettlements(state, effect.target, ctx)) adjustResource(s, effect.resource, effect.amount, rec);
+      for (const s of targetSettlements(state, effect.target, ctx)) {
+        if (effect.from && effect.amount > 0) {
+          // Only what the land still holds can be taken from it.
+          const loc = state.locations.find((l) => l.id === s.locationId);
+          const pool = loc?.[effect.from] ?? 0;
+          const take = Math.min(effect.amount, pool);
+          if (!loc || take <= 0) continue;
+          loc[effect.from] = round2(pool - take);
+          record(rec, `locations.${loc.id}.${effect.from}`, `${loc.id} ${effect.from}`, pool, loc[effect.from]!);
+          adjustResource(s, effect.resource, take, rec);
+        } else adjustResource(s, effect.resource, effect.amount, rec);
+      }
+      return;
+    }
+    case "ADD_SEEDS":
+    case "CHANGE_FERTILITY":
+    case "SET_FARM_PLAN":
+    case "CHANGE_CROPS": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const farm = (s!.farm ??= { seeds: 0, fertility: 100, crops: [], harvests: 0 });
+      if (effect.type === "ADD_SEEDS") {
+        const before = farm.seeds;
+        farm.seeds = round2(Math.max(0, before + effect.amount));
+        record(rec, `settlements.${s!.id}.farm.seeds`, `${s!.name} seed`, before, farm.seeds);
+      } else if (effect.type === "CHANGE_FERTILITY") {
+        const before = farm.fertility;
+        farm.fertility = Math.max(0, Math.min(150, before + effect.delta));
+        record(rec, `settlements.${s!.id}.farm.fertility`, `${s!.name} fertility`, before, farm.fertility);
+      } else if (effect.type === "SET_FARM_PLAN") {
+        const before = farm.plan ?? "seedsave";
+        farm.plan = effect.plan;
+        record(rec, `settlements.${s!.id}.farm.plan`, `${s!.name} farm plan`, before, effect.plan);
+      } else {
+        const before = farm.crops.reduce((n, c) => n + c.seeds, 0);
+        for (const c of farm.crops) c.seeds = round2(c.seeds * (1 + effect.fraction));
+        record(rec, `settlements.${s!.id}.farm.crops`, `${s!.name} crops`, before, farm.crops.reduce((n, c) => n + c.seeds, 0));
+      }
+      return;
+    }
+    case "PRIORITIZE_BRANCH": {
+      const active = new Set((state.projects ?? []).map((p) => p.techId));
+      const next = TECHNOLOGIES.filter((t) => t.branch === effect.branch && !state.technologies.includes(t.id) && !active.has(t.id) && t.prerequisites.every((p) => state.technologies.includes(p)))
+        .sort((a, b) => a.tier - b.tier || (a.id < b.id ? -1 : 1))[0];
+      if (!next) return;
+      const before = state.researchFocus;
+      state.researchFocus = next.id;
+      record(rec, "researchFocus", "Research focus", before, next.id);
       return;
     }
     case "CHANGE_SETTLEMENT_STAT": {
@@ -232,6 +286,12 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
     }
     case "BUILD_FACILITY": {
       const [s] = targetSettlements(state, "settlement", ctx);
+      if (effect.facility === "worst") {
+        const worst = worstFacility(s!);
+        if (!worst) return;
+        applyEffect(state, { ...effect, facility: worst }, ctx, rec);
+        return;
+      }
       if (effect.seasons) {
         // On a building that already stands this is a repair: it keeps working as it is until the work is done.
         if (s!.building?.[effect.facility] !== undefined) return; // already being built or repaired
@@ -250,6 +310,7 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       const have = Object.entries(s!.facilities ?? {}) as [FacilityId, number][];
       const id = effect.facility === "any"
         ? [...have].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0]
+        : effect.facility === "worst" ? worstFacility(s!)
         : have.some(([k]) => k === effect.facility) ? effect.facility : undefined;
       if (!id) return; // nothing there to damage or mend
       const before = s!.facilities![id]!;
@@ -270,7 +331,7 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
     }
     case "CLAIM_SITE": {
       const [s] = targetSettlements(state, "settlement", ctx);
-      const loc = state.locations.find((l) => l.id === effect.location);
+      const loc = effect.location === "nearest" ? nearestClaimable(state) : state.locations.find((l) => l.id === effect.location);
       if (!loc || !loc.discovered || loc.settlementId) return; // unknown, or someone lives there
       const before = loc.claimedBy ?? null;
       // A site belongs to one settlement at a time; taking it from another goes through CEDE_CLAIM.

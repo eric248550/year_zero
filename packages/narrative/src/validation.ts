@@ -169,6 +169,10 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
       case "law": { const k = `law:${c.law}`; if (bool.has(k) && bool.get(k) !== c.active) errors.push({ path, code: "precondition.contradiction", message: `Law ${c.law} must be both in force and not` }); bool.set(k, c.active); break; }
       case "site_claimed": { const k = `claim:${c.location}`; if (bool.has(k) && bool.get(k) !== c.claimed) errors.push({ path, code: "precondition.contradiction", message: `${c.location} must be both claimed and not` }); bool.set(k, c.claimed); break; }
       case "flag_any":
+      case "worn":
+        break;
+      case "salvage": case "seeds": case "harvests": case "power":
+        key = c.type; label = c.type; domain = c.type === "power" ? { lo: 0, loInc: true, hi: 1, hiInc: true } : { lo: 0, loInc: true, hi: Infinity, hiInc: false };
         break;
       case "farmable": { const k = "farmable"; if (bool.has(k) && bool.get(k) !== c.present) errors.push({ path, code: "precondition.contradiction", message: "Land must be both farmable and not" }); bool.set(k, c.present); break; }
       case "children":
@@ -210,7 +214,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 
   if (scope === "world") {
     conds.forEach((c, i) => {
-      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age" || c.type === "facility" || c.type === "law" || c.type === "claims" || c.type === "children" || c.type === "site_feature" || c.type === "farmable"
+      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age" || c.type === "facility" || c.type === "law" || c.type === "claims" || c.type === "children" || c.type === "site_feature" || c.type === "farmable" || c.type === "worn" || c.type === "salvage" || c.type === "seeds" || c.type === "harvests" || c.type === "power"
         || ((c.type === "resource" || c.type === "population") && c.scope === "target");
       if (settlementOnly) {
         errors.push({ path: `${basePath}.${i}`, code: "scope.mismatch", message: `World-scoped events have no target settlement; use scope "world" on this condition or change the event scope` });
@@ -272,6 +276,7 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
         break;
       case "CLAIM_SITE":
+        if (e.location === "nearest") break;
         if (!LOCATION_BY_ID[e.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${e.location}"` });
         else if (LOCATION_BY_ID[e.location]!.hidden || e.location === "haven_deep") errors.push({ path, code: "effect.invalid", message: `${e.location} cannot be claimed` });
         if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Claims need a target settlement" });
@@ -286,6 +291,14 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
       case "SCHEDULE_EVENT":
         for (const r of e.away ?? []) if (!roleIds.has(r)) errors.push({ path, code: "ref.role", message: `Unknown role "${r}"` });
         if (e.event === def.id) errors.push({ path, code: "effect.invalid", message: "An event cannot schedule itself" });
+        break;
+      case "ADD_SEEDS":
+      case "CHANGE_FERTILITY":
+      case "SET_FARM_PLAN":
+      case "CHANGE_CROPS":
+        if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Farm effects need a target settlement" });
+        break;
+      case "PRIORITIZE_BRANCH":
         break;
       case "BUILD_FACILITY":
       case "CHANGE_FACILITY":
@@ -408,6 +421,14 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
   // Templates
   def.roles.forEach((r, i) => {
     if (r.bondWith && !def.roles.some((o) => o.id === r.bondWith!.role && o !== r)) errors.push({ path: `roles.${i}.bondWith`, code: "ref.role", message: `Unknown role "${r.bondWith.role}"` });
+  });
+
+  // Shared goods are settled once per choice, never once per person who chose it.
+  def.choices.forEach((c, i) => {
+    for (const e of c.memberEffects ?? []) {
+      const shared = (e.type === "ADJUST_RESOURCE" && e.amount > 0) || ["EXCHANGE", "BUILD_FACILITY", "ADD_SEEDS", "CLAIM_SITE", "ADD_WORLD_FLAG", "ENACT_LAW", "CHANGE_PROJECT"].includes(e.type);
+      if (shared) errors.push({ path: `choices.${i}.memberEffects`, code: "effect.shared", message: `${e.type} changes shared state and would repeat for every member; put it in effects` });
+    }
   });
 
   // Generated drafts tell stories; they do not get to rewrite the world's fixed facts.

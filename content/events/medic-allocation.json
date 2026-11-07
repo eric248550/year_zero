@@ -1,0 +1,105 @@
+{
+  "id": "medic-allocation",
+  "title": "醫療資源怎麼分",
+  "scope": "settlement",
+  "category": "social",
+  "description": "醫護決定聚落的醫療怎麼做。",
+  "preconditions": [
+    {
+      "type": "settlement_stat",
+      "stat": "health",
+      "op": "<",
+      "value": 80
+    }
+  ],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Medic",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "clinic",
+      "label": "蓋一間診所",
+      "tags": [
+        "growth",
+        "community"
+      ],
+      "costs": {
+        "materials": 20
+      },
+      "requires": [
+        {
+          "type": "facility",
+          "facility": "clinic",
+          "working": false
+        }
+      ],
+      "effects": [
+        {
+          "type": "BUILD_FACILITY",
+          "facility": "clinic",
+          "seasons": 2
+        }
+      ],
+      "outcome": "大家動手蓋一間診所，兩季後完工。"
+    },
+    {
+      "id": "sanitation",
+      "label": "訂衛生規範：煮水、隔離",
+      "tags": [
+        "cautious",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ENACT_LAW",
+          "law": "sanitation"
+        }
+      ],
+      "outcome": "{{settlement}}從此有了衛生規範：每一口水都要煮過，病人要隔開。每年要花一點物資維持。"
+    },
+    {
+      "id": "triage",
+      "label": "把藥留給最重的病人",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "health",
+          "delta": 3
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "you",
+          "text": "在藥不夠的時候決定先救誰"
+        }
+      ],
+      "outcome": "有些人救回來了，有些人沒有。{{you}}記得每一張臉。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.3,
+  "cooldown": 5,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}要決定怎麼照顧大家",
+    "text": "{{settlement}}的病人越來越多。{{you}}手上的東西有限，得決定先做什麼。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

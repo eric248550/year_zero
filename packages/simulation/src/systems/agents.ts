@@ -1,5 +1,5 @@
 import { LOCATION_BY_ID, PLAYER_ACTION_TYPES, POLICY_INFO, PlayerActionSchema, TECH_BY_ID, type PlayerAction, type ResourceId } from "@genesis/schemas";
-import { activeSettlements, characterAge, fullName, getSettlement, newRecorder, population, professionName, residents, resourceName, round2, say, spendResources } from "@genesis/narrative";
+import { activeSettlements, characterAge, fullName, getSettlement, newRecorder, population, professionName, residents, resourceName, round2, say, spendResources, tensionBetween } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { attemptExploration } from "./progress";
 import { aidAllowed } from "./conflict";
@@ -186,7 +186,31 @@ export function councilDecisions(ctx: TickContext): void {
     }
   }
 
-  // 3. Clear an obsolete research focus.
+  // 3. Building materials: a settlement that cannot keep its buildings up gets some from one with plenty.
+  for (const needy of active) {
+    if (needy.resources.materials >= 15) continue;
+    const donor = active
+      .filter((d) => d.id !== needy.id && d.resources.materials > 150 && tensionBetween(st, d.id, needy.id) < 50)
+      .sort((a, b) => b.resources.materials - a.resources.materials || (a.id < b.id ? -1 : 1))[0];
+    if (!donor) continue;
+    const amount = 30;
+    const rec = newRecorder();
+    spendResources(donor, { materials: amount }, rec);
+    const before = needy.resources.materials;
+    needy.resources.materials = round2(before + amount);
+    rec.changes.push({ path: `settlements.${needy.id}.resources.materials`, label: `${needy.name} materials`, before, after: needy.resources.materials });
+    ctx.system({
+      category: "resource",
+      importance: "minor",
+      title: say(st).reliefTitle(amount, resourceName(st, "materials"), needy.name),
+      text: say(st).reliefText(donor.name, amount, resourceName(st, "materials"), needy.name),
+      settlementIds: [donor.id, needy.id],
+      changes: rec.changes,
+      summary: "Council rule: a settlement short of building materials is sent some by one with plenty",
+    });
+  }
+
+  // 4. Clear an obsolete research focus.
   if (st.researchFocus) {
     const t = TECH_BY_ID[st.researchFocus];
     if (!t || st.technologies.includes(t.id)) st.researchFocus = null;

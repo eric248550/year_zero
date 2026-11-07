@@ -98,15 +98,13 @@ describe("P0.2 event effects", () => {
     expect(ra.morale).toBeGreaterThan(rb.morale);
   });
 
-  it("the first outdoor harvest needs sowing on fertile land, saved seed, and two seasons", () => {
-    const harvest = byId("first-surface-harvest");
+  it("breaking ground needs farmable land, seed in store and a farmer; the celebration creates no food", () => {
     const sowing = byId("spring-sowing");
-    expect(harvest.scheduledOnly).toBe(true);
-    expect(sowing.preconditions.some((c) => c.type === "technology")).toBe(false);
-    expect(sowing.preconditions).toEqual(expect.arrayContaining([{ type: "farmable", present: true }]));
-    const sow = sowing.choices.find((c) => c.id === "sow_all")!;
-    expect(sow.costs?.food).toBeGreaterThan(0);
-    expect(sow.effects).toEqual(expect.arrayContaining([expect.objectContaining({ type: "SCHEDULE_EVENT", event: "first-surface-harvest", seasons: 2 })]));
+    expect(sowing.preconditions).toEqual(expect.arrayContaining([{ type: "farmable", present: true }, { type: "seeds", op: ">=", value: 6 }]));
+    expect(sowing.roles.find((r) => r.id === "farmer")?.profession).toBe("Farmer");
+    const harvest = byId("first-surface-harvest");
+    expect(harvest.preconditions).toEqual(expect.arrayContaining([{ type: "harvests", op: ">=", value: 1 }]));
+    expect([...harvest.effects, ...harvest.choices.flatMap((c) => c.effects)].some((e) => e.type === "ADJUST_RESOURCE")).toBe(false);
   });
 
   it("the whole content set has no unreachable follow-ups, unset flags or broken references", () => {
@@ -122,8 +120,9 @@ describe("P0.3 resource consistency", () => {
     const s = twoSettlements(44);
     const [a, b] = s.settlements.filter((x) => x.status === "active");
     s.tensions = { [tensionKey(a!.id, b!.id)]: 1 };
-    s.settlements.find((x) => x.id === a!.id)!.resources.materials = 5; // can only pay a quarter
-    const trade = def({ id: "x-trade", scope: "settlement", maxOccurrences: 1, preconditions: [{ type: "settlement_kind", kind: "bunker" }], choices: [{ id: "go", label: "Go", effects: [{ type: "EXCHANGE", get: { resource: "food", amount: 20 }, give: { resource: "materials", amount: 20 } }] }] });
+    s.settlements.find((x) => x.id === a!.id)!.resources.materials = 22; // can only pay part of the 40
+    s.settlements.find((x) => x.id === b!.id)!.resources.food = 100;
+    const trade = def({ id: "x-trade", scope: "settlement", maxOccurrences: 1, preconditions: [{ type: "settlement_kind", kind: "bunker" }], choices: [{ id: "go", label: "Go", effects: [{ type: "EXCHANGE", get: { resource: "food", amount: 40 }, give: { resource: "materials", amount: 40 } }] }] });
     const e = step(s, [trade]).events.find((x) => x.definitionId === "x-trade")!;
     const net = (r: string) => e.changes.filter((c) => c.path.endsWith(`resources.${r}`)).reduce((n, c) => n + Number(c.after) - Number(c.before), 0);
     expect(Math.abs(net("food"))).toBeLessThan(0.01);
@@ -132,7 +131,7 @@ describe("P0.3 resource consistency", () => {
     const got = e.changes.find((c) => c.path === `settlements.${a!.id}.resources.food`)!;
     const paid = e.changes.find((c) => c.path === `settlements.${a!.id}.resources.materials`)!;
     expect(Number(got.after) - Number(got.before)).toBeCloseTo(Number(paid.before) - Number(paid.after), 1);
-    expect(Number(got.after) - Number(got.before)).toBeLessThan(20);
+    expect(Number(got.after) - Number(got.before)).toBeLessThan(40);
   });
 
   it("a choice that can no longer be afforded changes nothing", () => {

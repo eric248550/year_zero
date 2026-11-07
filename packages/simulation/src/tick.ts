@@ -9,7 +9,8 @@ import { births, comingOfAge, mortality } from "./systems/demographics";
 import { development, exploration } from "./systems/progress";
 import { councilProjects, projects } from "./systems/projects";
 import { friction, raids, schisms } from "./systems/conflict";
-import { claims, construction, facilities, infrastructure, teaching } from "./systems/legacy";
+import { claims, construction, facilities, infrastructure, land, teaching } from "./systems/legacy";
+import { harvest, seedSharing, sowing } from "./systems/farming";
 import { abandonment, milestones } from "./systems/settlements";
 import { playerUpkeep } from "./systems/players";
 import { attributeDrift } from "./systems/attributes";
@@ -73,7 +74,10 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   ctx.deaths += countDeaths(resolved.events);
 
   councilDecisions(ctx);
+  seedSharing(ctx);
+  sowing(ctx);
   produce(ctx);
+  land(ctx);
   claims(ctx);
   supplyOutposts(ctx);
   consume(ctx);
@@ -114,6 +118,9 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   ctx.state = scheduled.state;
   ctx.events.push(...scheduled.events);
   ctx.deaths += countDeaths(scheduled.events);
+
+  // Autumn: whatever survived the year's storms is brought in.
+  harvest(ctx);
 
   abandonment(ctx);
   wanderers(ctx);

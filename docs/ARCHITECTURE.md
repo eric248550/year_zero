@@ -102,6 +102,17 @@ rejectedEvents, metrics }`. Phases:
    outcome; follow-ups whose `away` people died are recorded as lost and deliver
    nothing. Claims only take unclaimed, discovered, unsettled sites. Players can
    `DONATE_PROJECT` materials once a year; projects keep a short `log`.
+   Rules 1.0: surface farming is a production system (`systems/farming.ts`):
+   settlement `farm` holds seed, fertility, plan and crops; `sowing` in spring
+   (seed × farmers × fields), `harvest` in autumn (after the year's storms),
+   seed kept back, fertility drifting toward the plan's level, crop failures,
+   `seedSharing` between farms. Locations hold finite `salvage` and regrowing
+   `wild` food (`LAND`); everyday scrap, forage, claims and `from:` effects draw
+   on them. Power: solar array (half without a battery bank), generator (needs a
+   water mill), grid via power lines (`powerLevel`). Expansions take a year
+   (`expanding`); worn infrastructure is repaired automatically. Choices whose
+   effects cannot happen are not offered (`effectBlocker`). Follow-ups never
+   refill a carried role whose person died.
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

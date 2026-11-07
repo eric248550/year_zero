@@ -9,6 +9,11 @@
       "type": "world_tick",
       "op": ">=",
       "value": 1
+    },
+    {
+      "type": "salvage",
+      "op": ">=",
+      "value": 18
     }
   ],
   "roles": [
@@ -22,7 +27,8 @@
     {
       "type": "ADJUST_RESOURCE",
       "resource": "materials",
-      "amount": 18
+      "amount": 18,
+      "from": "salvage"
     },
     {
       "type": "ADD_LIFE_EVENT",

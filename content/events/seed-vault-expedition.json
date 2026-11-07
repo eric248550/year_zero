@@ -77,9 +77,8 @@
               "flag": "food.heirloom_seeds"
             },
             {
-              "type": "ADJUST_RESOURCE",
-              "resource": "food",
-              "amount": 6
+              "type": "ADD_SEEDS",
+              "amount": 10
             }
           ],
           "risk": {

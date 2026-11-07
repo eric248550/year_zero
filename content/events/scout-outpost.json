@@ -1,0 +1,128 @@
+{
+  "id": "scout-outpost",
+  "title": "據點還是搜刮",
+  "scope": "settlement",
+  "category": "social",
+  "description": "斥候決定下一趟出門要做什麼。",
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 3
+    }
+  ],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true,
+      "profession": "Scout",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "claim",
+      "label": "去最近的空地立牌子、守下來",
+      "tags": [
+        "bold",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "AFTER",
+          "seasons": 1,
+          "away": [
+            "you"
+          ],
+          "title": "{{you}}回來了：據點守下來了",
+          "text": "{{you}}在那裡立了牌子、搭了棚子。往後那裡的出產歸{{settlement}}。",
+          "effects": [
+            {
+              "type": "CLAIM_SITE",
+              "location": "nearest"
+            }
+          ]
+        }
+      ],
+      "outcome": "{{you}}帶著工具出發去立牌子了。"
+    },
+    {
+      "id": "salvage",
+      "label": "去附近的廢墟搜刮",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "AFTER",
+          "seasons": 1,
+          "away": [
+            "you"
+          ],
+          "title": "{{you}}從廢墟回來了",
+          "text": "{{you}}背回來一大袋還能用的零件。",
+          "effects": [
+            {
+              "type": "ADJUST_RESOURCE",
+              "resource": "materials",
+              "amount": 12,
+              "from": "salvage"
+            }
+          ],
+          "risk": {
+            "chance": 0.2,
+            "text": "{{you}}被倒下的鋼樑壓傷了腿。",
+            "effects": [
+              {
+                "type": "ADJUST_ATTRIBUTE",
+                "role": "you",
+                "attribute": "health",
+                "delta": -15
+              }
+            ]
+          }
+        }
+      ],
+      "outcome": "{{you}}往廢墟出發了。"
+    },
+    {
+      "id": "routes",
+      "label": "把路標畫好，讓大家走得安全",
+      "tags": [
+        "cautious",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ADD_SPECIALTY",
+          "role": "you",
+          "specialty": "wayfinding"
+        },
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -3
+        }
+      ],
+      "outcome": "{{you}}把安全的路畫成地圖，在岔路口堆了石堆。往來的人少了很多麻煩。"
+    }
+  ],
+  "priority": 4,
+  "chance": 0.3,
+  "cooldown": 5,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}要決定下一趟去做什麼",
+    "text": "{{you}}知道外面有些地方還沒人管，也知道哪裡還能挖到東西。這一趟要去哪裡？"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal",
+    "profession"
+  ]
+}

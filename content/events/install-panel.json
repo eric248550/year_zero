@@ -12,7 +12,7 @@
     },
     {
       "type": "facility",
-      "facility": "generator",
+      "facility": "solar_array",
       "working": true
     }
   ],
@@ -59,7 +59,7 @@
         },
         {
           "type": "CHANGE_FACILITY",
-          "facility": "generator",
+          "facility": "solar_array",
           "delta": 10
         }
       ],

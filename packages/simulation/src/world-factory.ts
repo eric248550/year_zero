@@ -1,6 +1,8 @@
 import {
   ADULT_AGE,
   BRANCH_INFO,
+  FARM,
+  LAND,
   LOCATIONS,
   SPECIALTIES,
   SPECIALTY_INFO,
@@ -83,6 +85,8 @@ export function createWorld(options: CreateWorldOptions): WorldState {
         },
         shortage: { food: 0, water: 0 },
         shortageOrigin: { food: null, water: null },
+        // The bunker grows in racks; its seed bank is what the first farmers will carry up.
+        farm: { seeds: FARM.havenSeed, fertility: 100, crops: [], harvests: 0 },
       },
     ],
     locations: LOCATIONS.map((l) => ({
@@ -90,6 +94,8 @@ export function createWorld(options: CreateWorldOptions): WorldState {
       discovered: l.initiallyKnown,
       discoveredTick: l.initiallyKnown ? 0 : null,
       settlementId: l.id === "haven_deep" ? "s-haven" : null,
+      salvage: LAND.salvage(l.features),
+      wild: LAND.wildCap(l.features),
     })),
     characters: [],
     technologies: [],

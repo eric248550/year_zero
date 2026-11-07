@@ -1,4 +1,4 @@
-import { LOCATION_BY_ID, TECHNOLOGIES, type Character, type Settlement } from "@genesis/schemas";
+import { FARM, LOCATION_BY_ID, TECHNOLOGIES, type Character, type Settlement } from "@genesis/schemas";
 import { activeSettlements, characterAge, hasTech, population, residents, round2 } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { placeDescription, placeName, say } from "@genesis/narrative";
@@ -46,6 +46,9 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
   from.resources.food = round2(from.resources.food - transfer.food);
   from.resources.water = round2(from.resources.water - transfer.water);
   from.resources.materials = round2(from.resources.materials - transfer.materials);
+  // The founders carry seed from home: it leaves the old store as it arrives in the new one.
+  const seed = Math.min(FARM.founderSeed, from.farm?.seeds ?? 0);
+  if (from.farm) from.farm.seeds = round2(from.farm.seeds - seed);
 
   const settlement: Settlement = {
     id,
@@ -61,6 +64,7 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
     capacity: 40 + (hasTech(st, "power_grid") ? 10 : 0) + (hasTech(st, "homesteading") ? 10 : 0) + (hasTech(st, "metallurgy") ? 5 : 0),
     supportedBy: from.id,
     resources: transfer,
+    farm: { seeds: seed, fertility: 100, crops: [], harvests: 0 },
     shortage: { food: 0, water: 0 },
     shortageOrigin: { food: null, water: null },
   };

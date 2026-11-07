@@ -6,13 +6,14 @@
   "description": "地表聚落在露天的土地上迎來第一次真正的收成。",
   "preconditions": [
     {
-      "type": "settlement_kind",
-      "kind": "settlement"
+      "type": "harvests",
+      "op": ">=",
+      "value": 1
     },
     {
-      "type": "facility",
-      "facility": "fields",
-      "working": true
+      "type": "flag",
+      "flag": "food.surface_farming",
+      "present": false
     }
   ],
   "roles": [
@@ -23,11 +24,6 @@
     }
   ],
   "effects": [
-    {
-      "type": "ADJUST_RESOURCE",
-      "resource": "food",
-      "amount": 18
-    },
     {
       "type": "CHANGE_SETTLEMENT_STAT",
       "stat": "morale",
@@ -44,8 +40,8 @@
     }
   ],
   "choices": [],
-  "priority": 6,
-  "chance": 0.6,
+  "priority": 9,
+  "chance": 1,
   "cooldown": 0,
   "storylineIds": [
     "rebuilding-food-production"
@@ -53,11 +49,10 @@
   "importance": "major",
   "narrative": {
     "headline": "{{settlement}}的第一次地表收成",
-    "text": "{{farmer}}把第一籃露天種出來的穀子扛進{{settlement}}。種下去的種子，收回來三倍。有人哭了。"
+    "text": "{{farmer}}把第一籃露天種出來的穀子扛進{{settlement}}。這是崩潰以後，第一次有人在天空下種出糧食。有人哭了。"
   },
   "version": 1,
   "status": "published",
   "source": "seed",
-  "scheduledOnly": true,
-  "maxOccurrences": null
+  "maxOccurrences": 1
 }

@@ -1,7 +1,7 @@
 {
   "id": "dust-storm",
   "title": "沙塵暴",
-  "scope": "world",
+  "scope": "settlement",
   "category": "environment",
   "description": "一道有毒的沙塵之牆橫掃整片區域。",
   "preconditions": [
@@ -9,6 +9,10 @@
       "type": "world_tick",
       "op": ">=",
       "value": 2
+    },
+    {
+      "type": "settlement_kind",
+      "kind": "settlement"
     }
   ],
   "roles": [],
@@ -16,20 +20,21 @@
     {
       "type": "ADJUST_RESOURCE",
       "resource": "water",
-      "amount": -8,
-      "target": "all_settlements"
+      "amount": -8
     },
     {
       "type": "ADJUST_RESOURCE",
       "resource": "food",
-      "amount": -6,
-      "target": "all_settlements"
+      "amount": -6
     },
     {
       "type": "CHANGE_SETTLEMENT_STAT",
       "stat": "morale",
-      "delta": -4,
-      "target": "all_settlements"
+      "delta": -4
+    },
+    {
+      "type": "CHANGE_CROPS",
+      "fraction": -0.3
     }
   ],
   "choices": [],
@@ -39,8 +44,8 @@
   "storylineIds": [],
   "importance": "notable",
   "narrative": {
-    "headline": "沙塵暴遮蔽了天空",
-    "text": "{{year}} 年的某天中午，天空變成了赭黃色。整整九天，沒有人敢出門。"
+    "headline": "沙塵暴襲擊{{settlement}}",
+    "text": "{{year}} 年的某天中午，{{settlement}}的天空變成了赭黃色。整整九天，沒有人敢出門；田裡的苗被沙埋了三成。"
   },
   "version": 1,
   "status": "published",

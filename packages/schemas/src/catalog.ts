@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-0.9.0";
+export const RULES_VERSION = "rules-1.0.0";
 
 export const START_YEAR = 2131;
 
@@ -130,7 +130,7 @@ export const TECH_IDS = TECHNOLOGIES.map((t) => t.id);
  * it up, neglect, storms and raids wear it down; below 30 it is broken and does
  * nothing until repaired.
  */
-export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall", "fields", "watermill", "generator"] as const;
+export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall", "fields", "watermill", "generator", "solar_array", "battery_bank", "power_lines"] as const;
 export type FacilityId = (typeof FACILITIES)[number];
 export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }> = {
   granary: { name: "Granary", effect: "Food spoils half as fast." },
@@ -144,19 +144,25 @@ export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }>
   meeting_hall: { name: "Meeting Hall", effect: "Morale +3, splits half as likely." },
   fields: { name: "Fields", effect: "Sown surface land. Without fields a surface settlement grows only 60% of its food; irrigation adds 25% more." },
   watermill: { name: "Water Mill", effect: "Water power: water and materials +10% (needs a river)." },
-  generator: { name: "Generator", effect: "Local electricity: knowledge +20%, materials +10%; with the power grid, water and materials +10% more." },
+  generator: { name: "Generator", effect: "A dynamo driven by the water mill: steady electric power, day and night." },
+  solar_array: { name: "Solar Array", effect: "Electric power by day; half of it without a battery bank to carry it through the night." },
+  battery_bank: { name: "Battery Bank", effect: "Stores the solar array's power for the night." },
+  power_lines: { name: "Power Lines", effect: "Joins the power grid: shares electricity with every other connected settlement." },
 };
 export const FACILITY_WORKING = 30;
 /** Finishing these technologies raises a building in the settlement that built them. */
 export const TECH_FACILITY: Partial<Record<string, FacilityId>> = {
   hydroponics: "greenhouse", water_purification: "well", field_medicine: "clinic", workshop: "forge",
   schooling: "schoolhouse", civic_charter: "meeting_hall", mass_farming: "granary", pathfinding: "watchtower",
-  water_wheel: "watermill", solar_power: "generator",
+  water_wheel: "watermill", solar_power: "solar_array", power_grid: "power_lines",
 };
 /** Technologies whose benefit needs the building on site; knowing them elsewhere lets a settlement build it. */
-export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; materials: number; seasons: number; needs?: LocationFeature }>> = {
+export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; materials: number; seasons: number; needs?: LocationFeature; after?: FacilityId }>> = {
   watermill: { tech: "water_wheel", materials: 25, seasons: 2, needs: "river" },
-  generator: { tech: "solar_power", materials: 40, seasons: 2 },
+  solar_array: { tech: "solar_power", materials: 40, seasons: 2 },
+  battery_bank: { tech: "metallurgy", materials: 30, seasons: 2, after: "solar_array" },
+  generator: { tech: "mechanical_power", materials: 35, seasons: 2, after: "watermill" },
+  power_lines: { tech: "power_grid", materials: 30, seasons: 2 },
   forge: { tech: "workshop", materials: 25, seasons: 2 },
   well: { tech: "water_purification", materials: 15, seasons: 1 },
   clinic: { tech: "field_medicine", materials: 20, seasons: 2 },
@@ -164,13 +170,14 @@ export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; material
 };
 
 /** Rules a settlement lives by. Enacted and repealed by its people (usually a vote). */
-export const LAWS = ["rationing", "work_duty", "shared_stores", "curfew"] as const;
+export const LAWS = ["rationing", "work_duty", "shared_stores", "curfew", "sanitation"] as const;
 export type LawId = (typeof LAWS)[number];
 export const LAW_INFO: Record<LawId, { name: string; effect: string }> = {
   rationing: { name: "Rationing", effect: "Hunger and thirst kill far fewer; morale -3." },
   work_duty: { name: "Work Duty", effect: "Projects here move 15% faster; morale -4." },
   shared_stores: { name: "Shared Stores", effect: "Aid goes out even to rivals (refused only above 70 tension); morale +2." },
   curfew: { name: "Curfew", effect: "Raids on this settlement 40% less likely; morale -2." },
+  sanitation: { name: "Sanitation Rules", effect: "Boiled water, latrines, quarantine: health +4, 2 materials a year." },
 };
 
 /** Skills a person learns and can pass on to the young who grow up with them. */
@@ -185,15 +192,51 @@ export const SPECIALTY_INFO: Record<SpecialtyId, { name: string; branch: BranchI
   wayfinding: { name: "Wayfinding", branch: "society", effect: "Works 50% harder on society projects; safer in the wastes." },
 };
 
+/**
+ * Finite things the land holds. Salvage (materials) is used up; wild food grows
+ * back each year up to the cap. Settlements draw on their own site; claims on
+ * the claimed site.
+ */
+export const LAND = {
+  salvage: (features: readonly LocationFeature[]) => (features.includes("ruins") ? 800 : features.includes("bunker") ? 250 : 250),
+  wildCap: (features: readonly LocationFeature[]) => (features.includes("fertile") ? 80 : features.includes("bunker") ? 0 : 40),
+  wildRegrowth: 0.15,
+} as const;
+
+/** Farm plans a settlement can follow (chosen by its farmers). */
+export const FARM_PLANS = ["staple", "rotation", "seedsave"] as const;
+export type FarmPlan = (typeof FARM_PLANS)[number];
+export const FARM = {
+  /** Seed each farmer can sow in a year, at full fields. */
+  seedPerFarmer: 3,
+  /** Grain back per seed sown, at fertility 100 and an ordinary year. */
+  yieldPerSeed: 2.5,
+  /** Share of the harvest kept back as next year's seed. */
+  seedKeep: 0.35,
+  /** Plans: yield, fertility change per harvest, extra seed kept. */
+  plans: {
+    staple: { yield: 1.15, fertility: -6, keep: 0 },
+    rotation: { yield: 0.9, fertility: 4, keep: 0 },
+    seedsave: { yield: 1, fertility: -2, keep: 0.15 },
+  } as Record<FarmPlan, { yield: number; fertility: number; keep: number }>,
+  /** Seed a new surface settlement's founders carry from home. */
+  founderSeed: 15,
+  /** Haven Deep's seed bank at the start. */
+  havenSeed: 60,
+} as const;
+
 /** What a site gives whoever has claimed it, each year. Settled sites belong to the settlement on them. */
 export const CLAIM_YIELD: Partial<Record<string, Partial<Record<ResourceId, number>>>> = {
-  seed_vault: { food: 3, knowledge: 1 },
+  // Materials come out of the site's salvage and food out of its wild growth; both run out or must grow back.
+  seed_vault: { knowledge: 1 },
   signal_tower: { knowledge: 3 },
   cinder_flats: { materials: 4 },
   old_reservoir: { water: 5 },
   ashford_crossing: { food: 3 },
   greenhollow: { food: 4 },
 };
+/** Seed a claimed site gives each year (the seed vault's cold rooms). */
+export const CLAIM_SEED: Partial<Record<string, number>> = { seed_vault: 3 };
 export const TECH_BY_ID: Record<string, TechnologyInfo> = Object.fromEntries(TECHNOLOGIES.map((t) => [t.id, t]));
 
 export type LocationFeature = "bunker" | "river" | "fertile" | "ruins" | "seed_cache" | "relay" | "sealed_bunker" | "clean_aquifer";

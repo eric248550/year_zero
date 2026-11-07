@@ -12,7 +12,7 @@
     },
     {
       "type": "facility",
-      "facility": "generator",
+      "facility": "power_lines",
       "working": true
     }
   ],
@@ -26,7 +26,7 @@
   "effects": [
     {
       "type": "CHANGE_FACILITY",
-      "facility": "generator",
+      "facility": "power_lines",
       "delta": -45
     }
   ],
@@ -44,7 +44,7 @@
       "effects": [
         {
           "type": "BUILD_FACILITY",
-          "facility": "generator",
+          "facility": "power_lines",
           "seasons": 1
         },
         {
@@ -58,7 +58,7 @@
           "text": "在大突波之後重建發電機，加裝了斷路器"
         }
       ],
-      "outcome": "{{engineer}}花了一季，用回收來的繼電器做出斷路器，把燒壞的線圈重新繞好。修好之前，發電機只剩一半的力氣。"
+      "outcome": "{{engineer}}花了一季，用回收來的繼電器做出斷路器，把燒斷的輸電線重新接好。修好之前，這裡分到的電只剩一半。"
     },
     {
       "id": "ration_power",
@@ -73,7 +73,7 @@
           "delta": -5
         }
       ],
-      "outcome": "天一黑燈又滅了，暫時只能這樣。 發電機沒有修，只能靠每年的維護慢慢恢復。"
+      "outcome": "限量供電。燒斷的線路沒有修，只能靠每年的維護慢慢恢復。"
     }
   ],
   "priority": 4,
@@ -85,7 +85,7 @@
   "importance": "notable",
   "narrative": {
     "headline": "{{settlement}}的電網突波",
-    "text": "一道閃電讓突波沿著新電線竄進{{settlement}}。{{engineer}}聞到了銅線燒焦的味道。發電機的線圈燒壞了一半。"
+    "text": "一道閃電讓突波沿著輸電線竄進{{settlement}}。{{engineer}}聞到了銅線燒焦的味道，半條線路都燒斷了。"
   },
   "version": 1,
   "status": "published",

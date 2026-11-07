@@ -55,7 +55,8 @@
             {
               "type": "ADJUST_RESOURCE",
               "resource": "food",
-              "amount": 20
+              "amount": 20,
+              "from": "wild"
             }
           ],
           "risk": {

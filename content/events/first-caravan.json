@@ -22,12 +22,7 @@
     }
   ],
   "roles": [],
-  "effects": [
-    {
-      "type": "ADD_WORLD_FLAG",
-      "flag": "trade.caravan"
-    }
-  ],
+  "effects": [],
   "choices": [
     {
       "id": "go",
@@ -38,22 +33,34 @@
       ],
       "effects": [
         {
-          "type": "EXCHANGE",
-          "get": {
-            "resource": "food",
-            "amount": 10
-          },
-          "give": {
-            "resource": "materials",
-            "amount": 10
-          }
-        },
-        {
-          "type": "CHANGE_TENSION",
-          "delta": -5
+          "type": "AFTER",
+          "seasons": 1,
+          "title": "第一支商隊回來了",
+          "text": "商隊從{{rival}}回來了，車上載著換回來的糧食。兩個聚落之間，第一次有了一條走得通的路。",
+          "effects": [
+            {
+              "type": "EXCHANGE",
+              "get": {
+                "resource": "food",
+                "amount": 10
+              },
+              "give": {
+                "resource": "materials",
+                "amount": 10
+              }
+            },
+            {
+              "type": "ADD_WORLD_FLAG",
+              "flag": "trade.caravan"
+            },
+            {
+              "type": "CHANGE_TENSION",
+              "delta": -5
+            }
+          ]
         }
       ],
-      "outcome": "商隊扛著廢料和工具去了{{rival}}，換回了一車糧食。兩邊的人第一次坐下來討價還價。",
+      "outcome": "商隊扛著廢料和工具出發去{{rival}}了。下一季才會回來。",
       "memberEffects": [
         {
           "type": "ADJUST_ATTRIBUTE",
@@ -89,7 +96,7 @@
   "priority": 3,
   "chance": 0.4,
   "cooldown": 4,
-  "maxOccurrences": 1,
+  "maxOccurrences": null,
   "storylineIds": [
     "roads-between"
   ],
