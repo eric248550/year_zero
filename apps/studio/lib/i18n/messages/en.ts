@@ -654,6 +654,8 @@ export const en = {
   "play.me.age": "{age} years old",
   "play.me.home": "Lives in {place}",
   "play.me.child": "child",
+  "play.inbox.title": "{n} new: what others did touched you",
+  "play.inbox.dismiss": "Got it",
   "play.decisions.title": "Waiting for you",
   "play.decisions.empty": "Nothing needs your decision right now. The year goes on.",
   "play.decisions.others": "{n} others decide for themselves too",

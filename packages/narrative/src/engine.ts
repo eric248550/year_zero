@@ -164,7 +164,10 @@ export function executeEvent(
   if (def.choices.length > 0 && available.length === 0) throw new EffectError("No available choice");
 
   // Players decide for themselves: open a pending decision instead of letting the council choose.
-  const deciders = decidersFor(state, def, participantsFor(state, def, settlementId, roles));
+  // Shared scenes: a personal event belongs to the player it is about; others in it just see what happened.
+  const deciders = state.sharedScenes && isPersonalEvent(def)
+    ? def.roles.filter((r) => r.player).map((r) => roles[r.id]).filter((id): id is string => !!id)
+    : decidersFor(state, def, participantsFor(state, def, settlementId, roles));
   if (available.length > 0 && deciders.some((id) => isPlayerControlled(getCharacter(state, id)))) {
     return openDecision(state, def, settlementId, roles, deciders, traces, meta);
   }
@@ -410,6 +413,8 @@ export function isPersonalEvent(def: EventDefinition): boolean {
 export const PERSONAL_EVENTS = {
   /** Chance each year that something finds each player; a second thing is rarer. */
   chances: [0.85, 0.25] as readonly number[],
+  /** With shared scenes: up to three a year (they appear spread through the year). */
+  sharedChances: [0.9, 0.6, 0.3] as readonly number[],
 };
 
 /** Whether `def` could happen to this player now. Per-player cooldown and occurrences; consumes no randomness. */
@@ -446,13 +451,14 @@ export function runPersonalPhase(
   const personal = definitions.filter(isPersonalEvent).sort((a, b) => (a.id < b.id ? -1 : 1));
   const playerIds = Object.keys(state.players).sort();
   for (const pid of playerIds) {
-    for (const chance of PERSONAL_EVENTS.chances) {
+    const maxOpen = state.sharedScenes ? 3 : 2;
+    for (const chance of state.sharedScenes ? PERSONAL_EVENTS.sharedChances : PERSONAL_EVENTS.chances) {
       const player = current.players![pid]!;
       if (player.status !== "active" || !player.characterId || (player.prologue?.length ?? 0) < 3) break;
       const me = getCharacter(current, player.characterId);
       if (!me || me.deathTick !== null) break;
-      // Never more than two open decisions at once (world events this year count too).
-      if ((current.pendingDecisions ?? []).filter((p) => p.participants.includes(me.id)).length >= 2) break;
+      // Never too many open decisions at once (world events this year count too).
+      if ((current.pendingDecisions ?? []).filter((p) => p.participants.includes(me.id)).length >= maxOpen) break;
       const roll = rng.next();
       if (roll >= chance) break;
       const pool = personal.filter((d) => personalEligible(current, d, player, me));

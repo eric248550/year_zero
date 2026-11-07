@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { LocaleSwitcher } from "@/components/i18n";
-import { Countdown, YearProgress } from "@/components/play/countdown";
+import { Countdown, LiveRefresh, YearProgress } from "@/components/play/countdown";
 import { PlayTabBar } from "@/components/play/tab-bar";
 import { loadPlay } from "@/lib/play";
 import { getI18n } from "@/lib/i18n/server";
@@ -43,6 +43,7 @@ export default async function PlayLayout({ children }: { children: React.ReactNo
       </header>
       <main className={playing ? "flex-1 px-4 pb-28 pt-4" : "flex-1 px-4 pb-10"}>{children}</main>
       {playing && <PlayTabBar />}
+      {playing && <LiveRefresh />}
     </div>
   );
 }

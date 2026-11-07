@@ -76,7 +76,7 @@ export function resolveRoles(
     }
     const anchorId = role.familiarWith ? assigned[role.familiarWith] : undefined;
     const pick = anchorId
-      ? rng.weighted(pool, (c) => (1 + Math.abs(state.relationships[relationshipKey(anchorId, c.id)] ?? 0) / 10) ** 2)
+      ? rng.weighted(pool, (c) => (1 + Math.abs(state.relationships[relationshipKey(anchorId, c.id)] ?? 0) / 10) ** 2 * (state.sharedScenes && c.controllerId ? PLAYER_ROLE_WEIGHT : 1))
       : state.personalEvents && pool.some((c) => c.controllerId)
         ? rng.weighted(pool, (c) => (c.controllerId ? PLAYER_ROLE_WEIGHT : 1))
         : rng.pick(pool);

@@ -3,13 +3,13 @@ import { availableOrigins, successionCandidates, TRAITS, PLAYERS } from "@genesi
 import { queryHistory } from "@genesis/database";
 import { EmptyState, SectionTitle } from "@/components/ui";
 import { ConditionPanel } from "@/components/play/condition";
-import { DecisionCard } from "@/components/play/decision-card";
+import { DecisionList, Inbox } from "@/components/play/live-feed";
 import { Onboarding, type InviteInfo } from "@/components/play/onboarding";
 import { Prologue } from "@/components/play/prologue";
 import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
 import { redirect } from "next/navigation";
-import { ageOf, conditionOf, decisionViews, listWorlds, loadPlay } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -97,12 +97,10 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
         <ConditionPanel c={conditionOf(state, character)} t={t} />
       </section>
 
+      <Inbox items={inboxFor(ctx)} scope={`${ctx.runId}:${player.id}`} />
+
       <SectionTitle>{t("play.decisions.title")}</SectionTitle>
-      {decisions.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-line-strong px-4 py-6 text-center text-sm text-ink-3">{t("play.decisions.empty")}</p>
-      ) : (
-        <div className="space-y-3">{decisions.map((d) => <DecisionCard key={d.id} d={d} />)}</div>
-      )}
+      <DecisionList decisions={decisions} />
 
       <SectionTitle>{t("play.report.title")}</SectionTitle>
       {story.length === 0 ? (

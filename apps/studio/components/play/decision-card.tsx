@@ -15,6 +15,8 @@ export interface DecisionView {
   others: number;
   /** Only this player decides, and the outcome shows as soon as they choose. */
   instant: boolean;
+  /** Hidden until this time (ISO), so a year's events arrive one by one. */
+  appearAt: string | null;
 }
 
 /** One pending decision. The player can change their answer until the year ends. */

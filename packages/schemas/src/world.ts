@@ -158,6 +158,12 @@ export const WorldStateSchema = z.object({
    * Absent in older worlds.
    */
   instantDecisions: z.boolean().optional(),
+  /**
+   * Personal events are shared: only the player they are about decides, other
+   * players in them are cast more often and just see what happened, and a
+   * player can meet up to three a year. Absent in older worlds.
+   */
+  sharedScenes: z.boolean().optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),

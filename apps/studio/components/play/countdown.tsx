@@ -81,3 +81,15 @@ export function YearProgress({ className = "", ...props }: ClockProps & { classN
     </div>
   );
 }
+
+/** Pull in what other players did every few seconds, so the world feels live. */
+export function LiveRefresh({ seconds = 15 }: { seconds?: number }) {
+  const router = useRouter();
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") router.refresh();
+    }, seconds * 1000);
+    return () => clearInterval(id);
+  }, [router, seconds]);
+  return null;
+}

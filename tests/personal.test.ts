@@ -94,3 +94,28 @@ describe("instant decisions", () => {
     expect(r.state.pendingDecisions?.some((x) => x.id === d.id)).toBe(true);
   });
 });
+
+describe("shared scenes", () => {
+  it("players turn up in each other's scenes, and only the lead decides", () => {
+    let s = played(played(played(createWorld({ seed: 70 }), "a"), "b"), "c");
+    const ids = ["a", "b", "c"].map((p) => playerCharacter(s, p)!.id);
+    let crossed = 0;
+    let opened = 0;
+    for (let i = 0; i < 20; i++) {
+      const r = stepWorld(s, { events, actions: [] });
+      expect(checkInvariants(r.state, r.events)).toEqual([]);
+      for (const p of r.state.pendingDecisions ?? []) {
+        if (p.firedTick !== r.state.tick - 1 && p.firedTick !== r.state.tick) continue;
+        const def = events.find((d) => d.id === p.definitionId)!;
+        if (!isPersonalEvent(def)) continue;
+        opened++;
+        const lead = def.roles.find((x) => x.player)!.id;
+        expect(p.participants).toEqual([p.roles[lead]]);
+        if (Object.entries(p.roles).some(([role, id]) => role !== lead && ids.includes(id))) crossed++;
+      }
+      s = r.state;
+    }
+    expect(opened).toBeGreaterThan(30);
+    expect(crossed).toBeGreaterThan(3);
+  });
+});

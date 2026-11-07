@@ -642,6 +642,8 @@ export const zhTW: Record<Exclude<MessageKey, `${string}_one`>, string> = {
   "play.me.age": "{age} 歲",
   "play.me.home": "住在 {place}",
   "play.me.child": "孩子",
+  "play.inbox.title": "{n} 則新消息：別人做的事牽動了你",
+  "play.inbox.dismiss": "知道了",
   "play.decisions.title": "等你決定",
   "play.decisions.empty": "現在沒有需要你決定的事。日子照常過。",
   "play.decisions.others": "還有 {n} 人也在各自決定",

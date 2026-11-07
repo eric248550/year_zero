@@ -217,3 +217,12 @@ means just the player), `applyImmediate` resolves it on the spot and the app
 shows the outcome at once. Group decisions with NPC participants still wait
 for the year to end. `applyImmediate` takes the run's frozen content for this,
 and replay passes it too.
+
+And `sharedScenes`: a personal event is decided only by the player it is
+about (the `player: true` role); other players cast in it are weighted
+`PLAYER_ROLE_WEIGHT` times higher in `familiarWith` picks and see it in their
+"new" inbox (`inboxFor` in `apps/studio/lib/play.ts`). Players can meet up to
+three personal events a year (chances 0.9 / 0.6 / 0.3); the app shows each at
+a fixed point 5–65% through the year and refreshes every 15 seconds. With
+three players, about 1.7 personal events per player-year, a third of them
+with another player in them.

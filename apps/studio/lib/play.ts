@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, type ClockStatus } from "@genesis/database";
+import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
 import { characterAge, fullName, getCharacter, population, relationshipKey, renderTemplate } from "@genesis/narrative";
 import type { DecisionView } from "@/components/play/decision-card";
@@ -98,6 +98,42 @@ export const loadPlay = cache(async (): Promise<PlayContext | null> => {
   return { runId, worldName: summary.name, state, events: getRunContent(d, runId).events, clock, playerId, player, character };
 });
 
+/**
+ * Shared-scene worlds spread a year's personal events through the year: each
+ * one appears at a fixed point between 5% and 65% of the way through (from its
+ * id, so every viewer sees the same), leaving time to answer.
+ */
+function appearAt(ctx: PlayContext, id: string, firedTick: number): string | null {
+  const { state, clock } = ctx;
+  if (!state.sharedScenes || !clock.nextTickAt || !clock.minutes || firedTick !== state.tick) return null;
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const span = clock.minutes * 60_000;
+  const start = Date.parse(clock.nextTickAt) - span;
+  return new Date(start + span * (0.05 + (h % 1000) / 1000 * 0.6)).toISOString();
+}
+
+export interface InboxItem {
+  id: string;
+  year: number;
+  title: string;
+  text: string;
+}
+
+/**
+ * What happened to this character because of someone else lately: events they
+ * were part of but did not lead (another player's scene, a world event), so
+ * the people affected see it too. Their own open decisions are shown as cards instead.
+ */
+export function inboxFor(ctx: PlayContext): InboxItem[] {
+  const { state, character, runId } = ctx;
+  if (!character) return [];
+  const open = new Set((state.pendingDecisions ?? []).filter((p) => p.participants.includes(character.id)).map((p) => p.id));
+  return queryHistory(db(), runId, { characterId: character.id, fromYear: state.startYear + state.tick - 1, order: "desc", limit: 12 })
+    .items.filter((e) => e.characterIds[0] !== character.id && !open.has(e.id))
+    .map((e) => ({ id: e.id, year: e.year, title: e.title, text: e.text }));
+}
+
 /** Pending decisions this character takes part in, ready to render. */
 export function decisionViews(ctx: PlayContext): DecisionView[] {
   const { state, character } = ctx;
@@ -123,6 +159,7 @@ export function decisionViews(ctx: PlayContext): DecisionView[] {
         myChoice: p.responses[character.id] ?? null,
         others: p.participants.length - 1,
         instant: !!state.instantDecisions && p.participants.length === 1,
+        appearAt: appearAt(ctx, p.id, p.firedTick),
       };
     });
 }

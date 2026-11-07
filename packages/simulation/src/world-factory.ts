@@ -53,6 +53,7 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     attributesEnabled: true,
     personalEvents: true,
     instantDecisions: true,
+    sharedScenes: true,
     rulesVersion: RULES_VERSION,
     worldName: options.worldName ?? "Year Zero",
     seed: options.seed,
