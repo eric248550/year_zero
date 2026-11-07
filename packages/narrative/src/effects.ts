@@ -155,7 +155,7 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       const key = relationshipKey(a.id, b.id);
       const before = state.relationships[key] ?? 0;
       // Warm people make friends faster: positive changes scale with both sides' social skill.
-      const delta = state.attributesEnabled && effect.delta > 0 && a.attributes && b.attributes
+      const delta = effect.delta > 0 && a.attributes && b.attributes
         ? Math.round(effect.delta * (0.6 + a.attributes.social / 250 + b.attributes.social / 250))
         : effect.delta;
       const after = Math.max(-100, Math.min(100, before + delta));

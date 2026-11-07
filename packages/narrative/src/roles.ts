@@ -53,7 +53,7 @@ export function rolesSatisfiable(state: WorldState, roles: readonly Role[], sett
   return true;
 }
 
-/** In newer worlds, players are this many times likelier to be cast in a world event than an NPC. */
+/** Players are this many times likelier to be cast in a world event than an NPC. */
 export const PLAYER_ROLE_WEIGHT = 4;
 
 /** Fill roles with distinct living characters, randomly but deterministically. Returns null if impossible. */
@@ -76,8 +76,8 @@ export function resolveRoles(
     }
     const anchorId = role.familiarWith ? assigned[role.familiarWith] : undefined;
     const pick = anchorId
-      ? rng.weighted(pool, (c) => (1 + Math.abs(state.relationships[relationshipKey(anchorId, c.id)] ?? 0) / 10) ** 2 * (state.sharedScenes && c.controllerId ? PLAYER_ROLE_WEIGHT : 1))
-      : state.personalEvents && pool.some((c) => c.controllerId)
+      ? rng.weighted(pool, (c) => (1 + Math.abs(state.relationships[relationshipKey(anchorId, c.id)] ?? 0) / 10) ** 2 * (c.controllerId ? PLAYER_ROLE_WEIGHT : 1))
+      : pool.some((c) => c.controllerId)
         ? rng.weighted(pool, (c) => (c.controllerId ? PLAYER_ROLE_WEIGHT : 1))
         : rng.pick(pool);
     assigned[role.id] = pick.id;

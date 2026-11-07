@@ -9,7 +9,7 @@ import { EventRow } from "@/components/domain";
 import { StepControls } from "@/components/step-controls";
 import { SeedContentButton } from "@/components/forms";
 import { StorylineCard } from "@/components/story/storyline";
-import { Directions, EnableAttributes } from "@/components/story/directions";
+import { Directions } from "@/components/story/directions";
 import { describeAction } from "@/lib/describe-action";
 import { buildStory, directionOptions } from "@/lib/story";
 import { contentStats, db, loadActiveRun } from "@/lib/server";
@@ -67,10 +67,6 @@ export default async function StoryPage() {
           {!active && <p className="mt-2 text-xs text-warn">{t("overview.archived")}</p>}
         </div>
       </section>
-
-      {active && !state.attributesEnabled && (
-        <EnableAttributes runId={summary.id} queued={run.queuedActions.some((a) => a.type === "ENABLE_ATTRIBUTES")} />
-      )}
 
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">

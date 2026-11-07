@@ -3,6 +3,7 @@ import { Rng, type EventDefinition, type WorldState } from "@genesis/schemas";
 import { characterAge, getCharacter, relationshipKey, residents } from "@genesis/narrative";
 import {
   TickContext,
+  applyImmediate,
   availableOrigins,
   checkInvariants,
   createWorld,
@@ -297,7 +298,6 @@ describe("determinism with players", () => {
 describe("attributes and bonds", () => {
   it("new worlds give everyone attributes shaped by profession", () => {
     const w = createWorld({ seed: 30 });
-    expect(w.attributesEnabled).toBe(true);
     for (const c of w.characters) {
       for (const v of Object.values(c.attributes!)) expect(v).toBeGreaterThanOrEqual(0);
     }
@@ -307,26 +307,21 @@ describe("attributes and bonds", () => {
     if (scouts.length && others.length) expect(avg(scouts, "survival")).toBeGreaterThan(avg(others, "survival"));
   });
 
-  it("older worlds can be given attributes by a logged developer action", () => {
-    const w = createWorld({ seed: 31, locale: "en" });
-    delete w.attributesEnabled;
-    for (const c of w.characters) delete c.attributes;
-    const r = step(w, [{ type: "ENABLE_ATTRIBUTES" }]);
-    expect(r.state.attributesEnabled).toBe(true);
-    expect(r.state.characters.filter((c) => c.deathTick === null).every((c) => c.attributes)).toBe(true);
-  });
-
   it("an orphan scene lets a player take a child in, which makes them a ward", () => {
-    const w = createWorld({ seed: 32 });
-    w.personalEvents = false; // world-wide scheduling, so the scene fires on the join tick
+    let w = createWorld({ seed: 32 });
     const orphan = w.characters.find((c) => characterAge(w, c) < 14)!;
     for (const pid of orphan.parentIds) { const p = getCharacter(w, pid)!; p.deathTick = 0; p.causeOfDeath = "test"; }
-    const adult = w.characters.find((c) => characterAge(w, c) >= 25 && !orphan.parentIds.includes(c.id))!;
-    const orphanEvent = seedContent.events.find((e) => e.id === "orphan-child")!;
-    const opened = step(w, [join("p", { characterId: adult.id })], [{ ...orphanEvent, chance: 1 }]);
-    const d = opened.state.pendingDecisions?.find((x) => x.definitionId === "orphan-child");
+    const adult = w.characters.find((c) => characterAge(w, c) >= 25 && !orphan.parentIds.includes(c.id) && c.homeId === orphan.homeId)!;
+    w = applyImmediate(w, join("p", { characterId: adult.id })).state;
+    for (const [stepId, choiceId] of [["first_climb", "surface"], ["water", "share"], ["static", "tell"]] as const) w = applyImmediate(w, { type: "PROLOGUE", playerId: "p", step: stepId, choiceId }).state;
+    const orphanEvent = { ...seedContent.events.find((e) => e.id === "orphan-child")!, chance: 1 };
+    let d;
+    for (let i = 0; i < 8 && !d; i++) {
+      w = step(w, [], [orphanEvent]).state;
+      d = w.pendingDecisions?.find((x) => x.definitionId === "orphan-child");
+    }
     expect(d?.roles.child).toBe(orphan.id);
-    const done = step(opened.state, [{ type: "CHOOSE", playerId: "p", decisionId: d!.id, choiceId: "adopt" }], [orphanEvent]);
+    const done = applyImmediate(w, { type: "CHOOSE", playerId: "p", decisionId: d!.id, choiceId: "adopt" }, [orphanEvent]);
     expect(getCharacter(done.state, orphan.id)!.caretakerIds).toContain(adult.id);
     expect(done.state.relationships[relationshipKey(adult.id, orphan.id)]).toBeGreaterThan(20);
   });

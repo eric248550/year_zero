@@ -50,11 +50,6 @@ export function createWorld(options: CreateWorldOptions): WorldState {
   const state: WorldState = {
     schemaVersion: 1,
     locale,
-    attributesEnabled: true,
-    personalEvents: true,
-    instantDecisions: true,
-    sharedScenes: true,
-    pioneering: true,
     rulesVersion: RULES_VERSION,
     worldName: options.worldName ?? "Year Zero",
     seed: options.seed,

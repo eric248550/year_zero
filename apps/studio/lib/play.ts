@@ -99,13 +99,13 @@ export const loadPlay = cache(async (): Promise<PlayContext | null> => {
 });
 
 /**
- * Shared-scene worlds spread a year's personal events through the year: each
+ * Spread a year's personal events through the year: each
  * one appears at a fixed point between 5% and 65% of the way through (from its
  * id, so every viewer sees the same), leaving time to answer.
  */
 function appearAt(ctx: PlayContext, id: string, firedTick: number): string | null {
   const { state, clock } = ctx;
-  if (!state.sharedScenes || !clock.nextTickAt || !clock.minutes || firedTick !== state.tick) return null;
+  if (!clock.nextTickAt || !clock.minutes || firedTick !== state.tick) return null;
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const span = clock.minutes * 60_000;
@@ -158,7 +158,7 @@ export function decisionViews(ctx: PlayContext): DecisionView[] {
         choices: (def?.choices ?? []).map((c) => ({ id: c.id, label: c.label, description: c.description ?? null })),
         myChoice: p.responses[character.id] ?? null,
         others: p.participants.length - 1,
-        instant: !!state.instantDecisions && p.participants.length === 1,
+        instant: p.participants.length === 1,
         appearAt: appearAt(ctx, p.id, p.firedTick),
       };
     });

@@ -145,31 +145,6 @@ export const WorldStateSchema = z.object({
   schemaVersion: z.literal(1),
   /** Language of engine-generated text. Absent = English (worlds created before locales existed). */
   locale: z.enum(WORLD_LOCALES).optional(),
-  /** Characters have attributes (health, social, knowledge, survival). Absent in older worlds. */
-  attributesEnabled: z.boolean().optional(),
-  /**
-   * Events with a player role are scheduled per player (each player has their
-   * own chance and cooldowns every year) instead of world-wide. Absent in older worlds.
-   */
-  personalEvents: z.boolean().optional(),
-  /**
-   * A decision resolves as soon as every participant has chosen (personal
-   * events show their result at once) instead of waiting for the year to end.
-   * Absent in older worlds.
-   */
-  instantDecisions: z.boolean().optional(),
-  /**
-   * Personal events are shared: only the player they are about decides, other
-   * players in them are cast more often and just see what happened, and a
-   * player can meet up to three a year. Absent in older worlds.
-   */
-  sharedScenes: z.boolean().optional(),
-  /**
-   * While no one lives on the surface, the council sends the first settlers
-   * out as soon as it can (from year 3) instead of waiting for the bunker to
-   * be crowded. Absent in older worlds.
-   */
-  pioneering: z.boolean().optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),

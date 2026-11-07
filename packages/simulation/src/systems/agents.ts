@@ -4,7 +4,6 @@ import type { TickContext } from "../context";
 import { attemptExploration, researchable } from "./progress";
 import { foundSettlement, foundingBlocker } from "./settlements";
 import { applyPlayerAction, validatePlayerAction, type IndividualAction } from "./players";
-import { enableAttributes } from "./attributes";
 
 const INDIVIDUAL = new Set<string>(PLAYER_ACTION_TYPES);
 function isIndividual(a: PlayerAction): a is IndividualAction {
@@ -21,8 +20,6 @@ export function validateAction(ctx: TickContext, raw: unknown): string | null {
   switch (a.type) {
     case "SET_POLICY":
       return null;
-    case "ENABLE_ATTRIBUTES":
-      return st.attributesEnabled ? "This world already has attributes" : null;
     case "SET_RESEARCH_FOCUS": {
       if (a.tech === null) return null;
       const t = TECH_BY_ID[a.tech];
@@ -95,10 +92,6 @@ export function applyAction(ctx: TickContext, a: PlayerAction): void {
       foundSettlement(ctx, a.locationId, from, a.settlers, "Founding ordered by developer action");
       return;
     }
-    case "ENABLE_ATTRIBUTES":
-      enableAttributes(ctx);
-      directive(ctx, "Attributes enabled", "Every living person now has health, social, knowledge and survival.");
-      return;
     case "LAUNCH_EXPEDITION": {
       const s = getSettlement(st, a.settlementId)!;
       const rec = newRecorder();
@@ -140,8 +133,8 @@ export function councilDecisions(ctx: TickContext): void {
   const policy = POLICY_INFO[st.policy];
 
   // 1. Expansion: relieve crowded settlements by founding on a known site.
-  // Pioneering worlds: the first surface settlement does not wait for the bunker to fill up.
-  const pioneers = !!st.pioneering && st.tick >= 3 && !activeSettlements(st).some((x) => x.kind === "settlement");
+  // Pioneering: the first surface settlement does not wait for the bunker to fill up.
+  const pioneers = st.tick >= 3 && !activeSettlements(st).some((x) => x.kind === "settlement");
   for (const s of activeSettlements(st)) {
     const pop = population(st, s.id);
     if (pop < s.capacity * policy.foundingPressure && !pioneers) continue;

@@ -20,7 +20,7 @@ export interface ImmediateResult {
 
 /**
  * Apply one player action to the world right now, without advancing time.
- * In worlds with `instantDecisions`, a CHOOSE that completes a decision (every
+ * A CHOOSE that completes a decision (every
  * living participant has answered) resolves it on the spot, so a personal
  * event shows its outcome at once. `events` is the run's frozen content.
  * Pure: the input is never mutated. Uses (and advances) the world's own RNG,
@@ -46,7 +46,7 @@ export function applyImmediate(prev: WorldState, raw: unknown, events: readonly 
 
 function resolveIfEveryoneChose(ctx: TickContext, decisionId: string, events: readonly EventDefinition[]): void {
   const st = ctx.state;
-  if (!st.instantDecisions || events.length === 0) return;
+  if (events.length === 0) return;
   const p = st.pendingDecisions?.find((d) => d.id === decisionId);
   if (!p) return;
   const waiting = p.participants.some((id) => {

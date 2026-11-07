@@ -165,7 +165,7 @@ export function executeEvent(
 
   // Players decide for themselves: open a pending decision instead of letting the council choose.
   // Shared scenes: a personal event belongs to the player it is about; others in it just see what happened.
-  const deciders = state.sharedScenes && isPersonalEvent(def)
+  const deciders = isPersonalEvent(def)
     ? def.roles.filter((r) => r.player).map((r) => roles[r.id]).filter((id): id is string => !!id)
     : decidersFor(state, def, participantsFor(state, def, settlementId, roles));
   if (available.length > 0 && deciders.some((id) => isPlayerControlled(getCharacter(state, id)))) {
@@ -369,7 +369,7 @@ export function runNarrativePhase(
   options: NarrativeOptions,
 ): { state: WorldState; events: HistoricalEvent[]; rejections: EventRejection[] } {
   const ordered = [...definitions]
-    .filter((d) => d.status === "published" && !(state.personalEvents && isPersonalEvent(d)))
+    .filter((d) => d.status === "published" && !isPersonalEvent(d))
     .sort((a, b) => b.priority - a.priority || (a.id < b.id ? -1 : 1));
   let current = state;
   const events: HistoricalEvent[] = [];
@@ -411,10 +411,10 @@ export function isPersonalEvent(def: EventDefinition): boolean {
 }
 
 export const PERSONAL_EVENTS = {
-  /** Chance each year that something finds each player; a second thing is rarer. */
-  chances: [0.85, 0.25] as readonly number[],
-  /** With shared scenes: up to three a year (they appear spread through the year). */
-  sharedChances: [0.9, 0.6, 0.3] as readonly number[],
+  /** Chance each year of a first, second and third personal event (they appear spread through the year). */
+  chances: [0.9, 0.6, 0.3] as readonly number[],
+  /** Never more open decisions than this for one player (world events count too). */
+  maxOpen: 3,
 };
 
 /** Whether `def` could happen to this player now. Per-player cooldown and occurrences; consumes no randomness. */
@@ -444,15 +444,15 @@ export function runPersonalPhase(
   definitions: readonly EventDefinition[],
   rng: Rng,
 ): { state: WorldState; events: HistoricalEvent[]; rejections: EventRejection[] } {
-  if (!state.personalEvents || !state.players) return { state, events: [], rejections: [] };
+  if (!state.players) return { state, events: [], rejections: [] };
   let current = state;
   const events: HistoricalEvent[] = [];
   const rejections: EventRejection[] = [];
   const personal = definitions.filter(isPersonalEvent).sort((a, b) => (a.id < b.id ? -1 : 1));
   const playerIds = Object.keys(state.players).sort();
   for (const pid of playerIds) {
-    const maxOpen = state.sharedScenes ? 3 : 2;
-    for (const chance of state.sharedScenes ? PERSONAL_EVENTS.sharedChances : PERSONAL_EVENTS.chances) {
+    const maxOpen = PERSONAL_EVENTS.maxOpen;
+    for (const chance of PERSONAL_EVENTS.chances) {
       const player = current.players![pid]!;
       if (player.status !== "active" || !player.characterId || (player.prologue?.length ?? 0) < 3) break;
       const me = getCharacter(current, player.characterId);

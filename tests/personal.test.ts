@@ -49,22 +49,11 @@ describe("personal events", () => {
     expect(fired.every((f) => f.characterIds.includes(a) || f.characterIds.includes(b))).toBe(true);
   });
 
-  it("never touch worlds created before they existed", () => {
-    const old = createWorld({ seed: 51 });
-    delete old.personalEvents;
-    const s = played(old, "a");
-    const r1 = stepWorld(s, { events, actions: [] });
-    const legacy = structuredClone(s);
-    const r2 = stepWorld(legacy, { events, actions: [] });
-    expect(hashState(r1.state)).toBe(hashState(r2.state));
-    expect(r1.state.players!.a!.personal).toBeUndefined();
-  });
 });
 
 describe("instant decisions", () => {
-  function firstPersonal(seed: number, flag: boolean) {
+  function firstPersonal(seed: number) {
     const w = createWorld({ seed });
-    if (!flag) delete w.instantDecisions;
     let s = played(w, "p");
     for (let i = 0; i < 10; i++) {
       const me = playerCharacter(s, "p")!;
@@ -76,7 +65,7 @@ describe("instant decisions", () => {
   }
 
   it("a personal event resolves the moment the player chooses", () => {
-    const { s, d } = firstPersonal(60, true);
+    const { s, d } = firstPersonal(60);
     const def = events.find((e) => e.id === d.definitionId)!;
     const r = applyImmediate(s, { type: "CHOOSE", playerId: "p", decisionId: d.id, choiceId: def.choices[0]!.id }, events);
     expect(r.rejected).toBeNull();
@@ -86,13 +75,6 @@ describe("instant decisions", () => {
     expect(checkInvariants(r.state, r.events)).toEqual([]);
   });
 
-  it("older worlds still wait for the year to end", () => {
-    const { s, d } = firstPersonal(61, false);
-    const def = events.find((e) => e.id === d.definitionId)!;
-    const r = applyImmediate(s, { type: "CHOOSE", playerId: "p", decisionId: d.id, choiceId: def.choices[0]!.id }, events);
-    expect(r.events).toHaveLength(0);
-    expect(r.state.pendingDecisions?.some((x) => x.id === d.id)).toBe(true);
-  });
 });
 
 describe("shared scenes", () => {

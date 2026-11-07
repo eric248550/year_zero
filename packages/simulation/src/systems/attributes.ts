@@ -44,7 +44,7 @@ export function rollAttributes(rng: Rng, c: Pick<Character, "profession" | "trai
 
 /** Give a new character attributes, if this world has them. */
 export function initAttributes(state: WorldState, rng: Rng, c: Character): void {
-  if (!state.attributesEnabled || c.attributes) return;
+  if (c.attributes) return;
   c.attributes = rollAttributes(rng, c, characterAge(state, c));
 }
 
@@ -54,7 +54,6 @@ export function initAttributes(state: WorldState, rng: Rng, c: Character): void 
  */
 export function attributeDrift(ctx: TickContext): void {
   const st = ctx.state;
-  if (!st.attributesEnabled) return;
   for (const c of st.characters) {
     if (c.deathTick !== null || !c.attributes) continue;
     const a = c.attributes;
@@ -87,9 +86,3 @@ export function healthMortality(c: Character): number {
   return h === undefined ? 1 : Math.min(1.5, Math.max(0.5, 1.5 - h / 100));
 }
 
-/** Turn attributes on for an existing world (developer action, logged for replay). */
-export function enableAttributes(ctx: TickContext): void {
-  const st = ctx.state;
-  st.attributesEnabled = true;
-  for (const c of st.characters) if (c.deathTick === null) initAttributes(st, ctx.rng, c);
-}
