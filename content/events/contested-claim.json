@@ -1,0 +1,119 @@
+{
+  "id": "contested-claim",
+  "title": "據點之爭",
+  "scope": "settlement",
+  "category": "social",
+  "description": "鄰居眼紅{{settlement}}佔著的據點。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "claims",
+      "op": ">=",
+      "value": 1
+    },
+    {
+      "type": "tension",
+      "op": ">=",
+      "value": 40
+    }
+  ],
+  "roles": [
+    {
+      "id": "envoy",
+      "minAge": 20,
+      "optional": true,
+      "minAttributes": {
+        "social": 55
+      }
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "defend",
+      "label": "那是我們的",
+      "tags": [
+        "bold",
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": 10
+        },
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": 2
+        }
+      ],
+      "outcome": "{{settlement}}的人說得很清楚：那是我們先找到、先守住的。"
+    },
+    {
+      "id": "cede",
+      "label": "讓給他們",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "CEDE_CLAIM"
+        },
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -15
+        }
+      ],
+      "outcome": "{{settlement}}把據點讓給了{{rival}}。有人說這是軟弱，也有人說這是遠見。"
+    },
+    {
+      "id": "share",
+      "label": "談一個分享的辦法",
+      "tags": [
+        "community"
+      ],
+      "requiresRoles": [
+        "envoy"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -8
+        },
+        {
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "food",
+            "amount": 6
+          }
+        }
+      ],
+      "outcome": "{{envoy}}和{{rival}}談好了：據點還是歸{{settlement}}，但每年分他們一點收成，換一車糧食作數。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.3,
+  "cooldown": 6,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "rift"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{rival}}要{{settlement}}讓出據點",
+    "text": "{{rival}}派人來說：那個地方大家都需要，不能只有{{settlement}}佔著。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

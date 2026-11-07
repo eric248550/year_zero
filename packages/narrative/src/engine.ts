@@ -149,7 +149,7 @@ export function executeEvent(
   def: EventDefinition,
   settlementId: string | null,
   rng: Rng,
-  meta: { chance: number | null; roll: number | null; choiceOverride?: string | undefined; forcedRoles?: Record<string, string> },
+  meta: { chance: number | null; roll: number | null; choiceOverride?: string | undefined; forcedRoles?: Record<string, string>; season?: number },
 ): ExecutionResult {
   const settlement = settlementId ? state.settlements.find((s) => s.id === settlementId) ?? null : null;
   const roles = resolveRoles(state, def.roles, settlementId, rng, meta.forcedRoles);
@@ -195,6 +195,7 @@ export function executeEvent(
       scope: def.scope,
       category: def.category,
       storylineIds: def.storylineIds,
+      season: meta.season,
     };
     const draftSettlement = settlementId ? draft.settlements.find((s) => s.id === settlementId)! : null;
 
@@ -369,7 +370,7 @@ export function runNarrativePhase(
   options: NarrativeOptions,
 ): { state: WorldState; events: HistoricalEvent[]; rejections: EventRejection[] } {
   const ordered = [...definitions]
-    .filter((d) => d.status === "published" && !isPersonalEvent(d))
+    .filter((d) => d.status === "published" && !isPersonalEvent(d) && !d.scheduledOnly)
     .sort((a, b) => b.priority - a.priority || (a.id < b.id ? -1 : 1));
   let current = state;
   const events: HistoricalEvent[] = [];
@@ -419,7 +420,7 @@ export const PERSONAL_EVENTS = {
 
 /** Whether `def` could happen to this player now. Per-player cooldown and occurrences; consumes no randomness. */
 export function personalEligible(state: WorldState, def: EventDefinition, player: Player, me: Character): boolean {
-  if (def.status !== "published" || !isPersonalEvent(def)) return false;
+  if (def.status !== "published" || !isPersonalEvent(def) || def.scheduledOnly) return false;
   const mem = player.personal?.[def.id];
   if (mem && state.tick - mem.last < Math.max(1, def.cooldown)) return false;
   if (mem && def.maxOccurrences !== null && mem.count >= def.maxOccurrences) return false;
@@ -481,6 +482,55 @@ export function runPersonalPhase(
         else throw err;
         break;
       }
+    }
+  }
+  return { state: current, events, rejections };
+}
+
+/* ------------------------------------------------------------------ */
+/* Follow-ups: things that take seasons                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Fire every scheduled follow-up whose season falls in this year, in season
+ * order, with the roles of the event that scheduled it. Whoever was away is
+ * back. A follow-up whose people or place are gone is dropped.
+ */
+export function runScheduledPhase(
+  state: WorldState,
+  definitions: readonly EventDefinition[],
+  rng: Rng,
+): { state: WorldState; events: HistoricalEvent[]; rejections: EventRejection[] } {
+  const until = (state.tick + 1) * 4;
+  const due = (state.scheduled ?? []).filter((x) => x.dueSeason < until).sort((a, b) => a.dueSeason - b.dueSeason || (a.id < b.id ? -1 : 1));
+  if (due.length === 0) return { state, events: [], rejections: [] };
+  let current = structuredClone(state);
+  current.scheduled = (current.scheduled ?? []).filter((x) => x.dueSeason >= until);
+  const events: HistoricalEvent[] = [];
+  const rejections: EventRejection[] = [];
+  for (const item of due) {
+    for (const id of Object.values(item.roles)) {
+      const c = getCharacter(current, id);
+      if (c && c.awayUntil !== undefined && c.awayUntil <= item.dueSeason) delete c.awayUntil;
+    }
+    const def = definitions.find((d) => d.id === item.definitionId && d.status === "published");
+    if (!def) { rejections.push({ definitionId: item.definitionId, reason: "Scheduled event is not in this run's content" }); continue; }
+    if (item.settlementId && current.settlements.find((s) => s.id === item.settlementId)?.status !== "active") {
+      rejections.push({ definitionId: def.id, reason: "The settlement is gone" });
+      continue;
+    }
+    const roleIds = new Set(def.roles.map((r) => r.id));
+    const forced = Object.fromEntries(Object.entries(item.roles).filter(([r, id]) => roleIds.has(r) && getCharacter(current, id)?.deathTick === null));
+    try {
+      const result = executeEvent(current, def, item.settlementId, rng, { chance: null, roll: null, forcedRoles: forced, season: item.dueSeason });
+      current = result.state;
+      const [first, ...rest] = result.events;
+      if (first) {
+        events.push({ ...first, text: `${say(current).seasonOpening(item.dueSeason % 4)}${first.text}`, causeIds: [...new Set([...first.causeIds, item.causeId])] }, ...rest);
+      }
+    } catch (err) {
+      if (err instanceof EffectError) rejections.push({ definitionId: def.id, reason: err.message });
+      else throw err;
     }
   }
   return { state: current, events, rejections };

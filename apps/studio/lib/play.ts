@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
 import { characterAge, fullName, getCharacter, population, relationshipKey, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
-import { BRANCH_INFO, TECH_BY_ID } from "@genesis/schemas";
+import { BRANCH_INFO, CLAIM_YIELD, FACILITY_INFO, FACILITY_WORKING, LAW_INFO, SPECIALTY_INFO, TECH_BY_ID, ZH_CATALOG, type FacilityId, type LawId, type SpecialtyId } from "@genesis/schemas";
 import { activeProjects, projectBlocker, proposableBranches, startableTechs, workEstimate } from "@genesis/simulation";
 import type { ProjectsView } from "@/components/play/projects";
 import type { DecisionView } from "@/components/play/decision-card";
@@ -284,4 +284,38 @@ export function neighboursOf(state: WorldState, c: Character): { name: string; t
       return { name: s.name, tension, level };
     })
     .sort((a, b) => b.tension - a.tension);
+}
+
+export interface HomeView {
+  facilities: { id: string; name: string; effect: string; condition: number; working: boolean }[];
+  laws: { id: string; name: string; effect: string }[];
+  claims: { name: string; yields: string }[];
+}
+
+/** What stands, what rules, and what is claimed where the character lives. */
+export function homeOf(state: WorldState, c: Character, zh: boolean): HomeView | null {
+  const home = state.settlements.find((s) => s.id === c.homeId);
+  if (!home) return null;
+  const res = (r: string) => (zh ? ({ food: "食物", water: "水", materials: "物資", knowledge: "知識" } as Record<string, string>)[r] ?? r : r);
+  return {
+    facilities: (Object.entries(home.facilities ?? {}) as [FacilityId, number][]).map(([id, condition]) => ({
+      id, condition: Math.round(condition), working: condition >= FACILITY_WORKING,
+      name: zh ? ZH_CATALOG.facility[id] : FACILITY_INFO[id].name,
+      effect: zh ? ZH_CATALOG.facilityEffect[id] : FACILITY_INFO[id].effect,
+    })),
+    laws: (home.laws ?? []).map((id: LawId) => ({ id, name: zh ? ZH_CATALOG.law[id] : LAW_INFO[id].name, effect: zh ? ZH_CATALOG.lawEffect[id] : LAW_INFO[id].effect })),
+    claims: state.locations.filter((l) => l.claimedBy === home.id).map((l) => ({
+      name: zh ? ZH_CATALOG.locationName[l.id as keyof typeof ZH_CATALOG.locationName] ?? l.id : l.id,
+      yields: Object.entries(CLAIM_YIELD[l.id] ?? {}).map(([r, n]) => `${res(r)} +${n}`).join("、"),
+    })),
+  };
+}
+
+/** The character's skills, and when they are back if away. */
+export function personalOf(state: WorldState, c: Character, zh: boolean): { specialties: { name: string; effect: string }[]; awayUntil: { year: number; season: string } | null } {
+  const seasons = zh ? ["春天", "夏天", "秋天", "冬天"] : ["spring", "summer", "autumn", "winter"];
+  return {
+    specialties: (c.specialties ?? []).map((x: SpecialtyId) => ({ name: zh ? ZH_CATALOG.specialty[x] : SPECIALTY_INFO[x].name, effect: zh ? ZH_CATALOG.specialtyEffect[x] : SPECIALTY_INFO[x].effect })),
+    awayUntil: c.awayUntil !== undefined && c.awayUntil >= state.tick * 4 ? { year: state.startYear + Math.floor(c.awayUntil / 4), season: seasons[c.awayUntil % 4]! } : null,
+  };
 }

@@ -1,0 +1,57 @@
+{
+  "id": "seed-vault-return",
+  "title": "從種子庫歸來",
+  "scope": "settlement",
+  "category": "exploration",
+  "description": "去種子庫的人回來了。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "scout",
+      "minAge": 16
+    },
+    {
+      "id": "helper",
+      "minAge": 16,
+      "optional": true
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADD_WORLD_FLAG",
+      "flag": "food.heirloom_seeds"
+    },
+    {
+      "type": "CLAIM_SITE",
+      "location": "seed_vault"
+    },
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "knowledge",
+      "amount": 12
+    },
+    {
+      "type": "ADD_LIFE_EVENT",
+      "role": "scout",
+      "text": "花了大半年，從種子庫取回傳家種"
+    }
+  ],
+  "choices": [],
+  "priority": 3,
+  "chance": 0.2,
+  "cooldown": 6,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{scout}}從種子庫回來了",
+    "text": "{{scout}}一行人扛著密封箱走進{{settlement}}。箱子裡是一排排標好年份的種子。他們在種子庫門口立了一塊牌子：這裡歸{{settlement}}。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "scheduledOnly": true
+}

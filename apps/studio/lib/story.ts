@@ -88,6 +88,14 @@ function plain(c: Condition, i18n: I18n): string {
       return zh ? `${c.occurred ? "要先發生" : "不能已經發生"}「${c.event}」` : `"${c.event}" must ${c.occurred ? "" : "not "}have happened`;
     case "shortage":
       return zh ? `聚落${c.active ? "正在缺" : "沒有缺"}${term.resource(c.resource)}` : `Settlement ${c.active ? "is short of" : "has enough"} ${term.resource(c.resource)}`;
+    case "facility":
+      return zh ? `${c.working ? "要有能用的" : "還沒有能用的"}${({ granary: "穀倉", well: "水井", clinic: "診所", forge: "鍛爐", schoolhouse: "校舍", palisade: "圍牆", watchtower: "瞭望塔", greenhouse: "溫室", meeting_hall: "議事廳" } as Record<string, string>)[c.facility]}` : `${c.working ? "Needs a working" : "Has no working"} ${c.facility}`;
+    case "law":
+      return zh ? `${c.active ? "正在實施" : "沒有實施"}「${({ rationing: "配給制", work_duty: "義務勞動", shared_stores: "公倉制", curfew: "宵禁" } as Record<string, string>)[c.law]}」` : `Law ${c.law} must ${c.active ? "" : "not "}be in force`;
+    case "claims":
+      return zh ? `聚落佔有的據點要${op(c.op)} ${c.value}` : `Claimed sites must be ${op(c.op)} ${c.value}`;
+    case "site_claimed":
+      return zh ? `「${term.locationName(c.location)}」${c.claimed ? "已經有人佔" : "還沒有人佔"}` : `${term.locationName(c.location)} must ${c.claimed ? "" : "not "}be claimed`;
     case "project":
       return zh ? `${c.active ? "正在" : "沒有在"}做「${term.techName(c.tech)}」` : `${term.techName(c.tech)} must ${c.active ? "" : "not "}be under way`;
     case "settlement_age":

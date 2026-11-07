@@ -15,11 +15,6 @@
       "present": false
     },
     {
-      "type": "settlement_age",
-      "op": ">=",
-      "value": 1
-    },
-    {
       "type": "technology",
       "tech": "hydroponics",
       "has": true
@@ -68,5 +63,6 @@
   },
   "version": 1,
   "status": "published",
-  "source": "seed"
+  "source": "seed",
+  "scheduledOnly": true
 }

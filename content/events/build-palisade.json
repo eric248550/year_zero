@@ -1,0 +1,91 @@
+{
+  "id": "build-palisade",
+  "title": "築牆",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "和鄰居關係太差，有人主張築一道牆。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "tension",
+      "op": ">=",
+      "value": 45
+    },
+    {
+      "type": "facility",
+      "facility": "palisade",
+      "working": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "speaker",
+      "minAge": 20,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "build",
+      "label": "築牆",
+      "tags": [
+        "cautious",
+        "industry"
+      ],
+      "costs": {
+        "materials": 30
+      },
+      "effects": [
+        {
+          "type": "BUILD_FACILITY",
+          "facility": "palisade"
+        },
+        {
+          "type": "CHANGE_TENSION",
+          "delta": 5
+        }
+      ],
+      "outcome": "一個月後，{{settlement}}四周立起了一圈木樁和鐵板。{{rival}}的人說，這是把他們當賊。"
+    },
+    {
+      "id": "no",
+      "label": "不要把自己關起來",
+      "tags": [
+        "openness",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -3
+        }
+      ],
+      "outcome": "大家決定不築牆。門還是開著。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.3,
+  "cooldown": 6,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "rift"
+  ],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{settlement}}要不要築牆",
+    "text": "{{speaker}}在大會上說：「{{rival}}遲早會來搶。我們得有一道牆。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

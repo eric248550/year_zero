@@ -71,6 +71,11 @@
           "role": "you",
           "attribute": "survival",
           "delta": 2
+        },
+        {
+          "type": "ADD_SPECIALTY",
+          "role": "you",
+          "specialty": "wayfinding"
         }
       ],
       "outcome": "多走了三天，帶回來的東西不多，但人都平安。"

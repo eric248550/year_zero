@@ -1,0 +1,72 @@
+{
+  "id": "curfew-vote",
+  "title": "宵禁",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "和鄰居劍拔弩張，有人主張宵禁。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "tension",
+      "op": ">=",
+      "value": 60
+    },
+    {
+      "type": "law",
+      "law": "curfew",
+      "active": false
+    }
+  ],
+  "roles": [],
+  "effects": [],
+  "choices": [
+    {
+      "id": "enact",
+      "label": "天黑就關門",
+      "tags": [
+        "cautious",
+        "secrecy"
+      ],
+      "effects": [
+        {
+          "type": "ENACT_LAW",
+          "law": "curfew"
+        }
+      ],
+      "outcome": "天一黑，大門就關上，有人輪流守夜。"
+    },
+    {
+      "id": "no",
+      "label": "不要活得像在打仗",
+      "tags": [
+        "openness"
+      ],
+      "effects": [],
+      "outcome": "沒有宵禁。晚上的路還是開著。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.35,
+  "cooldown": 5,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "rift"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{settlement}}要不要宵禁",
+    "text": "{{rival}}的人最近常在附近出沒。有人提議：天黑以後，誰都不准進出。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

@@ -15,6 +15,13 @@ export const ZH_CATALOG = {
   },
   resource: { food: "食物", water: "水", materials: "物資", knowledge: "知識" },
   profession: { Scientist: "科學家", Engineer: "工程師", Medic: "醫護", Scout: "斥候", Farmer: "農人" },
+  facility: { granary: "穀倉", well: "水井", clinic: "診所", forge: "鍛爐", schoolhouse: "校舍", palisade: "圍牆", watchtower: "瞭望塔", greenhouse: "溫室", meeting_hall: "議事廳" },
+  facilityEffect: { granary: "食物腐壞減半。", well: "水 +10%。", clinic: "健康 +5，死亡減少。", forge: "物資 +10%。", schoolhouse: "知識 +10%，孩子學得更快。", palisade: "被搶時損失減半、死傷較少。", watchtower: "探索 +20%，比較不會被搶。", greenhouse: "食物 +10%。", meeting_hall: "士氣 +3，分裂機率減半。" },
+  law: { rationing: "配給制", work_duty: "義務勞動", shared_stores: "公倉制", curfew: "宵禁" },
+  lawEffect: { rationing: "飢渴致死大幅減少；士氣 -3。", work_duty: "本地專案快 15%；士氣 -4。", shared_stores: "就算交惡也照樣援助（緊張度 70 以上才拒絕）；士氣 +2。", curfew: "被搶的機率少 40%；士氣 -2。" },
+  specialty: { grafting: "嫁接", smithing: "鍛造", wiring: "配線", midwifery: "接生", archivist: "考據", wayfinding: "認路" },
+  specialtyEffect: { grafting: "做農業專案時出力多 50%。", smithing: "做工業專案時出力多 50%。", wiring: "做能源專案時出力多 50%。", midwifery: "做醫療專案時出力多 50%；家裡的嬰兒比較容易活下來。", archivist: "做知識專案時出力多 50%。", wayfinding: "做探索專案時出力多 50%；在荒野比較安全。" },
+  season: { "0": "春天", "1": "夏天", "2": "秋天", "3": "冬天" },
   branch: { farming: "農業", industry: "材料與工業", energy: "能源與基礎建設", medicine: "醫療與人口", knowledge: "知識與教育", society: "探索與社會" },
   techName: {
     hydroponics: "種子與水耕",

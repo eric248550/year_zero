@@ -10,6 +10,9 @@ import {
   SETTLEMENT_STATS,
   BRANCHES,
   PROJECT_APPROACHES,
+  FACILITIES,
+  LAWS,
+  SPECIALTIES,
 } from "./catalog";
 import { ATTRIBUTES, FlagValueSchema } from "./world";
 
@@ -56,6 +59,14 @@ export const ConditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("settlement_age"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
   /** Someone is (or is not) building this technology right now. */
   z.object({ type: z.literal("project"), tech: z.string(), active: z.boolean() }).strict(),
+  /** The target settlement has this building in working order (condition ≥ 30), or not. */
+  z.object({ type: z.literal("facility"), facility: z.enum(FACILITIES), working: z.boolean() }).strict(),
+  /** A law is (or is not) in force in the target settlement. */
+  z.object({ type: z.literal("law"), law: z.enum(LAWS), active: z.boolean() }).strict(),
+  /** How many sites the target settlement has claimed. */
+  z.object({ type: z.literal("claims"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
+  /** A site is claimed by anyone (or nobody). */
+  z.object({ type: z.literal("site_claimed"), location: z.string(), claimed: z.boolean() }).strict(),
 ]);
 export type Condition = z.infer<typeof ConditionSchema>;
 export type ConditionInput = z.input<typeof ConditionSchema>;
@@ -83,6 +94,8 @@ export const RoleSchema = z.object({
   familiarWith: z.string().optional(),
   /** Only characters working on an active project (optionally of this branch). Fills {{project}}. */
   onProject: z.union([z.literal(true), z.enum(BRANCHES)]).optional(),
+  /** Only characters who have learned this specialty. */
+  specialty: z.enum(SPECIALTIES).optional(),
   /** Minimum attribute values (worlds without attributes treat everyone as 50). */
   minAttributes: z.object({ health: z.number(), social: z.number(), knowledge: z.number(), survival: z.number() }).partial().strict().optional(),
 }).strict();
@@ -111,6 +124,14 @@ export const EFFECT_TYPES = [
   "CHANGE_TENSION",
   "EXCHANGE",
   "CHANGE_PROJECT",
+  "BUILD_FACILITY",
+  "CHANGE_FACILITY",
+  "ENACT_LAW",
+  "REPEAL_LAW",
+  "CLAIM_SITE",
+  "CEDE_CLAIM",
+  "ADD_SPECIALTY",
+  "SCHEDULE_EVENT",
 ] as const;
 export type EffectType = (typeof EFFECT_TYPES)[number];
 
@@ -172,6 +193,28 @@ export const EffectSchema = z.discriminatedUnion("type", [
     tech: z.string().optional(),
     progress: z.number().min(-0.5).max(0.5).optional(),
     approach: z.enum(PROJECT_APPROACHES).optional(),
+  }).strict(),
+  /** Raise (or fully rebuild) a building in the target settlement. */
+  z.object({ type: z.literal("BUILD_FACILITY"), facility: z.enum(FACILITIES) }).strict(),
+  /** Wear down or repair a building that exists; "any" picks the one in best shape. */
+  z.object({ type: z.literal("CHANGE_FACILITY"), facility: z.union([z.enum(FACILITIES), z.literal("any")]), delta: z.number().int().min(-100).max(100) }).strict(),
+  z.object({ type: z.literal("ENACT_LAW"), law: z.enum(LAWS) }).strict(),
+  z.object({ type: z.literal("REPEAL_LAW"), law: z.enum(LAWS) }).strict(),
+  /** The target settlement stakes a claim to a discovered, unsettled site (taking it from whoever held it). */
+  z.object({ type: z.literal("CLAIM_SITE"), location: z.string() }).strict(),
+  /** The target settlement hands its oldest claim to its rival. */
+  z.object({ type: z.literal("CEDE_CLAIM") }).strict(),
+  z.object({ type: z.literal("ADD_SPECIALTY"), role: z.string(), specialty: z.enum(SPECIALTIES) }).strict(),
+  /**
+   * Something that takes time: `event` (a scheduledOnly event) happens `seasons`
+   * seasons from now with the same roles. Roles in `away` are gone until then
+   * (no other events, no work).
+   */
+  z.object({
+    type: z.literal("SCHEDULE_EVENT"),
+    event: z.string(),
+    seasons: z.number().int().min(1).max(16),
+    away: z.array(z.string()).optional(),
   }).strict(),
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
@@ -247,6 +290,8 @@ export const EventDefinitionSchema = z.object({
    * run once; memberEffects still follow what each person voted for.
    */
   resolution: z.enum(["each", "vote"]).optional(),
+  /** Only happens when another event schedules it (SCHEDULE_EVENT), never by chance. */
+  scheduledOnly: z.boolean().optional(),
   priority: z.number().int().min(1).max(10).default(5),
   /** Probability per tick of firing while eligible. */
   chance: z.number().min(0).max(1).default(0.3),

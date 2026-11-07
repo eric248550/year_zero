@@ -164,6 +164,12 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
       case "tension":
         key = "tension"; label = "tension"; domain = { lo: 0, loInc: true, hi: 100, hiInc: true };
         break;
+      case "facility": { const k = `facility:${c.facility}`; if (bool.has(k) && bool.get(k) !== c.working) errors.push({ path, code: "precondition.contradiction", message: `${c.facility} must be both working and not` }); bool.set(k, c.working); break; }
+      case "law": { const k = `law:${c.law}`; if (bool.has(k) && bool.get(k) !== c.active) errors.push({ path, code: "precondition.contradiction", message: `Law ${c.law} must be both in force and not` }); bool.set(k, c.active); break; }
+      case "site_claimed": { const k = `claim:${c.location}`; if (bool.has(k) && bool.get(k) !== c.claimed) errors.push({ path, code: "precondition.contradiction", message: `${c.location} must be both claimed and not` }); bool.set(k, c.claimed); break; }
+      case "claims":
+        key = "claims"; label = "claims"; domain = { lo: 0, loInc: true, hi: Infinity, hiInc: false };
+        break;
       case "project": {
         const k = `project:${c.tech}`;
         if (bool.has(k) && bool.get(k) !== c.active) errors.push({ path, code: "precondition.contradiction", message: `A project for ${c.tech} is required to be both active and inactive` });
@@ -196,7 +202,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 
   if (scope === "world") {
     conds.forEach((c, i) => {
-      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age"
+      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age" || c.type === "facility" || c.type === "law" || c.type === "claims"
         || ((c.type === "resource" || c.type === "population") && c.scope === "target");
       if (settlementOnly) {
         errors.push({ path: `${basePath}.${i}`, code: "scope.mismatch", message: `World-scoped events have no target settlement; use scope "world" on this condition or change the event scope` });
@@ -208,6 +214,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 function checkConditionRefs(conds: readonly Condition[], basePath: string, ctx: ValidationContext, selfId: string, errors: ValidationIssue[], warnings: ValidationIssue[]) {
   conds.forEach((c, i) => {
     const path = `${basePath}.${i}`;
+    if (c.type === "site_claimed" && !LOCATION_BY_ID[c.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${c.location}"` });
     if (c.type === "project" && !TECH_BY_ID[c.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${c.tech}"` });
     if (c.type === "technology" && !TECH_BY_ID[c.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${c.tech}"` });
     if (c.type === "location" && !LOCATION_BY_ID[c.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${c.location}"` });
@@ -253,6 +260,23 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         if (e.tech !== undefined && !TECH_BY_ID[e.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${e.tech}"` });
         if (e.progress === undefined && e.approach === undefined) errors.push({ path, code: "effect.invalid", message: "CHANGE_PROJECT changes nothing" });
         break;
+      case "ADD_SPECIALTY":
+        if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
+        break;
+      case "CLAIM_SITE":
+        if (!LOCATION_BY_ID[e.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${e.location}"` });
+        else if (LOCATION_BY_ID[e.location]!.hidden || e.location === "haven_deep") errors.push({ path, code: "effect.invalid", message: `${e.location} cannot be claimed` });
+        if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Claims need a target settlement" });
+        break;
+      case "SCHEDULE_EVENT":
+        for (const r of e.away ?? []) if (!roleIds.has(r)) errors.push({ path, code: "ref.role", message: `Unknown role "${r}"` });
+        if (e.event === def.id) errors.push({ path, code: "effect.invalid", message: "An event cannot schedule itself" });
+        break;
+      case "BUILD_FACILITY":
+      case "CHANGE_FACILITY":
+      case "ENACT_LAW":
+      case "REPEAL_LAW":
+      case "CEDE_CLAIM":
       case "EXCHANGE":
       case "CHANGE_TENSION":
         if (def.scope === "world") errors.push({ path, code: "scope.mismatch", message: "Tension needs a target settlement; world-scoped events cannot change it" });

@@ -1,0 +1,65 @@
+{
+  "id": "ration-vote",
+  "title": "要不要配給",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "缺糧了，有人主張實施配給。",
+  "preconditions": [
+    {
+      "type": "shortage",
+      "resource": "food",
+      "active": true
+    },
+    {
+      "type": "law",
+      "law": "rationing",
+      "active": false
+    }
+  ],
+  "roles": [],
+  "effects": [],
+  "choices": [
+    {
+      "id": "enact",
+      "label": "實施配給制",
+      "tags": [
+        "cautious",
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "ENACT_LAW",
+          "law": "rationing"
+        }
+      ],
+      "outcome": "從今天起，每個人每天一樣多，不多不少。肚子還是餓，但比較少人會餓死。"
+    },
+    {
+      "id": "no",
+      "label": "各家自己想辦法",
+      "tags": [
+        "bold"
+      ],
+      "effects": [],
+      "outcome": "沒有配給。有門路的人吃得飽，沒有的就難說了。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.5,
+  "cooldown": 4,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "major",
+  "narrative": {
+    "headline": "{{settlement}}要不要實施配給",
+    "text": "倉庫快見底了。有人在大會上提議：從今天起，所有糧食統一分配。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

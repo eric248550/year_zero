@@ -87,6 +87,11 @@
           "role": "you",
           "attribute": "knowledge",
           "delta": 2
+        },
+        {
+          "type": "ADD_SPECIALTY",
+          "role": "you",
+          "specialty": "midwifery"
         }
       ],
       "outcome": "{{you}}把風險高的步驟全部拿掉。進度慢下來了，但沒有人受傷。"

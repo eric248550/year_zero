@@ -93,7 +93,7 @@ describe("prologue across lives", () => {
 
 describe("persisted play", () => {
   it("between-tick actions are logged and replay exactly, including the head", () => {
-    const run = createRun(db, { name: "play", seed: 77 });
+    const run = createRun(db, { name: "play", seed: 78 });
     applyPlayerAction(db, run.id, join_("a"));
     applyPlayerAction(db, run.id, { type: "PROLOGUE", playerId: "a", step: "first_climb", choiceId: "surface" });
     stepRun(db, run.id, 4);

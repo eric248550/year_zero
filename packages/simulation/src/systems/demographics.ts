@@ -1,9 +1,10 @@
 import { ADULT_AGE, POLICY_INFO, PROFESSIONS, type Character, type Profession, type Settlement } from "@genesis/schemas";
-import { characterAge, fullName, hasTech, residents } from "@genesis/narrative";
+import { characterAge, fullName, hasTech, inheritBonds, residents } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { healthMortality, initAttributes } from "./attributes";
+import { hasLaw, working } from "./legacy";
 import { professionName, say } from "@genesis/narrative";
 
 export const DEMOGRAPHY = {
@@ -36,15 +37,18 @@ export function mortality(ctx: TickContext): void {
     let mult = Math.min(2.5, Math.max(0.5, 1 + (60 - s.health) / 50));
     if (hasTech(st, "field_medicine")) mult *= 0.8;
     if (hasTech(st, "antibiotics")) mult *= 0.75;
-    const childCare = hasTech(st, "maternal_care") ? 0.5 : 1;
+    if (working(s, "clinic")) mult *= 0.9;
+    // Someone at home who knows how to deliver a baby.
+    const childCare = (hasTech(st, "maternal_care") ? 0.5 : 1) * (people.some((c) => c.specialties?.includes("midwifery")) ? 0.7 : 1);
     mult *= Math.max(0.7, 1 - 0.04 * medics);
-    const starvation = d.food * 0.15;
-    const thirst = d.water * 0.25;
+    const rationed = hasLaw(s, "rationing") ? 0.5 : 1;
+    const starvation = d.food * 0.15 * rationed;
+    const thirst = d.water * 0.25 * rationed;
 
     for (const c of people) {
       const age = characterAge(st, c);
       const natural = baseMortality(age) * mult * healthMortality(c) * (age < 5 ? childCare : 1);
-      const accident = c.profession === "Scout" ? 0.006 : 0;
+      const accident = c.profession === "Scout" ? (c.specialties?.includes("wayfinding") ? 0.003 : 0.006) : 0;
       const p = natural + accident + starvation + thirst;
       const roll = ctx.rng.next();
       if (roll >= p) continue;
@@ -92,6 +96,7 @@ export function killCharacter(ctx: TickContext, c: Character, s: Settlement, cau
     changes: [{ path: `characters.${c.id}.alive`, label: `${fullName(c)} alive`, before: true, after: false }],
   });
   c.lifeEvents.push({ tick: ctx.state.tick, text: say(ctx.state).diedLife(age, cause), historyId: e.id });
+  inheritBonds(ctx.state, c);
 }
 
 /** Housing: families stop growing when there is nowhere to live. */

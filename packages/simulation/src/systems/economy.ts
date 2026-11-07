@@ -2,6 +2,7 @@ import { LOCATION_BY_ID, type ResourceId, type Settlement, type StateChange } fr
 import { characterAge, hasTech, residents, round2 } from "@genesis/narrative";
 import { ADULT_AGE, ELDER_AGE } from "@genesis/schemas";
 import type { TickContext } from "../context";
+import { hasLaw, isAway, working } from "./legacy";
 import { resourceName, say } from "@genesis/narrative";
 
 /** Tunable economic constants. Changing these changes RULES_VERSION semantics. */
@@ -45,7 +46,8 @@ export function workforce(ctx: TickContext, s: Settlement): Workforce {
       continue;
     }
     w.adults++;
-    const effort = age >= ELDER_AGE ? 0.5 : 1;
+    // Away on a long job: still eats, does not work here.
+    const effort = isAway(ctx.state, c) ? 0 : age >= ELDER_AGE ? 0.5 : 1;
     w.labor += effort;
     if (c.profession === "Scientist") w.scientists += effort;
     if (c.profession === "Engineer") w.engineers += effort;
@@ -67,11 +69,13 @@ function multipliers(ctx: TickContext, s: Settlement) {
   if (t("crop_genetics")) food *= 1.15;
   if (t("mass_farming")) food *= 1.15;
   if (ctx.state.flags["food.heirloom_seeds"]) food *= 1.1;
+  if (working(s, "greenhouse")) food *= 1.1;
   let water = 1;
   if (t("water_purification")) water *= 1.3;
   if (features.includes("clean_aquifer")) water *= 1.3;
   if (features.includes("river")) water *= 1.15;
   if (t("water_wheel")) water *= 1.1;
+  if (working(s, "well")) water *= 1.1;
   water *= grid;
   let materials = 1;
   if (features.includes("ruins")) materials *= 1.4;
@@ -81,6 +85,7 @@ function multipliers(ctx: TickContext, s: Settlement) {
   if (t("mechanical_power")) materials *= 1.1;
   if (t("workshop")) materials *= 1.2;
   if (t("metallurgy")) materials *= 1.2;
+  if (working(s, "forge")) materials *= 1.1;
   materials *= grid;
   let knowledge = 1;
   if (t("solar_power")) knowledge *= 1.2;
@@ -89,6 +94,7 @@ function multipliers(ctx: TickContext, s: Settlement) {
   if (t("schooling")) knowledge *= 1.25;
   if (t("research_institute")) knowledge *= 1.3;
   if (ctx.state.flags["mystery.halcyon_archive"]) knowledge *= 1.15;
+  if (working(s, "schoolhouse")) knowledge *= 1.1;
   return { food, water, materials, knowledge };
 }
 
@@ -124,7 +130,7 @@ export function consume(ctx: TickContext): void {
       const unmet = Math.max(0, need - available);
       s.resources[r] = round2(Math.max(0, available - need));
       deficit[r] = need > 0 ? unmet / need : 0;
-      const loss = r === "food" ? ECONOMY.foodSpoilage * (hasTech(ctx.state, "mass_farming") ? 0.5 : 1) : ECONOMY.waterLoss;
+      const loss = r === "food" ? ECONOMY.foodSpoilage * (hasTech(ctx.state, "mass_farming") ? 0.5 : 1) * (working(s, "granary") ? 0.5 : 1) : ECONOMY.waterLoss;
       s.resources[r] = round2(s.resources[r] * (1 - loss));
 
       if (deficit[r] > 0.02) {
@@ -183,6 +189,11 @@ export function wellbeing(ctx: TickContext): void {
     if (st.flags["society.truth_known"]) morale -= 4;
     if (st.flags["governance.ration_council"]) morale += 3;
     if (st.flags["society.closed_gates"]) morale += 2;
+    if (working(s, "meeting_hall")) morale += 3;
+    if (hasLaw(s, "rationing")) morale -= 3;
+    if (hasLaw(s, "work_duty")) morale -= 4;
+    if (hasLaw(s, "shared_stores")) morale += 2;
+    if (hasLaw(s, "curfew")) morale -= 2;
     if (st.flags["society.bunker_first"] && s.kind === "bunker") morale += 4;
     if (st.flags["society.surface_first"] && s.kind === "bunker") morale -= 3;
 
@@ -190,6 +201,7 @@ export function wellbeing(ctx: TickContext): void {
     if (hasTech(st, "field_medicine")) health += 8;
     if (hasTech(st, "antibiotics")) health += 10;
     if (hasTech(st, "water_purification")) health += 4;
+    if (working(s, "clinic")) health += 5;
     health -= d.food * 30 + d.water * 40;
     if (crowded) health -= 10;
 

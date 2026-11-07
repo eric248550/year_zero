@@ -1,0 +1,76 @@
+{
+  "id": "shared-stores-vote",
+  "title": "公倉",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "有了交易路線，有人主張把一部分存糧放進公倉，誰有難就幫誰。",
+  "preconditions": [
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
+    },
+    {
+      "type": "technology",
+      "tech": "trade_routes",
+      "has": true
+    },
+    {
+      "type": "law",
+      "law": "shared_stores",
+      "active": false
+    }
+  ],
+  "roles": [],
+  "effects": [],
+  "choices": [
+    {
+      "id": "enact",
+      "label": "設立公倉",
+      "tags": [
+        "community",
+        "openness"
+      ],
+      "effects": [
+        {
+          "type": "ENACT_LAW",
+          "law": "shared_stores"
+        },
+        {
+          "type": "CHANGE_TENSION",
+          "delta": -5
+        }
+      ],
+      "outcome": "{{settlement}}設了公倉。就算是{{rival}}有難，也會開倉。"
+    },
+    {
+      "id": "no",
+      "label": "自己的糧自己顧",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "沒有公倉。各顧各的。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.2,
+  "cooldown": 8,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "roads-between"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{settlement}}要不要設公倉",
+    "text": "商隊帶來的不只是貨，還有別處挨餓的消息。有人提議：我們該設一座公倉。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

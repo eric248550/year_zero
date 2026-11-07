@@ -78,6 +78,10 @@
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 2
+        },
+        {
+          "type": "CLAIM_SITE",
+          "location": "old_reservoir"
         }
       ],
       "outcome": "{{speaker}}帶人站在水源前面，誰也不讓。{{rival}}的人空著桶回去了，臨走前撂下了狠話。"

@@ -76,6 +76,11 @@
           "role": "you",
           "attribute": "knowledge",
           "delta": 3
+        },
+        {
+          "type": "ADD_SPECIALTY",
+          "role": "you",
+          "specialty": "smithing"
         }
       ],
       "outcome": "樣品裝上去第二天就裂了。幸好只是樣品，大家知道問題在哪了。"

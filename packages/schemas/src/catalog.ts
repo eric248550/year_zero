@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-0.6.0";
+export const RULES_VERSION = "rules-0.7.0";
 
 export const START_YEAR = 2131;
 
@@ -120,6 +120,67 @@ export const TECHNOLOGIES: readonly TechnologyInfo[] = [
 ];
 
 export const TECH_IDS = TECHNOLOGIES.map((t) => t.id);
+
+/* ------------------------------------------------------------------ */
+/* Things that stay: facilities, laws, specialties                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Buildings a settlement can have. Each has a condition (0–100); upkeep keeps
+ * it up, neglect, storms and raids wear it down; below 30 it is broken and does
+ * nothing until repaired.
+ */
+export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall"] as const;
+export type FacilityId = (typeof FACILITIES)[number];
+export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }> = {
+  granary: { name: "Granary", effect: "Food spoils half as fast." },
+  well: { name: "Well", effect: "Water +10%." },
+  clinic: { name: "Clinic", effect: "Health +5, fewer deaths." },
+  forge: { name: "Forge", effect: "Materials +10%." },
+  schoolhouse: { name: "Schoolhouse", effect: "Knowledge +10%, children learn faster." },
+  palisade: { name: "Palisade", effect: "Raids on this settlement take half as much and kill less." },
+  watchtower: { name: "Watchtower", effect: "Exploration +20%, raids on it are less likely." },
+  greenhouse: { name: "Greenhouse", effect: "Food +10%." },
+  meeting_hall: { name: "Meeting Hall", effect: "Morale +3, splits half as likely." },
+};
+export const FACILITY_WORKING = 30;
+/** Finishing these technologies raises a building in the settlement that built them. */
+export const TECH_FACILITY: Partial<Record<string, FacilityId>> = {
+  hydroponics: "greenhouse", water_purification: "well", field_medicine: "clinic", workshop: "forge",
+  schooling: "schoolhouse", civic_charter: "meeting_hall", mass_farming: "granary", pathfinding: "watchtower",
+};
+
+/** Rules a settlement lives by. Enacted and repealed by its people (usually a vote). */
+export const LAWS = ["rationing", "work_duty", "shared_stores", "curfew"] as const;
+export type LawId = (typeof LAWS)[number];
+export const LAW_INFO: Record<LawId, { name: string; effect: string }> = {
+  rationing: { name: "Rationing", effect: "Hunger and thirst kill far fewer; morale -3." },
+  work_duty: { name: "Work Duty", effect: "Projects here move 15% faster; morale -4." },
+  shared_stores: { name: "Shared Stores", effect: "Aid goes out even to rivals (refused only above 70 tension); morale +2." },
+  curfew: { name: "Curfew", effect: "Raids on this settlement 40% less likely; morale -2." },
+};
+
+/** Skills a person learns and can pass on to the young who grow up with them. */
+export const SPECIALTIES = ["grafting", "smithing", "wiring", "midwifery", "archivist", "wayfinding"] as const;
+export type SpecialtyId = (typeof SPECIALTIES)[number];
+export const SPECIALTY_INFO: Record<SpecialtyId, { name: string; branch: BranchId; effect: string }> = {
+  grafting: { name: "Grafting", branch: "farming", effect: "Works 50% harder on farming projects." },
+  smithing: { name: "Smithing", branch: "industry", effect: "Works 50% harder on industry projects." },
+  wiring: { name: "Wiring", branch: "energy", effect: "Works 50% harder on energy projects." },
+  midwifery: { name: "Midwifery", branch: "medicine", effect: "Works 50% harder on medicine projects; more babies survive at home." },
+  archivist: { name: "Archivist", branch: "knowledge", effect: "Works 50% harder on knowledge projects." },
+  wayfinding: { name: "Wayfinding", branch: "society", effect: "Works 50% harder on society projects; safer in the wastes." },
+};
+
+/** What a site gives whoever has claimed it, each year. Settled sites belong to the settlement on them. */
+export const CLAIM_YIELD: Partial<Record<string, Partial<Record<ResourceId, number>>>> = {
+  seed_vault: { food: 3, knowledge: 1 },
+  signal_tower: { knowledge: 3 },
+  cinder_flats: { materials: 4 },
+  old_reservoir: { water: 5 },
+  ashford_crossing: { food: 3 },
+  greenhollow: { food: 4 },
+};
 export const TECH_BY_ID: Record<string, TechnologyInfo> = Object.fromEntries(TECHNOLOGIES.map((t) => [t.id, t]));
 
 export type LocationFeature = "bunker" | "river" | "fertile" | "ruins" | "seed_cache" | "relay" | "sealed_bunker" | "clean_aquifer";

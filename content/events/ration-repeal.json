@@ -1,0 +1,71 @@
+{
+  "id": "ration-repeal",
+  "title": "取消配給",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "糧食夠了，有人想取消配給。",
+  "preconditions": [
+    {
+      "type": "law",
+      "law": "rationing",
+      "active": true
+    },
+    {
+      "type": "shortage",
+      "resource": "food",
+      "active": false
+    },
+    {
+      "type": "resource",
+      "resource": "food",
+      "op": ">=",
+      "value": 1.5,
+      "perCapita": true
+    }
+  ],
+  "roles": [],
+  "effects": [],
+  "choices": [
+    {
+      "id": "repeal",
+      "label": "取消配給",
+      "tags": [
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "REPEAL_LAW",
+          "law": "rationing"
+        }
+      ],
+      "outcome": "配給制取消了。晚上的廚房又熱鬧了起來。"
+    },
+    {
+      "id": "keep",
+      "label": "繼續配給，以防萬一",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "配給制留了下來。有人抱怨，也有人說這樣比較安心。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.4,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{settlement}}要不要取消配給",
+    "text": "倉庫又滿了，配給卻還在。有人問：我們還要這樣過多久？"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

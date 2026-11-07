@@ -62,6 +62,11 @@
           "role": "you",
           "attribute": "knowledge",
           "delta": 3
+        },
+        {
+          "type": "ADD_SPECIALTY",
+          "role": "you",
+          "specialty": "archivist"
         }
       ],
       "outcome": "{{you}}花了好幾個月重做每一個實驗。慢，但每個數字現在都可信。"

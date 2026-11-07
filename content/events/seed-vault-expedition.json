@@ -43,21 +43,16 @@
       },
       "effects": [
         {
-          "type": "ADD_WORLD_FLAG",
-          "flag": "food.heirloom_seeds"
-        },
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "knowledge",
-          "amount": 12
-        },
-        {
-          "type": "ADD_LIFE_EVENT",
-          "role": "scout",
-          "text": "從種子庫取回了傳家種"
+          "type": "SCHEDULE_EVENT",
+          "event": "seed-vault-return",
+          "seasons": 3,
+          "away": [
+            "scout",
+            "helper"
+          ]
         }
       ],
-      "outcome": "一包接一包，{{scout}}帶回了 2070 年封存的種子。"
+      "outcome": "{{scout}}帶著工具和三個季節的口糧出發了。要小心地把冷藏室裡的東西一件件搬出來，得花上大半年。"
     },
     {
       "id": "rush",
@@ -88,7 +83,7 @@
           }
         ]
       },
-      "outcome": "一箱箱種子被從搖搖欲墜的冷藏室裡拖了出來。"
+      "outcome": "一箱箱種子被從搖搖欲墜的冷藏室裡拖了出來。 他們沒有留人守著，種子庫很快又被荒野吞回去。"
     }
   ],
   "priority": 6,

@@ -70,6 +70,15 @@ rejectedEvents, metrics }`. Phases:
    what the other side has); projects change with `CHANGE_PROJECT`; projects have
    an `approach` (steady/careful/bold/frugal) chosen by their lead; players can
    only START projects in their own profession's branches.
+   Seasons and lasting state: the tick is still a year, but `SCHEDULE_EVENT`
+   queues a `scheduledOnly` follow-up N seasons ahead (`state.scheduled`, season
+   index = tick*4+season) with the same roles; `runScheduledPhase` fires those
+   due in the year, in season order. Roles listed `away` get `awayUntil` and are
+   skipped for roles, project crews and labor. Lasting outcomes live in state:
+   settlement `facilities` (condition, upkeep, `systems/legacy.ts`) and `laws`,
+   location `claimedBy` (yearly yields, envy), character `specialties` (project
+   work ×1.5, taught to the young), and inherited bonds on death
+   (`inheritBonds`).
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

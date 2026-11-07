@@ -1,0 +1,81 @@
+{
+  "id": "granary-proposal",
+  "title": "蓋穀倉",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "存糧多了，有人提議蓋一座穀倉。",
+  "preconditions": [
+    {
+      "type": "resource",
+      "resource": "food",
+      "op": ">=",
+      "value": 2,
+      "perCapita": true
+    },
+    {
+      "type": "facility",
+      "facility": "granary",
+      "working": false
+    },
+    {
+      "type": "resource",
+      "resource": "materials",
+      "op": ">=",
+      "value": 30
+    }
+  ],
+  "roles": [
+    {
+      "id": "builder",
+      "minAge": 16,
+      "profession": "Engineer",
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "build",
+      "label": "蓋穀倉",
+      "tags": [
+        "cautious",
+        "industry"
+      ],
+      "costs": {
+        "materials": 25
+      },
+      "effects": [
+        {
+          "type": "BUILD_FACILITY",
+          "facility": "granary"
+        }
+      ],
+      "outcome": "{{builder}}帶人蓋起一座架高的穀倉，通風口開得剛剛好。存糧不會再一季一季地爛掉了。"
+    },
+    {
+      "id": "no",
+      "label": "物資先留著",
+      "tags": [
+        "growth"
+      ],
+      "effects": [],
+      "outcome": "物資拿去做別的。糧食照樣一年爛掉一部分。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.2,
+  "cooldown": 8,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{settlement}}的穀倉",
+    "text": "糧食多到放不下，角落的麻袋開始發霉。有人提議：該蓋一座像樣的穀倉了。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ]
+}

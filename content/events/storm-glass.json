@@ -1,0 +1,73 @@
+{
+  "id": "storm-glass",
+  "title": "暴風打破溫室",
+  "scope": "settlement",
+  "category": "environment",
+  "description": "一場暴風打碎了溫室的玻璃。",
+  "preconditions": [
+    {
+      "type": "facility",
+      "facility": "greenhouse",
+      "working": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "keeper",
+      "minAge": 16,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "repair",
+      "label": "立刻修",
+      "tags": [
+        "industry"
+      ],
+      "costs": {
+        "materials": 12
+      },
+      "effects": [
+        {
+          "type": "CHANGE_FACILITY",
+          "facility": "greenhouse",
+          "delta": -10
+        }
+      ],
+      "outcome": "大家連夜把能找到的玻璃和塑膠布都拿來補。溫室保住了，只是不太好看。"
+    },
+    {
+      "id": "later",
+      "label": "等天氣好再說",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_FACILITY",
+          "facility": "greenhouse",
+          "delta": -45
+        }
+      ],
+      "outcome": "溫室空著吹了一季的風。裡面的苗死了一半，要好幾年才能慢慢補回來。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.06,
+  "cooldown": 10,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "暴風打碎了{{settlement}}的溫室",
+    "text": "夜裡起了暴風。早上{{keeper}}推開門，溫室的玻璃碎了一地。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ]
+}

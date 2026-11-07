@@ -1,0 +1,89 @@
+{
+  "id": "well-digging",
+  "title": "挖井",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "地表聚落缺水，有人想挖一口井。",
+  "preconditions": [
+    {
+      "type": "settlement_kind",
+      "kind": "settlement"
+    },
+    {
+      "type": "facility",
+      "facility": "well",
+      "working": false
+    },
+    {
+      "type": "resource",
+      "resource": "water",
+      "op": "<",
+      "value": 1.5,
+      "perCapita": true
+    }
+  ],
+  "roles": [
+    {
+      "id": "digger",
+      "minAge": 16
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "dig",
+      "label": "挖井",
+      "tags": [
+        "industry",
+        "bold"
+      ],
+      "costs": {
+        "materials": 15
+      },
+      "effects": [
+        {
+          "type": "BUILD_FACILITY",
+          "facility": "well"
+        }
+      ],
+      "risk": {
+        "chance": 0.2,
+        "description": "井壁塌了一角，{{digger}}被埋了半個身子，救出來時傷得不輕。",
+        "effects": [
+          {
+            "type": "ADJUST_ATTRIBUTE",
+            "role": "digger",
+            "attribute": "health",
+            "delta": -15
+          }
+        ]
+      },
+      "outcome": "挖到第十二米，水滲出來了。{{settlement}}有了自己的井。"
+    },
+    {
+      "id": "no",
+      "label": "繼續從河邊挑水",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "每天還是要走一趟河邊。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.25,
+  "cooldown": 6,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{settlement}}要不要挖井",
+    "text": "{{digger}}指著地上一塊顏色比較深的土：「下面有水。給我一季的時間和一點物資。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ]
+}

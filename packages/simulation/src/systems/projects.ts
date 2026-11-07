@@ -8,6 +8,9 @@ import {
   POLICY_INFO,
   TECHNOLOGIES,
   TECH_BY_ID,
+  TECH_FACILITY,
+  SPECIALTIES,
+  SPECIALTY_INFO,
   type Character,
   type Project,
   type Settlement,
@@ -31,6 +34,7 @@ import {
   unlockTechnology,
 } from "@genesis/narrative";
 import type { TickContext } from "../context";
+import { hasLaw, isAway, raiseFacility, specialtyBoost } from "./legacy";
 
 /**
  * Projects: every technology is built by people. The council or a player
@@ -105,7 +109,7 @@ function workOf(st: WorldState, c: Character, tech: TechnologyInfo): number {
   const branch = BRANCH_INFO[tech.branch];
   const base = c.profession === branch.profession ? PROJECTS.matchWork : PROJECTS.otherWork;
   const skill = 0.6 + 0.8 * ((c.attributes?.[branch.attribute] ?? 50) / 100);
-  return base * skill * (age >= ELDER_AGE ? 0.5 : 1);
+  return base * skill * specialtyBoost(c, tech.branch) * (age >= ELDER_AGE ? 0.5 : 1);
 }
 
 /** What one person adds to a project in a year, as a player (who chose the work) or not. */
@@ -248,7 +252,7 @@ export function projects(ctx: TickContext): void {
     const cap = PROJECTS.crewBase + PROJECTS.crewPerTier * tech.tier;
     const lead = getCharacter(st, p.leadId);
     const crew = residents(st, s.id)
-      .filter((c) => !c.controllerId && !taken.has(c.id) && c.profession === profession && characterAge(st, c) >= ADULT_AGE)
+      .filter((c) => !c.controllerId && !taken.has(c.id) && !isAway(st, c) && c.profession === profession && characterAge(st, c) >= ADULT_AGE)
       .sort((a, b) => (b.attributes?.[attr] ?? 0) - (a.attributes?.[attr] ?? 0) || (a.id < b.id ? -1 : 1))
       .slice(0, lead && !lead.controllerId ? cap - 1 : cap);
     for (const c of crew) taken.add(c.id);
@@ -259,7 +263,7 @@ export function projects(ctx: TickContext): void {
 
     const approach = APPROACH_INFO[p.approach ?? "steady"];
     let work = npcs.reduce((n, c) => n + workOf(st, c, tech), 0) + members.reduce((n, c) => n + workOf(st, c, tech) * PROJECTS.playerFocus, 0);
-    work *= approach.work;
+    work *= approach.work * (hasLaw(s, "work_duty") ? 1.15 : 1);
     if (s.shortage.food > 0 || s.shortage.water > 0) work *= PROJECTS.hungerFactor;
     const perWork = PROJECTS.knowledgePerWork * approach.knowledge * (hasTech(st, "research_institute") ? 0.7 : 1);
     if (work > 0) {
@@ -336,6 +340,9 @@ function complete(ctx: TickContext, p: Project, s: Settlement, tech: TechnologyI
   if (st.researchFocus === tech.id) st.researchFocus = null;
   if (tech.id === "power_grid") for (const x of activeSettlements(st)) x.capacity += 10;
   if (tech.id === "metallurgy") for (const x of activeSettlements(st)) x.capacity += 5;
+  // Some technologies come with a building, raised where the work was done.
+  const building = TECH_FACILITY[tech.id];
+  if (building && raiseFacility(st, s, building)) rec.changes.push({ path: `settlements.${s.id}.facilities.${building}`, label: `${s.name} ${building}`, before: null, after: 100 });
   const t = techText(st, tech.id);
   const lead = getCharacter(st, p.leadId);
   const e = ctx.system({
@@ -348,6 +355,12 @@ function complete(ctx: TickContext, p: Project, s: Settlement, tech: TechnologyI
     changes: rec.changes,
     summary: `Project ${p.id} reached its work total (${tech.cost})`,
   });
+  // Whoever led it now knows the craft for good.
+  const craft = SPECIALTIES.find((x) => SPECIALTY_INFO[x].branch === tech.branch);
+  if (lead && craft && !lead.specialties?.includes(craft)) {
+    lead.specialties = [...(lead.specialties ?? []), craft];
+    rec.changes.push({ path: `characters.${lead.id}.specialties.${craft}`, label: `${fullName(lead)} learns ${craft}`, before: false, after: true });
+  }
   for (const id of ids) {
     const c = getCharacter(st, id);
     c?.lifeEvents.push({ tick: st.tick, text: id === p.leadId ? say(st).ledProject(t.name) : say(st).workedProject(t.name), historyId: e.id });

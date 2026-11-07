@@ -34,6 +34,11 @@
           "role": "you",
           "attribute": "survival",
           "delta": 2
+        },
+        {
+          "type": "ADD_SPECIALTY",
+          "role": "you",
+          "specialty": "grafting"
         }
       ],
       "outcome": "{{you}}把苗圃分成四塊，每塊種不同的東西。進度慢，但每一塊都看得清楚。"

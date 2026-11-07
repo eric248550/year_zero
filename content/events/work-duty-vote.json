@@ -1,0 +1,70 @@
+{
+  "id": "work-duty-vote",
+  "title": "義務勞動",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "有人主張每個人每週都要替公共工程出工。",
+  "preconditions": [
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 10
+    },
+    {
+      "type": "population",
+      "op": ">=",
+      "value": 40
+    },
+    {
+      "type": "law",
+      "law": "work_duty",
+      "active": false
+    }
+  ],
+  "roles": [],
+  "effects": [],
+  "choices": [
+    {
+      "id": "enact",
+      "label": "實施義務勞動",
+      "tags": [
+        "industry",
+        "growth"
+      ],
+      "effects": [
+        {
+          "type": "ENACT_LAW",
+          "law": "work_duty"
+        }
+      ],
+      "outcome": "每個人每週要替公共工程出兩天工。工程快了，大家也累了。"
+    },
+    {
+      "id": "no",
+      "label": "出不出工，自己決定",
+      "tags": [
+        "openness"
+      ],
+      "effects": [],
+      "outcome": "沒有人被逼著出工。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.12,
+  "cooldown": 8,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{settlement}}要不要義務勞動",
+    "text": "工程進度落後了。有人提議：每個成年人每週都要出兩天工。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

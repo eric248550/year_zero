@@ -29,24 +29,16 @@
       ],
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 4
-        },
-        {
-          "type": "CHANGE_RELATIONSHIP",
-          "a": "you",
-          "b": "scout",
-          "delta": 10
-        },
-        {
-          "type": "ADJUST_ATTRIBUTE",
-          "role": "you",
-          "attribute": "survival",
-          "delta": 2
+          "type": "SCHEDULE_EVENT",
+          "event": "scavenge-return",
+          "seasons": 1,
+          "away": [
+            "you",
+            "scout"
+          ]
         }
       ],
-      "outcome": "{{you}}跟著{{scout}}在倒塌的商場裡翻了一整天，帶回一袋還能用的零件。",
+      "outcome": "{{you}}跟著{{scout}}出發了。下一季才會回來。",
       "description": "可能帶回物資，也可能受傷。",
       "risk": {
         "chance": 0.2,

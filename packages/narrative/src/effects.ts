@@ -5,9 +5,11 @@ import {
   SECRET_BY_ID,
   TECH_BY_ID,
   RESOURCES,
+  type Character,
   type Effect,
   type EventCategory,
   type EventScope,
+  type FacilityId,
   type HistoricalEvent,
   type ResourceId,
   type Settlement,
@@ -38,6 +40,8 @@ export interface EffectContext {
   scope: EventScope;
   category: EventCategory;
   storylineIds: string[];
+  /** Season index the event happens in (default: spring of this tick). Follow-ups count from it. */
+  season?: number;
 }
 
 function record(rec: ChangeRecorder, path: string, label: string, before: StateChange["before"], after: StateChange["after"]) {
@@ -127,6 +131,31 @@ export function discoverLocation(state: WorldState, locationId: string, rec: Cha
   return true;
 }
 
+export const INHERIT = { share: 0.5, min: 40 } as const;
+
+/** When someone dies, their children inherit their strongest bonds, friend and foe, at half strength. */
+export function inheritBonds(st: WorldState, dead: Character): void {
+  const children = st.characters.filter((c) => c.deathTick === null && c.parentIds.includes(dead.id));
+  if (children.length === 0) return;
+  for (const [key, v] of Object.entries(st.relationships)) {
+    if (Math.abs(v) < INHERIT.min) continue;
+    const [a, b] = key.split("|");
+    const other = a === dead.id ? b : b === dead.id ? a : null;
+    if (!other) continue;
+    const o = getCharacter(st, other);
+    if (!o || o.deathTick !== null) continue;
+    for (const child of children) {
+      if (child.id === other) continue;
+      const k = relationshipKey(child.id, other);
+      const inherited = Math.round(v * INHERIT.share);
+      const now = st.relationships[k] ?? 0;
+      if (Math.abs(now) >= Math.abs(inherited)) continue;
+      st.relationships[k] = inherited;
+      child.lifeEvents.push({ tick: st.tick, text: inherited > 0 ? say(st).inheritedFriend(fullName(dead), fullName(o)) : say(st).inheritedFeud(fullName(dead), fullName(o)), historyId: null });
+    }
+  }
+}
+
 /** Shift tension between two settlements, clamped to 0–100. Shared with the conflict rules. */
 export function changeTension(state: WorldState, a: string, b: string, delta: number, rec?: ChangeRecorder): number {
   const key = tensionKey(a, b);
@@ -197,6 +226,76 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
         const before = p.approach ?? "steady";
         p.approach = effect.approach;
         record(rec, `projects.${p.id}.approach`, `Project ${tech.name} approach`, before, effect.approach);
+      }
+      return;
+    }
+    case "BUILD_FACILITY": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const before = s!.facilities?.[effect.facility] ?? null;
+      s!.facilities = { ...(s!.facilities ?? {}), [effect.facility]: 100 };
+      record(rec, `settlements.${s!.id}.facilities.${effect.facility}`, `${s!.name} ${effect.facility}`, before, 100);
+      return;
+    }
+    case "CHANGE_FACILITY": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const have = Object.entries(s!.facilities ?? {}) as [FacilityId, number][];
+      const id = effect.facility === "any"
+        ? [...have].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0]
+        : have.some(([k]) => k === effect.facility) ? effect.facility : undefined;
+      if (!id) return; // nothing there to damage or mend
+      const before = s!.facilities![id]!;
+      const after = Math.max(0, Math.min(100, before + effect.delta));
+      s!.facilities![id] = after;
+      record(rec, `settlements.${s!.id}.facilities.${id}`, `${s!.name} ${id}`, before, after);
+      return;
+    }
+    case "ENACT_LAW":
+    case "REPEAL_LAW": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const had = !!s!.laws?.includes(effect.law);
+      const want = effect.type === "ENACT_LAW";
+      if (had === want) return;
+      s!.laws = want ? [...(s!.laws ?? []), effect.law] : (s!.laws ?? []).filter((l) => l !== effect.law);
+      record(rec, `settlements.${s!.id}.laws.${effect.law}`, `${s!.name} law ${effect.law}`, had, want);
+      return;
+    }
+    case "CLAIM_SITE": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const loc = state.locations.find((l) => l.id === effect.location);
+      if (!loc || !loc.discovered || loc.settlementId) return; // unknown, or someone lives there
+      const before = loc.claimedBy ?? null;
+      if (before === s!.id) return;
+      loc.claimedBy = s!.id;
+      record(rec, `locations.${loc.id}.claimedBy`, `${LOCATION_BY_ID[loc.id]?.name ?? loc.id} claim`, before, s!.id);
+      return;
+    }
+    case "CEDE_CLAIM": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const rival = rivalOf(state, s!);
+      const loc = state.locations.find((l) => l.claimedBy === s!.id);
+      if (!rival || !loc) return;
+      loc.claimedBy = rival.id;
+      record(rec, `locations.${loc.id}.claimedBy`, `${LOCATION_BY_ID[loc.id]?.name ?? loc.id} claim`, s!.id, rival.id);
+      return;
+    }
+    case "ADD_SPECIALTY": {
+      const c = roleCharacter(state, effect.role, ctx);
+      if (!c || c.specialties?.includes(effect.specialty)) return;
+      c.specialties = [...(c.specialties ?? []), effect.specialty];
+      record(rec, `characters.${c.id}.specialties.${effect.specialty}`, `${fullName(c)} learns ${effect.specialty}`, false, true);
+      return;
+    }
+    case "SCHEDULE_EVENT": {
+      const due = (ctx.season ?? ctx.tick * 4) + effect.seasons;
+      const actor = ctx.roles.actor ?? "";
+      const id = `${ctx.historyId}:${effect.event}${actor ? `:${actor}` : ""}`;
+      state.scheduled ??= [];
+      if (state.scheduled.some((x) => x.id === id)) return;
+      state.scheduled.push({ id, definitionId: effect.event, dueSeason: due, settlementId: ctx.settlementId, roles: { ...ctx.roles }, causeId: ctx.historyId });
+      record(rec, `scheduled.${id}`, `Follow-up ${effect.event}`, null, due);
+      for (const r of effect.away ?? []) {
+        const c = roleCharacter(state, r, ctx);
+        if (c) c.awayUntil = Math.max(c.awayUntil ?? 0, due);
       }
       return;
     }
@@ -297,6 +396,7 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       c.lifeEvents.push({ tick: state.tick, text: say(state).diedEvent(effect.cause), historyId: ctx.historyId });
       state.stats.deaths += 1;
       record(rec, `characters.${c.id}.alive`, `${fullName(c)} alive`, true, false);
+      inheritBonds(state, c);
       return;
     }
     case "ADJUST_ATTRIBUTE": {

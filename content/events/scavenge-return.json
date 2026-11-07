@@ -1,0 +1,56 @@
+{
+  "id": "scavenge-return",
+  "title": "搜刮歸來",
+  "scope": "settlement",
+  "category": "exploration",
+  "description": "一起去搜刮的人回來了。",
+  "preconditions": [],
+  "roles": [
+    {
+      "id": "you",
+      "description": "玩家自己",
+      "player": true
+    },
+    {
+      "id": "scout",
+      "minAge": 16
+    }
+  ],
+  "effects": [
+    {
+      "type": "ADJUST_RESOURCE",
+      "resource": "materials",
+      "amount": 4
+    },
+    {
+      "type": "CHANGE_RELATIONSHIP",
+      "a": "you",
+      "b": "scout",
+      "delta": 10
+    },
+    {
+      "type": "ADJUST_ATTRIBUTE",
+      "role": "you",
+      "attribute": "survival",
+      "delta": 2
+    }
+  ],
+  "choices": [],
+  "priority": 3,
+  "chance": 0.2,
+  "cooldown": 6,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "minor",
+  "narrative": {
+    "headline": "{{you}}和{{scout}}回來了",
+    "text": "{{you}}和{{scout}}在廢墟裡待了一整季。回來的時候背包很重，兩個人也熟了很多。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "personal"
+  ],
+  "scheduledOnly": true
+}

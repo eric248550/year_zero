@@ -1,6 +1,9 @@
 import {
   ADULT_AGE,
+  BRANCH_INFO,
   LOCATIONS,
+  SPECIALTIES,
+  SPECIALTY_INFO,
   PROFESSIONS,
   RULES_VERSION,
   Rng,
@@ -147,6 +150,12 @@ export function createWorld(options: CreateWorldOptions): WorldState {
     state.characters.push(c);
   }
   for (const c of state.characters) c.attributes = rollAttributes(rng, c, -c.birthTick);
+  // Forty years underground taught some of them a craft worth passing on.
+  for (const c of state.characters) {
+    if (!c.profession || !rng.chance(0.15)) continue;
+    const own = SPECIALTIES.filter((x) => BRANCH_INFO[SPECIALTY_INFO[x].branch].profession === c.profession);
+    if (own.length) c.specialties = [rng.pick(own)];
+  }
   state.stats.peakPopulation = state.characters.length;
   state.rng = rng.state;
   return state;

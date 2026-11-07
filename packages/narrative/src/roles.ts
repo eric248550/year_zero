@@ -24,6 +24,9 @@ export function candidatesForRole(
     if (role.maxAge !== undefined && age > role.maxAge) return false;
     if (role.player && !c.controllerId) return false;
     if (role.orphan && !isOrphan(state, c)) return false;
+    // Someone away on a long job cannot be in anything else until they are back.
+    if (c.awayUntil !== undefined && c.awayUntil >= state.tick * 4) return false;
+    if (role.specialty && !c.specialties?.includes(role.specialty)) return false;
     if (role.onProject) {
       const p = projectOf(state, c.id);
       if (!p || (role.onProject !== true && TECH_BY_ID[p.techId]?.branch !== role.onProject)) return false;

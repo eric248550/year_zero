@@ -1,4 +1,5 @@
 import {
+  FACILITY_WORKING,
   LOCATION_BY_ID,
   SECRET_BY_ID,
   TECH_BY_ID,
@@ -52,6 +53,14 @@ export function describeCondition(c: Condition): string {
       return `Settlement ${c.resource} shortage is ${c.active ? "active" : "not active"}`;
     case "tension":
       return `Tension with rival settlement ${c.op} ${c.value}`;
+    case "facility":
+      return `Settlement ${c.working ? "has a working" : "has no working"} ${c.facility}`;
+    case "law":
+      return `Law ${c.law} is ${c.active ? "in force" : "not in force"}`;
+    case "claims":
+      return `Sites claimed by the settlement ${c.op} ${c.value}`;
+    case "site_claimed":
+      return `${LOCATION_BY_ID[c.location]?.name ?? c.location} is ${c.claimed ? "claimed" : "unclaimed"}`;
     case "project":
       return `A project for ${TECH_BY_ID[c.tech]?.name ?? c.tech} is ${c.active ? "under way" : "not under way"}`;
     case "settlement_age":
@@ -138,6 +147,25 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
       if (!s || !rival) return result(null, false);
       const t = tensionBetween(state, s.id, rival.id);
       return result(t, compare(t, c.op, c.value));
+    }
+    case "facility": {
+      if (!s) return result(null, false);
+      const cond = s.facilities?.[c.facility] ?? 0;
+      return result(cond, (cond >= FACILITY_WORKING) === c.working);
+    }
+    case "law": {
+      if (!s) return result(null, false);
+      const active = !!s.laws?.includes(c.law);
+      return result(active, active === c.active);
+    }
+    case "claims": {
+      if (!s) return result(null, false);
+      const n = state.locations.filter((l) => l.claimedBy === s.id).length;
+      return result(n, compare(n, c.op, c.value));
+    }
+    case "site_claimed": {
+      const by = state.locations.find((l) => l.id === c.location)?.claimedBy ?? null;
+      return result(by, !!by === c.claimed);
     }
     case "project": {
       const active = (state.projects ?? []).some((p) => p.techId === c.tech);

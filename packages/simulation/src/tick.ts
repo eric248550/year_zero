@@ -1,6 +1,6 @@
 import { PlayerActionSchema, Rng, type EventDefinition, type HistoricalEvent, type PlayerAction, type WorldState } from "@genesis/schemas";
 import { supplyOutposts, wanderers } from "./systems/continuity";
-import { choiceAvailability, resolvePendingDecisions, runNarrativePhase, runPersonalPhase, type EventRejection } from "@genesis/narrative";
+import { choiceAvailability, resolvePendingDecisions, runNarrativePhase, runPersonalPhase, runScheduledPhase, type EventRejection } from "@genesis/narrative";
 import { TickContext } from "./context";
 import { computeMetrics, type TickMetrics } from "./metrics";
 import { applyAction, councilDecisions, validateAction } from "./systems/agents";
@@ -9,6 +9,7 @@ import { births, comingOfAge, mortality } from "./systems/demographics";
 import { development, exploration } from "./systems/progress";
 import { councilProjects, projects } from "./systems/projects";
 import { friction, raids, schisms } from "./systems/conflict";
+import { claims, facilities, teaching } from "./systems/legacy";
 import { abandonment, milestones } from "./systems/settlements";
 import { playerUpkeep } from "./systems/players";
 import { attributeDrift } from "./systems/attributes";
@@ -73,8 +74,10 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
 
   councilDecisions(ctx);
   produce(ctx);
+  claims(ctx);
   supplyOutposts(ctx);
   consume(ctx);
+  facilities(ctx);
   wellbeing(ctx);
   friction(ctx);
   raids(ctx);
@@ -82,6 +85,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   mortality(ctx);
   births(ctx);
   comingOfAge(ctx);
+  teaching(ctx);
   councilProjects(ctx);
   projects(ctx);
   development(ctx);
@@ -103,6 +107,12 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   ctx.events.push(...personal.events);
   ctx.deaths += countDeaths(personal.events);
 
+  // Follow-ups whose season falls in this year: an expedition comes back, a harvest comes in.
+  const scheduled = runScheduledPhase(ctx.state, input.events, rng);
+  ctx.state = scheduled.state;
+  ctx.events.push(...scheduled.events);
+  ctx.deaths += countDeaths(scheduled.events);
+
   abandonment(ctx);
   wanderers(ctx);
   milestones(ctx);
@@ -115,7 +125,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
     events: ctx.events,
     acceptedActions,
     rejectedActions,
-    rejectedEvents: [...resolved.rejections, ...narrative.rejections, ...personal.rejections],
+    rejectedEvents: [...resolved.rejections, ...narrative.rejections, ...personal.rejections, ...scheduled.rejections],
     metrics: computeMetrics(ctx.state, { births: ctx.births, deaths: ctx.deaths, events: narrativeCount }),
   };
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { POLICIES, PROFESSIONS, PROJECT_APPROACHES } from "./catalog";
+import { FACILITIES, LAWS, POLICIES, PROFESSIONS, PROJECT_APPROACHES, SPECIALTIES } from "./catalog";
 
 export const ResourceSetSchema = z.object({
   food: z.number().min(0),
@@ -31,6 +31,10 @@ export const SettlementSchema = z.object({
   shortageOrigin: z.object({ food: z.string().nullable(), water: z.string().nullable() }),
   /** An outpost: the settlement that founded it keeps it supplied until it can stand on its own. */
   supportedBy: z.string().nullable().optional(),
+  /** Buildings and their condition (0–100). */
+  facilities: z.partialRecord(z.enum(FACILITIES), z.number().min(0).max(100)).optional(),
+  /** Laws in force. */
+  laws: z.array(z.enum(LAWS)).optional(),
 });
 export type Settlement = z.infer<typeof SettlementSchema>;
 
@@ -39,6 +43,8 @@ export const LocationStateSchema = z.object({
   discovered: z.boolean(),
   discoveredTick: z.number().int().nullable(),
   settlementId: z.string().nullable(),
+  /** Settlement that has staked a claim to this site (and takes what it yields). */
+  claimedBy: z.string().nullable().optional(),
 });
 export type LocationState = z.infer<typeof LocationStateSchema>;
 
@@ -78,6 +84,10 @@ export const CharacterSchema = z.object({
   caretakerIds: z.array(z.string()).optional(),
   /** Present in worlds with attributes enabled. */
   attributes: AttributesSchema.optional(),
+  /** Skills learned along the way; the young can pick them up from parents and carers. */
+  specialties: z.array(z.enum(SPECIALTIES)).optional(),
+  /** Away (on an expedition, a long job) until this season index (tick * 4 + season). */
+  awayUntil: z.number().int().optional(),
 });
 export type Character = z.infer<typeof CharacterSchema>;
 
@@ -167,6 +177,22 @@ export const ProjectSchema = z.object({
 });
 export type Project = z.infer<typeof ProjectSchema>;
 
+/** Seasons: a world year has four. Season index = tick * 4 + season (0 spring … 3 winter). */
+export const SEASONS_PER_YEAR = 4;
+
+export const ScheduledEventSchema = z.object({
+  id: z.string(),
+  definitionId: z.string(),
+  /** Season index it happens in. */
+  dueSeason: z.number().int(),
+  settlementId: z.string().nullable(),
+  /** Roles carried over from the event that scheduled it. */
+  roles: z.record(z.string(), z.string()),
+  /** History id of that event. */
+  causeId: z.string(),
+});
+export type ScheduledEvent = z.infer<typeof ScheduledEventSchema>;
+
 export const WORLD_LOCALES = ["en", "zh-TW"] as const;
 export type WorldLocale = (typeof WORLD_LOCALES)[number];
 
@@ -215,5 +241,7 @@ export const WorldStateSchema = z.object({
   projects: z.array(ProjectSchema).optional(),
   /** Tension between two settlements, keyed "idA|idB" (sorted), 0 (at peace) to 100 (open hostility). */
   tensions: z.record(z.string(), z.number()).optional(),
+  /** Follow-up events waiting for their season (an expedition's return, a harvest). */
+  scheduled: z.array(ScheduledEventSchema).optional(),
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;

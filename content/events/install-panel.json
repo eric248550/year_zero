@@ -51,6 +51,11 @@
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 2
+        },
+        {
+          "type": "ADD_SPECIALTY",
+          "role": "you",
+          "specialty": "wiring"
         }
       ],
       "outcome": "{{you}}和{{lead}}在屋頂上待了一整天。傍晚，新的燈亮了。",

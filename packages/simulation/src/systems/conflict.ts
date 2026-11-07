@@ -9,6 +9,7 @@ import {
   population,
   residents,
   round2,
+  relationshipKey,
   resourceName,
   say,
   tensionBetween,
@@ -16,6 +17,7 @@ import {
 import type { TickContext } from "../context";
 import { killCharacter } from "./demographics";
 import { foundSettlement, foundingBlocker } from "./settlements";
+import { hasLaw, working } from "./legacy";
 
 /**
  * Conflict: settlements are not one happy family. Tension between each pair
@@ -103,7 +105,9 @@ export function raids(ctx: TickContext): void {
       const pop = raider === x ? px : py;
       const low = (r: "food" | "water") => raider.shortage[r] > 0 || raider.resources[r] < pop * 0.5;
       const desperate = low("food") || low("water");
-      if (!ctx.rng.chance(desperate ? CONFLICT.desperateRaidChance : CONFLICT.raidChance)) continue;
+      // A curfew and a watchtower make a settlement a harder target.
+      const guard = (hasLaw(victim, "curfew") ? 0.6 : 1) * (working(victim, "watchtower") ? 0.8 : 1);
+      if (!ctx.rng.chance((desperate ? CONFLICT.desperateRaidChance : CONFLICT.raidChance) * guard)) continue;
       const r = low("water") ? "water" : low("food") ? "food" : victim.resources.materials >= victim.resources.food ? "materials" : "food";
       if (victim.resources[r] < 10) continue;
       raid(ctx, raider, victim, r, pop);
@@ -116,7 +120,8 @@ function raid(ctx: TickContext, raider: Settlement, victim: Settlement, r: "food
   const fighters = residents(st, raider.id).filter((c) => !c.controllerId && characterAge(st, c) >= ADULT_AGE);
   if (fighters.length === 0) return;
   const leader = [...fighters].sort((x, y) => Number(y.profession === "Scout") - Number(x.profession === "Scout") || (y.attributes?.survival ?? 0) - (x.attributes?.survival ?? 0) || (x.id < y.id ? -1 : 1))[0]!;
-  const take = round2(Math.min(victim.resources[r] * (0.15 + 0.1 * ctx.rng.next()), pop * 1.2));
+  const walled = working(victim, "palisade");
+  const take = round2(Math.min(victim.resources[r] * (0.15 + 0.1 * ctx.rng.next()), pop * 1.2) * (walled ? 0.5 : 1));
   const rec = newRecorder();
   const vb = victim.resources[r];
   victim.resources[r] = round2(vb - take);
@@ -142,9 +147,18 @@ function raid(ctx: TickContext, raider: Settlement, victim: Settlement, r: "food
     summary: `Tension ≥ ${CONFLICT.raidAt}; ${raider.name} is the poorer side`,
   });
   leader.lifeEvents.push({ tick: st.tick, text: say(st).raidLife(victim.name), historyId: e.id });
-  if (ctx.rng.chance(CONFLICT.raidDeathChance)) {
+  // The fight leaves a mark on the place: the wall takes it first.
+  const hit = walled ? "palisade" : (Object.keys(victim.facilities ?? {}) as (keyof NonNullable<Settlement["facilities"]>)[]).sort()[0];
+  if (hit) {
+    const before = victim.facilities![hit]!;
+    victim.facilities![hit] = Math.max(0, before - 20);
+    e.changes.push({ path: `settlements.${victim.id}.facilities.${hit}`, label: `${victim.name} ${hit}`, before, after: victim.facilities![hit]! });
+  }
+  if (ctx.rng.chance(CONFLICT.raidDeathChance * (walled ? 0.5 : 1))) {
     const pool = [...fighters, ...residents(st, victim.id).filter((c) => !c.controllerId && characterAge(st, c) >= ADULT_AGE)];
     const dead = ctx.rng.pick(pool);
+    // Their children will remember who led it.
+    if (dead.id !== leader.id) st.relationships[relationshipKey(dead.id, leader.id)] = -60;
     killCharacter(ctx, dead, dead.homeId === raider.id ? raider : victim, say(st).causeRaid(), [e.id]);
   }
 }
@@ -156,7 +170,7 @@ export function schisms(ctx: TickContext): void {
     const pop = population(st, s.id);
     if (pop < CONFLICT.schismMinPop) continue;
     if (!(pop > s.capacity * 0.9 || s.morale < 45)) continue;
-    if (!ctx.rng.chance(CONFLICT.schismChance * (hasTech(st, "civic_charter") ? 0.5 : 1))) continue;
+    if (!ctx.rng.chance(CONFLICT.schismChance * (hasTech(st, "civic_charter") ? 0.5 : 1) * (working(s, "meeting_hall") ? 0.5 : 1))) continue;
     const npcs = residents(st, s.id).filter((c) => !c.controllerId && characterAge(st, c) >= ADULT_AGE);
     const n = Math.max(8, Math.round(npcs.length * 0.2));
     const leader = [...npcs].sort((a, b) => (b.attributes?.social ?? 0) - (a.attributes?.social ?? 0) || (a.id < b.id ? -1 : 1))[0];
@@ -213,7 +227,7 @@ function playersIn(st: TickContext["state"], settlementId: string): string[] {
 /** Aid between two settlements: refused when they are at odds, and remembered either way. */
 export function aidAllowed(ctx: TickContext, donor: Settlement, needy: Settlement, r: "food" | "water"): boolean {
   const st = ctx.state;
-  if (tensionBetween(st, donor.id, needy.id) < CONFLICT.refuseAidAt) {
+  if (tensionBetween(st, donor.id, needy.id) < (hasLaw(donor, "shared_stores") ? 70 : CONFLICT.refuseAidAt)) {
     changeTension(st, donor.id, needy.id, CONFLICT.aidGiven);
     return true;
   }

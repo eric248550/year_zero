@@ -1,0 +1,71 @@
+{
+  "id": "work-duty-repeal",
+  "title": "廢除義務勞動",
+  "scope": "settlement",
+  "category": "governance",
+  "description": "大家累壞了，有人要求廢除義務勞動。",
+  "preconditions": [
+    {
+      "type": "law",
+      "law": "work_duty",
+      "active": true
+    },
+    {
+      "type": "settlement_stat",
+      "stat": "morale",
+      "op": "<",
+      "value": 50
+    }
+  ],
+  "roles": [],
+  "effects": [],
+  "choices": [
+    {
+      "id": "repeal",
+      "label": "廢除",
+      "tags": [
+        "community"
+      ],
+      "effects": [
+        {
+          "type": "REPEAL_LAW",
+          "law": "work_duty"
+        }
+      ],
+      "outcome": "義務勞動廢除了。工程慢下來，但大家終於能喘口氣。"
+    },
+    {
+      "id": "keep",
+      "label": "再撐一陣子",
+      "tags": [
+        "industry"
+      ],
+      "effects": [
+        {
+          "type": "CHANGE_SETTLEMENT_STAT",
+          "stat": "morale",
+          "delta": -2
+        }
+      ],
+      "outcome": "義務勞動留了下來，怨氣也是。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.4,
+  "cooldown": 3,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{settlement}}要不要廢除義務勞動",
+    "text": "有人在工地上倒下了。晚上的大會上，越來越多人說：夠了。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ],
+  "participation": "everyone",
+  "resolution": "vote"
+}

@@ -1,0 +1,72 @@
+{
+  "id": "relay-claim",
+  "title": "守住訊號塔",
+  "scope": "settlement",
+  "category": "exploration",
+  "description": "訊號塔還沒有人管，有人想派人去守。",
+  "preconditions": [
+    {
+      "type": "location",
+      "location": "signal_tower",
+      "discovered": true
+    },
+    {
+      "type": "site_claimed",
+      "location": "signal_tower",
+      "claimed": false
+    }
+  ],
+  "roles": [
+    {
+      "id": "keeper",
+      "minAge": 16,
+      "optional": true
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "claim",
+      "label": "派人去守",
+      "tags": [
+        "bold",
+        "science"
+      ],
+      "costs": {
+        "materials": 10
+      },
+      "effects": [
+        {
+          "type": "CLAIM_SITE",
+          "location": "signal_tower"
+        }
+      ],
+      "outcome": "{{keeper}}帶著工具上了山脊，在塔下搭了一間小屋。訊號塔從此歸{{settlement}}。"
+    },
+    {
+      "id": "leave",
+      "label": "讓它空著",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "訊號塔繼續空著，誰都可以去。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.25,
+  "cooldown": 5,
+  "maxOccurrences": null,
+  "storylineIds": [],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{settlement}}要不要守住訊號塔",
+    "text": "訊號塔的電池還有電，上面能聽到很遠的地方。{{keeper}}說：「我們不去守，別人就會去。」"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "legacy"
+  ]
+}

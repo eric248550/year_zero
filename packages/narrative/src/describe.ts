@@ -19,6 +19,14 @@ export function describeEffect(e: Effect): string {
     case "ADD_CARETAKER": return `${e.caretaker} starts looking after ${e.ward}`;
     case "EXCHANGE": return `Exchange with rival: get ${e.get.amount} ${e.get.resource}${e.give ? `, give ${e.give.amount} ${e.give.resource}` : ""}`;
     case "CHANGE_PROJECT": return `Project of ${e.role ?? e.tech}: ${[e.progress !== undefined ? `${e.progress >= 0 ? "+" : ""}${Math.round(e.progress * 100)}% work` : "", e.approach ? `run ${e.approach}` : ""].filter(Boolean).join(", ")}`;
+    case "BUILD_FACILITY": return `Build ${e.facility}`;
+    case "CHANGE_FACILITY": return `${e.facility} condition ${e.delta >= 0 ? "+" : ""}${e.delta}`;
+    case "ENACT_LAW": return `Enact ${e.law}`;
+    case "REPEAL_LAW": return `Repeal ${e.law}`;
+    case "CLAIM_SITE": return `Claim ${LOCATION_BY_ID[e.location]?.name ?? e.location}`;
+    case "CEDE_CLAIM": return "Hand a claimed site to the rival";
+    case "ADD_SPECIALTY": return `${e.role} learns ${e.specialty}`;
+    case "SCHEDULE_EVENT": return `${e.event} follows in ${e.seasons} season(s)${e.away?.length ? ` (${e.away.join(", ")} away)` : ""}`;
     case "CHANGE_TENSION": return `Tension with rival ${e.delta >= 0 ? "+" : ""}${e.delta}`;
   }
 }

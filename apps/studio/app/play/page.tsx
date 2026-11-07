@@ -11,7 +11,7 @@ import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
 import { Projects } from "@/components/play/projects";
 import { redirect } from "next/navigation";
-import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor, homeOf, personalOf } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -79,6 +79,9 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
   const home = state.settlements.find((s) => s.id === character.homeId);
   const decisions = decisionViews(ctx);
   const neighbours = neighboursOf(state, character);
+  const zh = state.locale === "zh-TW";
+  const place = homeOf(state, character, zh);
+  const mine = personalOf(state, character, zh);
   const story = [...character.lifeEvents].reverse().slice(0, 8);
   const news = home ? queryHistory(db(), ctx.runId, { settlementId: home.id, minImportance: "notable", order: "desc", limit: 4 }).items.filter((e) => e.tick >= state.tick - PLAYERS.inviteTtl) : [];
 
@@ -92,6 +95,8 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
             {t("play.me.age", { age: ageOf(state, character) })} · {character.profession ? term.profession(character.profession) : t("play.me.child")} · {character.traits.map((x) => term.trait(x)).join(" · ")}
           </p>
           {home && <p className="text-xs text-ink-3">{t("play.me.home", { place: home.name })}</p>}
+          {mine.specialties.length > 0 && <p className="mt-0.5 text-xs text-ink-2">{t("play.me.skills")}：{mine.specialties.map((x) => <span key={x.name} title={x.effect} className="mr-1.5 rounded border border-line px-1.5 py-px">{x.name}</span>)}</p>}
+          {mine.awayUntil && <p className="mt-0.5 text-xs text-warn">{t("play.me.away", { year: mine.awayUntil.year, season: mine.awayUntil.season })}</p>}
           <RenameCharacter givenName={character.givenName} familyName={character.familyName} />
         </div>
       </section>
@@ -137,6 +142,40 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
               </li>
             ))}
           </ul>
+        </>
+      )}
+
+      {place && home && (place.facilities.length + place.laws.length + place.claims.length > 0) && (
+        <>
+          <SectionTitle>{t("play.home.title", { place: home.name })}</SectionTitle>
+          <div className="card divide-y divide-line">
+            {place.facilities.length > 0 && (
+              <div className="px-4 py-3">
+                <h3 className="label-xs mb-2">{t("play.home.facilities")}</h3>
+                <ul className="grid gap-1.5 sm:grid-cols-2">
+                  {place.facilities.map((f) => (
+                    <li key={f.id} className="text-sm">
+                      <span className={f.working ? "" : "text-danger"}>{f.name}</span> <span className="num text-xs text-ink-3">{f.condition}</span>
+                      {!f.working && <span className="ml-1 text-xs text-danger">{t("play.home.broken")}</span>}
+                      <div className="text-[11px] leading-snug text-ink-3">{f.effect}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {place.laws.length > 0 && (
+              <div className="px-4 py-3">
+                <h3 className="label-xs mb-2">{t("play.home.laws")}</h3>
+                <ul className="space-y-1.5">{place.laws.map((l) => <li key={l.id} className="text-sm">{l.name}<div className="text-[11px] text-ink-3">{l.effect}</div></li>)}</ul>
+              </div>
+            )}
+            {place.claims.length > 0 && (
+              <div className="px-4 py-3">
+                <h3 className="label-xs mb-2">{t("play.home.claims")}</h3>
+                <ul className="space-y-1">{place.claims.map((c) => <li key={c.name} className="text-sm">{c.name} <span className="text-xs text-ink-3">{t("play.home.yields", { what: c.yields })}</span></li>)}</ul>
+              </div>
+            )}
+          </div>
         </>
       )}
 

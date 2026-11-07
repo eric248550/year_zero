@@ -1,4 +1,4 @@
-import { BRANCH_INFO, LOCATION_BY_ID, TECH_BY_ID, ZH_CATALOG, type BranchId, type Profession, type ResourceId, type Settlement, type WorldState } from "@genesis/schemas";
+import { BRANCH_INFO, FACILITY_INFO, LAW_INFO, LOCATION_BY_ID, SPECIALTY_INFO, TECH_BY_ID, ZH_CATALOG, type BranchId, type FacilityId, type LawId, type SpecialtyId, type Profession, type ResourceId, type Settlement, type WorldState } from "@genesis/schemas";
 import { currentYear, fullName, getCharacter, projectOf, rivalOf } from "./queries";
 
 /**
@@ -33,6 +33,18 @@ export function techText(state: Pick<WorldState, "locale">, id: string) {
   if (!isZh(state)) return { name: t.name, description: t.description, effect: t.effect };
   const z = ZH_CATALOG as unknown as Record<"techName" | "techDescription" | "techEffect", Record<string, string>>;
   return { name: z.techName[id] ?? t.name, description: z.techDescription[id] ?? t.description, effect: z.techEffect[id] ?? t.effect };
+}
+
+export function facilityName(state: Pick<WorldState, "locale">, f: FacilityId): string {
+  return isZh(state) ? ZH_CATALOG.facility[f] : FACILITY_INFO[f].name;
+}
+
+export function lawName(state: Pick<WorldState, "locale">, l: LawId): string {
+  return isZh(state) ? ZH_CATALOG.law[l] : LAW_INFO[l].name;
+}
+
+export function specialtyName(state: Pick<WorldState, "locale">, x: SpecialtyId): string {
+  return isZh(state) ? ZH_CATALOG.specialty[x] : SPECIALTY_INFO[x].name;
 }
 
 export function branchName(state: Pick<WorldState, "locale">, b: BranchId): string {
@@ -139,6 +151,13 @@ const EN = {
   tellText: () => "Most laugh it off. A few lean closer and ask what it said.",
   keptStatic: () => "Heard a voice in the radio static and told no one",
   renamed: (before: string, after: string) => `${before} now goes by ${after}`,
+  facilityBrokeTitle: (s: string, f: string) => `The ${f} in ${s} has fallen into ruin`,
+  facilityBrokeText: (s: string, f: string) => `Nobody had the materials to keep it up. ${s}'s ${f} no longer works until someone repairs it.`,
+  facilityRaisedLife: (f: string) => `Helped raise the ${f}`,
+  learnedFrom: (who: string, x: string) => `Learned ${x} from ${who}`,
+  inheritedFriend: (dead: string, other: string) => `Inherited ${dead}'s friendship with ${other}`,
+  inheritedFeud: (dead: string, other: string) => `Inherited ${dead}'s quarrel with ${other}`,
+  seasonOpening: (season: number) => `${["In spring", "In summer", "In autumn", "In winter"][season] ?? ""}: `,
   voteResult: (counts: [string, number][], winner: string) => `The vote: ${counts.map(([l, n]) => `${l} ${n}`).join(", ")}. Decided: ${winner}.`,
   voteVoices: (players: [string, string][]) => players.map(([n, l]) => `${n} spoke for "${l}"`).join("; ") + ".",
   raidTitle: (raider: string, victim: string) => `${raider} raids ${victim}`,
@@ -263,6 +282,13 @@ const ZH: typeof EN = {
   tellText: () => "大多數人笑笑就算了。有幾個人湊過來，問它說了什麼。",
   keptStatic: () => "聽見收音機雜訊裡的人聲，沒有告訴任何人",
   renamed: (before, after) => `${before}改名為${after}`,
+  facilityBrokeTitle: (s, f) => `${s}的${f}荒廢了`,
+  facilityBrokeText: (s, f) => `沒有物資可以維修。${s}的${f}在有人修好之前，已經不能用了。`,
+  facilityRaisedLife: (f) => `參與蓋起了${f}`,
+  learnedFrom: (who, x) => `跟${who}學會了${x}`,
+  inheritedFriend: (dead, other) => `繼承了${dead}和${other}之間的交情`,
+  inheritedFeud: (dead, other) => `繼承了${dead}和${other}之間的恩怨`,
+  seasonOpening: (season) => `${["春天", "夏天", "秋天", "冬天"][season] ?? ""}，`,
   voteResult: (counts, winner) => `表決結果：${counts.map(([l, n]) => `「${l}」${n} 票`).join("、")}。決定：${winner}。`,
   voteVoices: (players) => players.map(([n, l]) => `${n}支持「${l}」`).join("，") + "。",
   raidTitle: (raider, victim) => `${raider}搶了${victim}`,

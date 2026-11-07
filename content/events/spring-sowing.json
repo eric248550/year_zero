@@ -1,0 +1,85 @@
+{
+  "id": "spring-sowing",
+  "title": "第一次播種",
+  "scope": "settlement",
+  "category": "resource",
+  "description": "地表聚落第一次把種子種進土裡。",
+  "preconditions": [
+    {
+      "type": "settlement_kind",
+      "kind": "settlement"
+    },
+    {
+      "type": "technology",
+      "tech": "hydroponics",
+      "has": true
+    },
+    {
+      "type": "flag",
+      "flag": "food.surface_farming",
+      "present": false
+    },
+    {
+      "type": "event_occurred",
+      "event": "spring-sowing",
+      "occurred": false,
+      "withinTicks": 2
+    }
+  ],
+  "roles": [
+    {
+      "id": "farmer",
+      "minAge": 16,
+      "profession": "Farmer"
+    }
+  ],
+  "effects": [],
+  "choices": [
+    {
+      "id": "sow_all",
+      "label": "把留種全部播下去",
+      "tags": [
+        "bold",
+        "growth"
+      ],
+      "costs": {
+        "food": 6
+      },
+      "effects": [
+        {
+          "type": "SCHEDULE_EVENT",
+          "event": "first-surface-harvest",
+          "seasons": 2
+        }
+      ],
+      "outcome": "{{farmer}}帶著大家把地翻了一遍，種子一排一排地埋下去。秋天才知道結果。"
+    },
+    {
+      "id": "wait",
+      "label": "再等一年，先把土養好",
+      "tags": [
+        "cautious"
+      ],
+      "effects": [],
+      "outcome": "{{farmer}}說土還太酸。今年先種豆子養地。"
+    }
+  ],
+  "priority": 3,
+  "chance": 0.5,
+  "cooldown": 1,
+  "maxOccurrences": null,
+  "storylineIds": [
+    "rebuilding-food-production"
+  ],
+  "importance": "notable",
+  "narrative": {
+    "headline": "{{settlement}}第一次播種",
+    "text": "{{farmer}}抓起一把灰黑色的土，聞了聞。{{settlement}}的人圍在田邊，等著{{farmer}}決定要不要現在就播種。"
+  },
+  "version": 1,
+  "status": "published",
+  "source": "seed",
+  "tags": [
+    "rebuild"
+  ]
+}
