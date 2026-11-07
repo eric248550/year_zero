@@ -135,7 +135,7 @@ export function actAs(runId: string, playerId: string, action: Record<string, un
   return applyPlayerAction(db(), runId, { ...action, playerId });
 }
 
-/** How a character is doing right now. 0–100; for hunger and thirst, higher is worse. */
+/** How a character is doing right now. 0–100, higher is better (a full hunger bar = well fed). */
 export interface ConditionView {
   hunger: { value: number; foodYears: number; shortYears: number };
   thirst: { value: number; waterYears: number; shortYears: number };
@@ -146,7 +146,7 @@ export interface ConditionView {
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
-/** Hunger from the stores at home: plenty = barely hungry; each year of shortage makes it worse. */
+/** How empty the stomach is (higher = worse), from the stores at home; each year of shortage makes it worse. */
 function need(stock: number, people: number, shortYears: number) {
   const years = stock / Math.max(1, people);
   const value = shortYears > 0 ? clamp(55 + 15 * shortYears) : clamp(45 - years * 15);
@@ -167,11 +167,12 @@ export function conditionOf(state: WorldState, c: Character): ConditionView {
   }
   const morale = home?.morale ?? 50;
   const worstNeed = Math.max(food.value, water.value);
+  // Shown like a game's hunger bar: full = fed.
   const mood = clamp(10 + morale * 0.8 + (closest ? closest.bond * 0.2 : 0) - Math.max(0, worstNeed - 50) / 2);
   const a = c.attributes;
   return {
-    hunger: { value: food.value, foodYears: food.years, shortYears: home?.shortage.food ?? 0 },
-    thirst: { value: water.value, waterYears: water.years, shortYears: home?.shortage.water ?? 0 },
+    hunger: { value: 100 - food.value, foodYears: food.years, shortYears: home?.shortage.food ?? 0 },
+    thirst: { value: 100 - water.value, waterYears: water.years, shortYears: home?.shortage.water ?? 0 },
     health: { value: a?.health ?? home?.health ?? 50, personal: !!a },
     mood: { value: mood, morale: Math.round(morale), closest },
     abilities: a ? { knowledge: a.knowledge, social: a.social, survival: a.survival } : null,

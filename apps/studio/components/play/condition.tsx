@@ -6,15 +6,15 @@ import type { ConditionView } from "@/lib/play";
 
 type T = ReturnType<typeof createI18n>["t"];
 
-/** Need words: higher is worse. */
+/** Hunger/thirst words for a bar where full = satisfied. */
 function needLevel(v: number) {
-  return v <= 15 ? "fine" : v <= 35 ? "ok" : v <= 55 ? "some" : v <= 75 ? "bad" : "worst";
+  return v >= 85 ? "fine" : v >= 65 ? "ok" : v >= 45 ? "some" : v >= 25 ? "bad" : "worst";
 }
 /** Wellbeing words: higher is better. */
 function wellLevel(v: number) {
   return v < 25 ? "worst" : v < 45 ? "bad" : v < 65 ? "ok" : v < 85 ? "good" : "great";
 }
-const needTone = (v: number) => (v > 55 ? "bg-danger" : v > 35 ? "bg-warn" : "bg-ok");
+const needTone = (v: number) => (v < 45 ? "bg-danger" : v < 65 ? "bg-warn" : "bg-ok");
 const wellTone = (v: number) => (v < 25 ? "bg-danger" : v < 45 ? "bg-warn" : "bg-ok");
 
 function Meter({ icon, label, word, value, color, why, danger }: { icon: React.ReactNode; label: string; word: string; value: number; color: string; why: string; danger: boolean }) {
@@ -45,7 +45,7 @@ export function ConditionPanel({ c, t }: { c: ConditionView; t: T }) {
           word={t(`play.cond.need.hunger.${hunger}`)}
           value={c.hunger.value}
           color={needTone(c.hunger.value)}
-          danger={c.hunger.value > 55}
+          danger={c.hunger.value < 45}
           why={c.hunger.shortYears > 0 ? t("play.cond.hunger.short", { n: c.hunger.shortYears }) : t("play.cond.hunger.stock", { n: c.hunger.foodYears })}
         />
         <Meter
@@ -54,7 +54,7 @@ export function ConditionPanel({ c, t }: { c: ConditionView; t: T }) {
           word={t(`play.cond.need.thirst.${thirst}`)}
           value={c.thirst.value}
           color={needTone(c.thirst.value)}
-          danger={c.thirst.value > 55}
+          danger={c.thirst.value < 45}
           why={c.thirst.shortYears > 0 ? t("play.cond.thirst.short", { n: c.thirst.shortYears }) : t("play.cond.thirst.stock", { n: c.thirst.waterYears })}
         />
         <Meter
