@@ -140,9 +140,11 @@ export function councilDecisions(ctx: TickContext): void {
   const policy = POLICY_INFO[st.policy];
 
   // 1. Expansion: relieve crowded settlements by founding on a known site.
+  // Pioneering worlds: the first surface settlement does not wait for the bunker to fill up.
+  const pioneers = !!st.pioneering && st.tick >= 3 && !activeSettlements(st).some((x) => x.kind === "settlement");
   for (const s of activeSettlements(st)) {
     const pop = population(st, s.id);
-    if (pop < s.capacity * policy.foundingPressure) continue;
+    if (pop < s.capacity * policy.foundingPressure && !pioneers) continue;
     const sites = st.locations
       .filter((l) => l.discovered && !l.settlementId && LOCATION_BY_ID[l.id]!.settleable)
       .sort((a, b) => LOCATION_BY_ID[a.id]!.distance - LOCATION_BY_ID[b.id]!.distance || (a.id < b.id ? -1 : 1));
@@ -150,7 +152,9 @@ export function councilDecisions(ctx: TickContext): void {
     if (!site) break;
     const settlers = Math.min(14, Math.max(6, Math.floor(pop * 0.35)));
     if (foundingBlocker(ctx, site.id, s, settlers) !== null || s.resources.food < 25) continue;
-    foundSettlement(ctx, site.id, s, settlers, `${s.name} reached ${Math.round((pop / s.capacity) * 100)}% of capacity (policy threshold ${Math.round(policy.foundingPressure * 100)}%)`);
+    foundSettlement(ctx, site.id, s, settlers, pioneers
+      ? `No one lives on the surface yet; ${s.name} sends its first settlers`
+      : `${s.name} reached ${Math.round((pop / s.capacity) * 100)}% of capacity (policy threshold ${Math.round(policy.foundingPressure * 100)}%)`);
     break; // at most one founding per tick
   }
 

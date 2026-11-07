@@ -9,12 +9,17 @@
       "type": "population",
       "op": ">=",
       "value": 20,
-      "scope": "target"
+      "scope": "world"
+    },
+    {
+      "type": "settlement_count",
+      "op": ">=",
+      "value": 2
     },
     {
       "type": "world_tick",
       "op": ">=",
-      "value": 3
+      "value": 5
     },
     {
       "type": "flag",
@@ -83,8 +88,8 @@
   ],
   "priority": 3,
   "chance": 0.4,
-  "cooldown": 4,
-  "maxOccurrences": 1,
+  "cooldown": 5,
+  "maxOccurrences": null,
   "storylineIds": [
     "first-school"
   ],

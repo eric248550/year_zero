@@ -9,7 +9,17 @@
       "type": "population",
       "op": ">=",
       "value": 25,
-      "scope": "target"
+      "scope": "world"
+    },
+    {
+      "type": "world_tick",
+      "op": ">=",
+      "value": 20
+    },
+    {
+      "type": "technology",
+      "tech": "civic_charter",
+      "has": false
     },
     {
       "type": "flag",

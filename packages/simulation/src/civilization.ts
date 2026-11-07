@@ -27,7 +27,7 @@ export const CIV_STAGES: readonly CivStage[] = [
     id: "survive",
     milestones: [
       { id: "water", check: { kind: "tech", tech: "water_purification" } },
-      { id: "tools", check: { kind: "tech", tech: "salvage_tools" } },
+      { id: "hydroponics", check: { kind: "tech", tech: "hydroponics" } },
       { id: "surface", check: { kind: "settlements", min: 2 } },
     ],
   },
@@ -35,7 +35,7 @@ export const CIV_STAGES: readonly CivStage[] = [
     id: "root",
     milestones: [
       { id: "harvest", check: { kind: "flag", flag: "food.surface_farming" } },
-      { id: "hydroponics", check: { kind: "tech", tech: "hydroponics" } },
+      { id: "tools", check: { kind: "tech", tech: "salvage_tools" } },
       { id: "medicine", check: { kind: "tech", tech: "field_medicine" } },
       { id: "school", check: { kind: "flag", flag: "culture.school" } },
       { id: "people", check: { kind: "population", min: 25 } },

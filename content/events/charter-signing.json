@@ -14,6 +14,11 @@
       "type": "flag",
       "flag": "governance.charter_signed",
       "present": false
+    },
+    {
+      "type": "flag",
+      "flag": "governance.assembly",
+      "present": true
     }
   ],
   "roles": [],

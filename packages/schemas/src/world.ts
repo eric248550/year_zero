@@ -164,6 +164,12 @@ export const WorldStateSchema = z.object({
    * player can meet up to three a year. Absent in older worlds.
    */
   sharedScenes: z.boolean().optional(),
+  /**
+   * While no one lives on the surface, the council sends the first settlers
+   * out as soon as it can (from year 3) instead of waiting for the bunker to
+   * be crowded. Absent in older worlds.
+   */
+  pioneering: z.boolean().optional(),
   rulesVersion: z.string(),
   worldName: z.string(),
   seed: z.number().int(),
