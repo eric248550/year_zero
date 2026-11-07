@@ -1,4 +1,5 @@
 import {
+  ADULT_AGE,
   FACILITY_WORKING,
   LOCATION_BY_ID,
   SECRET_BY_ID,
@@ -9,7 +10,7 @@ import {
   type Settlement,
   type WorldState,
 } from "@genesis/schemas";
-import { activeSettlements, population, rivalOf, round2, tensionBetween, totalResource } from "./queries";
+import { activeSettlements, characterAge, population, residents, rivalOf, round2, tensionBetween, totalResource } from "./queries";
 
 export function compare(actual: number, op: ComparisonOp, expected: number): boolean {
   switch (op) {
@@ -53,6 +54,10 @@ export function describeCondition(c: Condition): string {
       return `Settlement ${c.resource} shortage is ${c.active ? "active" : "not active"}`;
     case "tension":
       return `Tension with rival settlement ${c.op} ${c.value}`;
+    case "children":
+      return `Children in the settlement ${c.op} ${c.value}`;
+    case "site_feature":
+      return `Settlement's land is ${c.present ? "" : "not "}${c.feature}`;
     case "facility":
       return `Settlement ${c.working ? "has a working" : "has no working"} ${c.facility}`;
     case "law":
@@ -148,9 +153,21 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
       const t = tensionBetween(state, s.id, rival.id);
       return result(t, compare(t, c.op, c.value));
     }
+    case "children": {
+      if (!s) return result(null, false);
+      const n = residents(state, s.id).filter((x) => characterAge(state, x) < ADULT_AGE).length;
+      return result(n, compare(n, c.op, c.value));
+    }
+    case "site_feature": {
+      if (!s) return result(null, false);
+      const has = !!LOCATION_BY_ID[s.locationId]?.features.includes(c.feature);
+      return result(has, has === c.present);
+    }
     case "facility": {
       if (!s) return result(null, false);
       const cond = s.facilities?.[c.facility] ?? 0;
+      // "Has no working one" also means nobody is already building one.
+      if (!c.working && s.building?.[c.facility] !== undefined) return result("under construction", false);
       return result(cond, (cond >= FACILITY_WORKING) === c.working);
     }
     case "law": {

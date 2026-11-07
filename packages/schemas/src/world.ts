@@ -33,6 +33,8 @@ export const SettlementSchema = z.object({
   supportedBy: z.string().nullable().optional(),
   /** Buildings and their condition (0–100). */
   facilities: z.partialRecord(z.enum(FACILITIES), z.number().min(0).max(100)).optional(),
+  /** Buildings under construction: facility -> season index it is finished. */
+  building: z.partialRecord(z.enum(FACILITIES), z.number().int()).optional(),
   /** Laws in force. */
   laws: z.array(z.enum(LAWS)).optional(),
 });
@@ -172,6 +174,8 @@ export const ProjectSchema = z.object({
   lastGain: z.number().min(0),
   /** Consecutive years with nobody working on it. */
   idleYears: z.number().int().min(0),
+  /** Work each person has put in so far (character id -> work), kept for history. */
+  contributions: z.record(z.string(), z.number()).optional(),
   /** How it is being run (chosen by its lead). Absent = steady. */
   approach: z.enum(PROJECT_APPROACHES).optional(),
 });

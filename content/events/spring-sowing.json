@@ -10,9 +10,9 @@
       "kind": "settlement"
     },
     {
-      "type": "technology",
-      "tech": "hydroponics",
-      "has": true
+      "type": "site_feature",
+      "feature": "fertile",
+      "present": true
     },
     {
       "type": "flag",
@@ -37,7 +37,7 @@
   "choices": [
     {
       "id": "sow_all",
-      "label": "把留種全部播下去",
+      "label": "拿出存糧裡的留種，全部播下去",
       "tags": [
         "bold",
         "growth"

@@ -6,9 +6,14 @@
   "description": "學校缺老師，有人請你去教一堂課。",
   "preconditions": [
     {
-      "type": "flag",
-      "flag": "culture.school",
-      "present": true
+      "type": "facility",
+      "facility": "schoolhouse",
+      "working": true
+    },
+    {
+      "type": "children",
+      "op": ">=",
+      "value": 3
     }
   ],
   "roles": [

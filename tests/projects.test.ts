@@ -96,6 +96,10 @@ describe("projects", () => {
     let s = step(base);
     const farm = activeProjects(s).find((p) => TECH_BY_ID[p.techId]!.branch === "farming");
     expect(farm).toBeDefined();
+    // Plenty of knowledge, so the only difference is the player's work.
+    for (const x of s.settlements) x.resources.knowledge = 1000;
+    // No open personal events either: on autopilot one might send the player off scavenging for a season.
+    s.pendingDecisions = [];
     const without = step(s);
     const joined = applyImmediate(s, { type: "JOIN_PROJECT", playerId: "a", projectId: farm!.id });
     expect(joined.rejected).toBeNull();

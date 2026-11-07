@@ -6,25 +6,19 @@
   "description": "聚落裡的孩子越來越多，卻沒有人教他們讀寫。",
   "preconditions": [
     {
-      "type": "population",
+      "type": "children",
       "op": ">=",
-      "value": 20,
-      "scope": "world"
+      "value": 8
     },
     {
-      "type": "settlement_count",
-      "op": ">=",
-      "value": 2
+      "type": "facility",
+      "facility": "schoolhouse",
+      "working": false
     },
     {
       "type": "world_tick",
       "op": ">=",
       "value": 5
-    },
-    {
-      "type": "flag",
-      "flag": "culture.school",
-      "present": false
     }
   ],
   "roles": [
@@ -32,6 +26,13 @@
       "id": "child",
       "maxAge": 12,
       "minAge": 6
+    },
+    {
+      "id": "teacher",
+      "minAge": 18,
+      "minAttributes": {
+        "knowledge": 50
+      }
     }
   ],
   "effects": [],
@@ -45,13 +46,13 @@
       ],
       "effects": [
         {
-          "type": "ADD_WORLD_FLAG",
-          "flag": "culture.school"
+          "type": "BUILD_FACILITY",
+          "facility": "schoolhouse",
+          "seasons": 2
         },
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "knowledge",
-          "amount": 8
+          "type": "ADD_WORLD_FLAG",
+          "flag": "culture.school"
         },
         {
           "type": "CHANGE_SETTLEMENT_STAT",
@@ -62,12 +63,17 @@
           "type": "ADD_LIFE_EVENT",
           "role": "child",
           "text": "成了第一批學生"
+        },
+        {
+          "type": "ADD_LIFE_EVENT",
+          "role": "teacher",
+          "text": "當了第一批孩子的老師"
         }
       ],
-      "outcome": "大家把舊倉庫清出來，擺上撿來的桌椅。第一堂課，{{child}}坐在最前面。",
+      "outcome": "{{teacher}}先在倉庫一角開課，大家同時動手蓋一間像樣的校舍，兩季後完工。",
       "description": "花 10 份物資整理教室",
       "costs": {
-        "materials": 10
+        "materials": 20
       }
     },
     {
@@ -96,7 +102,7 @@
   "importance": "notable",
   "narrative": {
     "headline": "{{child}}問：「字要怎麼念？」",
-    "text": "{{child}}撿到一本破舊的圖畫書，翻來翻去，卻看不懂上面的字。{{settlement}}裡像這樣的孩子，已經有十幾個了。"
+    "text": "{{child}}撿到一本破舊的圖畫書，翻來翻去，卻看不懂上面的字。{{settlement}}裡像這樣的孩子已經不少了。{{teacher}}說：「給我一間屋子，我來教。」"
   },
   "version": 1,
   "status": "published",

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { Activity, BookMarked, BookOpen, Gauge, GitCompareArrows, Globe2, ScrollText, Radio } from "lucide-react";
+import { Activity, BookMarked, Bug, BookOpen, Gauge, GitCompareArrows, Globe2, ScrollText, Radio } from "lucide-react";
 import { useI18n } from "./i18n";
 import type { MessageKey } from "@/lib/i18n/core";
 
@@ -15,6 +15,7 @@ export const NAV = [
   { href: "/content", label: "nav.content", icon: BookOpen, mobile: true, advanced: true },
   { href: "/overview", label: "nav.overview", icon: Gauge, mobile: false, advanced: true },
   { href: "/compare", label: "nav.compare", icon: GitCompareArrows, mobile: false, advanced: true },
+  { href: "/debug", label: "nav.debug", icon: Bug, mobile: false, advanced: true },
 ] as const satisfies readonly { label: MessageKey; [k: string]: unknown }[];
 
 function isActive(pathname: string, href: string) {

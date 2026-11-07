@@ -43,7 +43,8 @@
       "effects": [
         {
           "type": "BUILD_FACILITY",
-          "facility": "well"
+          "facility": "well",
+          "seasons": 1
         }
       ],
       "risk": {

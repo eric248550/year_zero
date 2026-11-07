@@ -242,6 +242,7 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
       if (characterAge(st, me) < ADULT_AGE) return "You are too young to lead a project";
+      if (me.awayUntil !== undefined && me.awayUntil >= st.tick * 4) return "You are away and cannot start anything here until you are back";
       if (activeProjects(st).some((p) => p.leadId === me.id)) return "You are already leading a project";
       const tech = TECH_BY_ID[a.tech];
       // You can only propose what your trade knows how to build.
@@ -257,6 +258,7 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (p.settlementId !== me.homeId) return "You can only work on projects where you live";
       if (characterAge(st, me) < ADULT_AGE) return "You are too young to work on a project";
       if (p.memberIds.includes(me.id)) return "You are already working on it";
+      if (me.awayUntil !== undefined && me.awayUntil >= st.tick * 4) return "You are away and cannot join anything until you are back";
       return null;
     }
     case "PROJECT_APPROACH": {

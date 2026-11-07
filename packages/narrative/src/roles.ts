@@ -13,7 +13,11 @@ export function candidatesForRole(
   role: Role,
   settlementId: string | null,
   exclude: ReadonlySet<string>,
+  /** Roles already filled (for bondWith). */
+  assigned: Readonly<Record<string, string>> = {},
 ): Character[] {
+  const anchor = role.bondWith ? assigned[role.bondWith.role] : undefined;
+  if (role.bondWith && !anchor) return [];
   return state.characters.filter((c) => {
     if (c.deathTick !== null) return false;
     if (exclude.has(c.id)) return false;
@@ -27,6 +31,12 @@ export function candidatesForRole(
     // Someone away on a long job cannot be in anything else until they are back.
     if (c.awayUntil !== undefined && c.awayUntil >= state.tick * 4) return false;
     if (role.specialty && !c.specialties?.includes(role.specialty)) return false;
+    if (role.bornBefore !== undefined && c.birthTick >= role.bornBefore) return false;
+    if (role.bondWith && anchor) {
+      const bond = state.relationships[relationshipKey(anchor, c.id)] ?? 0;
+      if (role.bondWith.min !== undefined && bond < role.bondWith.min) return false;
+      if (role.bondWith.max !== undefined && bond > role.bondWith.max) return false;
+    }
     if (role.onProject) {
       const p = projectOf(state, c.id);
       if (!p || (role.onProject !== true && TECH_BY_ID[p.techId]?.branch !== role.onProject)) return false;
@@ -72,11 +82,12 @@ export function resolveRoles(
   /** Roles already decided (e.g. the player a personal event is about). Must be valid candidates. */
   forced: Readonly<Record<string, string>> = {},
 ): Record<string, string> | null {
-  const assigned: Record<string, string> = { ...forced };
+  // Someone forced into a role who has since died cannot take part.
+  const assigned: Record<string, string> = Object.fromEntries(Object.entries(forced).filter(([, id]) => state.characters.some((c) => c.id === id && c.deathTick === null)));
   const used = new Set<string>(Object.values(forced));
-  const ordered = [...roles].filter((r) => !(r.id in forced)).sort((a, b) => Number(a.optional) - Number(b.optional));
+  const ordered = [...roles].filter((r) => !(r.id in assigned)).sort((a, b) => Number(a.optional) - Number(b.optional) || Number(!!a.bondWith) - Number(!!b.bondWith));
   for (const role of ordered) {
-    const pool = candidatesForRole(state, role, settlementId, used);
+    const pool = candidatesForRole(state, role, settlementId, used, assigned);
     if (pool.length === 0) {
       if (role.optional) continue;
       return null;

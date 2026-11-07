@@ -56,18 +56,12 @@
     },
     {
       "id": "wait",
-      "label": "改種在室外",
+      "label": "先把種子收好",
       "tags": [
         "cautious"
       ],
-      "effects": [
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 10
-        }
-      ],
-      "outcome": "種子種進了普通的土裡，長得還算可以。"
+      "effects": [],
+      "outcome": "種子被小心地收進乾燥箱。等室外的田整好，再拿出來種。"
     }
   ],
   "priority": 5,

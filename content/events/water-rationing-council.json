@@ -12,7 +12,12 @@
     },
     {
       "type": "flag",
-      "flag": "governance.ration_council",
+      "flag": "governance.water_council",
+      "present": false
+    },
+    {
+      "type": "flag",
+      "flag": "governance.engineer_control",
       "present": false
     }
   ],
@@ -39,7 +44,7 @@
       "effects": [
         {
           "type": "ADD_WORLD_FLAG",
-          "flag": "governance.ration_council"
+          "flag": "governance.water_council"
         },
         {
           "type": "CHANGE_SETTLEMENT_STAT",
@@ -58,7 +63,7 @@
           "text": "召集了第一次水務議會"
         }
       ],
-      "outcome": "舊餐廳裡，大家舉起了手。{{speaker}}被選為管理水帳的人。"
+      "outcome": "舊餐廳裡，大家舉起了手。{{speaker}}被選為管理水帳的人。 往後分水由選出來的議會決定：大家比較服氣（士氣 +3）。"
     },
     {
       "id": "appoint",
@@ -70,8 +75,7 @@
       "effects": [
         {
           "type": "ADD_WORLD_FLAG",
-          "flag": "governance.ration_council",
-          "value": "technocratic"
+          "flag": "governance.engineer_control"
         },
         {
           "type": "CHANGE_RELATIONSHIP",
@@ -80,7 +84,7 @@
           "delta": -25
         }
       ],
-      "outcome": "工程師接管了水閥。{{dissenter}}說這是搶劫。"
+      "outcome": "工程師接管了水閥。{{dissenter}}說這是搶劫。 往後水閥由工程師管：水用得更省（水 +10%），但很多人不服（士氣 -2）。"
     }
   ],
   "priority": 6,
@@ -97,5 +101,7 @@
   },
   "version": 1,
   "status": "published",
-  "source": "seed"
+  "source": "seed",
+  "participation": "everyone",
+  "resolution": "vote"
 }

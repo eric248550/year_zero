@@ -131,6 +131,8 @@ export function births(ctx: TickContext): void {
     for (let i = 0; i < pairs; i++) {
       if (!ctx.rng.chance(p)) continue;
       const [a, b] = ctx.rng.shuffle(fertile).slice(0, 2) as [Character, Character];
+      // Never parent and child, or brother and sister.
+      if (closeKin(a, b)) continue;
       const child: Character = {
         id: newCharacterId(st),
         ...randomName(ctx.rng, a.familyName, st.locale),
@@ -192,4 +194,9 @@ export function comingOfAge(ctx: TickContext): void {
     }
     c.lifeEvents.push({ tick: st.tick, text: say(st).cameOfAge(professionName(st, c.profession)), historyId: null });
   }
+}
+
+/** Parent and child, or children of a shared parent. */
+export function closeKin(a: Character, b: Character): boolean {
+  return a.parentIds.includes(b.id) || b.parentIds.includes(a.id) || a.parentIds.some((p) => b.parentIds.includes(p));
 }

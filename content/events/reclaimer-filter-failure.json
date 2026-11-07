@@ -19,6 +19,10 @@
       "type": "world_tick",
       "op": ">=",
       "value": 1
+    },
+    {
+      "type": "settlement_kind",
+      "kind": "bunker"
     }
   ],
   "roles": [
@@ -54,10 +58,6 @@
           "amount": 10
         },
         {
-          "type": "ADD_WORLD_FLAG",
-          "flag": "water.filters_patched"
-        },
-        {
           "type": "ADD_LIFE_EVENT",
           "role": "engineer",
           "text": "靠廢料和一股倔強讓濾水機繼續運轉"
@@ -79,8 +79,8 @@
           "delta": -6
         },
         {
-          "type": "ADD_WORLD_FLAG",
-          "flag": "water.rationing"
+          "type": "ENACT_LAW",
+          "law": "rationing"
         }
       ],
       "outcome": "每一杯水都要算。大家的脾氣越來越差。"

@@ -189,15 +189,24 @@ export function resolvePendingDecisions(
   return { state: current, events, rejections };
 }
 
-/** A player who speaks up brings this many neighbours round to their side. */
-export const VOTE_PERSUASION = 3;
+/**
+ * Vote weights. A player who answers speaks up and brings a few neighbours
+ * round (1 + 3). A player who did not answer is decided by their nature and
+ * counts like anyone else, as does every NPC.
+ */
+export const VOTING = { player: 4, absentPlayer: 1, npc: 1 } as const;
+export type VoteWeights = { player: number; absentPlayer: number; npc: number };
+/** Kept for older callers: how many extra votes a player who answers carries. */
+export const VOTE_PERSUASION = VOTING.player - VOTING.npc;
 
-/** Weighted tally: one vote each, plus the neighbours each player talks round. Ties go to the earlier choice. */
-export function tallyVotes(choices: readonly Choice[], picks: readonly { choiceId: string; decidedBy: string }[]): { choice: Choice; votes: number }[] {
-  return choices.map((choice) => ({
-    choice,
-    votes: picks.filter((x) => x.choiceId === choice.id).reduce((n, x) => n + 1 + (x.decidedBy === "player" ? VOTE_PERSUASION : 0), 0),
-  }));
+/** Weighted tally. Ties go to the earlier choice. */
+export function tallyVotes(
+  choices: readonly Choice[],
+  picks: readonly { choiceId: string; decidedBy: string }[],
+  weights: VoteWeights = VOTING,
+): { choice: Choice; votes: number }[] {
+  const w = (d: string) => (d === "player" ? weights.player : d === "autopilot" ? weights.absentPlayer : weights.npc);
+  return choices.map((choice) => ({ choice, votes: picks.filter((x) => x.choiceId === choice.id).reduce((n, x) => n + w(x.decidedBy), 0) }));
 }
 
 /**
@@ -244,7 +253,7 @@ function resolveVote(
   }).filter((x): x is [string, string] => !!x);
   event.text = [say(state).voteResult(counts, winner.label), ...(players.length ? [say(state).voteVoices(players)] : []), ...event.text.split("\n\n").slice(1)].join("\n\n");
   event.characterIds = [...new Set([...event.characterIds, ...picks.map((x) => x.characterId)])];
-  if (event.trigger) event.trigger.summary = `Vote: ${counts.map(([l, n]) => `${l} ${n}`).join(", ")} (players count ${1 + VOTE_PERSUASION})`;
+  if (event.trigger) event.trigger.summary = `Vote: ${counts.map(([l, n]) => `${l} ${n}`).join(", ")} (weights player ${VOTING.player}, absent ${VOTING.absentPlayer}, npc ${VOTING.npc})`;
   for (const m of picks) {
     if (winners.some((w) => w.characterId === m.characterId)) continue;
     const c = next.characters.find((x) => x.id === m.characterId);

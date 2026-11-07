@@ -18,7 +18,13 @@
       "optional": true
     }
   ],
-  "effects": [],
+  "effects": [
+    {
+      "type": "CHANGE_FACILITY",
+      "facility": "greenhouse",
+      "delta": -40
+    }
+  ],
   "choices": [
     {
       "id": "repair",
@@ -33,7 +39,7 @@
         {
           "type": "CHANGE_FACILITY",
           "facility": "greenhouse",
-          "delta": -10
+          "delta": 35
         }
       ],
       "outcome": "大家連夜把能找到的玻璃和塑膠布都拿來補。溫室保住了，只是不太好看。"
@@ -44,14 +50,8 @@
       "tags": [
         "cautious"
       ],
-      "effects": [
-        {
-          "type": "CHANGE_FACILITY",
-          "facility": "greenhouse",
-          "delta": -45
-        }
-      ],
-      "outcome": "溫室空著吹了一季的風。裡面的苗死了一半，要好幾年才能慢慢補回來。"
+      "effects": [],
+      "outcome": "溫室空著吹了一季的風。裡面的苗死了一半，只能靠每年的維護慢慢補回來。"
     }
   ],
   "priority": 3,

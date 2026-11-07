@@ -64,21 +64,31 @@
     },
     {
       "id": "strip",
-      "label": "拿物資庫存去換糧食",
+      "label": "拿物資去跟鄰近聚落換糧食",
       "tags": [
         "industry"
       ],
-      "costs": {
-        "materials": 15
-      },
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 15
+          "type": "EXCHANGE",
+          "get": {
+            "resource": "food",
+            "amount": 15
+          },
+          "give": {
+            "resource": "materials",
+            "amount": 15
+          }
         }
       ],
-      "outcome": "工具和廢料被熔掉、拿去交換，或乾脆不吃不喝地撐著。"
+      "outcome": "工具和廢料被裝上車，送去{{rival}}換糧。",
+      "requires": [
+        {
+          "type": "settlement_count",
+          "op": ">=",
+          "value": 2
+        }
+      ]
     },
     {
       "id": "elders_fast",

@@ -59,17 +59,17 @@
       ],
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "food",
-          "amount": 8
-        },
-        {
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 3
+        },
+        {
+          "type": "CHANGE_PROJECT",
+          "tech": "solar_power",
+          "progress": 0.2
         }
       ],
-      "outcome": "幾盞燈亮了起來，種植室的苗長得比以前快。"
+      "outcome": "幾盞燈亮了起來。如果有人正在做「局部電力」，這幾塊板子讓工作快了一大截。"
     },
     {
       "id": "leave",

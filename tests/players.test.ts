@@ -168,11 +168,13 @@ describe("death and succession", () => {
   function worldWithFamily() {
     const w = createWorld({ seed: 8 });
     const parent = w.characters.find((c) => characterAge(w, c) >= 30)!;
-    const [kid, ward, friend, stranger] = w.characters.filter((c) => c.id !== parent.id && !c.parentIds.includes(parent.id)).slice(0, 4);
-    kid!.parentIds = [parent.id];
+    // The kid must really be young enough to be the parent's child.
+    const kid = w.characters.find((c) => c.id !== parent.id && c.birthTick >= parent.birthTick + 18 && characterAge(w, c) >= 12 && characterAge(w, c) <= 25)!;
+    const [ward, friend, stranger] = w.characters.filter((c) => c.id !== parent.id && c.id !== kid.id && !c.parentIds.includes(parent.id)).slice(0, 3);
+    kid.parentIds = [parent.id];
     ward!.caretakerIds = [parent.id];
     w.relationships[relationshipKey(parent.id, friend!.id)] = 70;
-    return { w, parent, kid: kid!, ward: ward!, friend: friend!, stranger: stranger! };
+    return { w, parent, kid, ward: ward!, friend: friend!, stranger: stranger! };
   }
 
   it("when a character dies the player may continue as a child, ward or close companion — never a stranger", () => {

@@ -1,6 +1,7 @@
 import {
   EFFECT_TYPES,
   EventDefinitionSchema,
+  EXCLUSIVE_FLAGS,
   LOCATION_BY_ID,
   RESERVED_FLAG_PREFIXES,
   SECRET_BY_ID,
@@ -167,6 +168,10 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
       case "facility": { const k = `facility:${c.facility}`; if (bool.has(k) && bool.get(k) !== c.working) errors.push({ path, code: "precondition.contradiction", message: `${c.facility} must be both working and not` }); bool.set(k, c.working); break; }
       case "law": { const k = `law:${c.law}`; if (bool.has(k) && bool.get(k) !== c.active) errors.push({ path, code: "precondition.contradiction", message: `Law ${c.law} must be both in force and not` }); bool.set(k, c.active); break; }
       case "site_claimed": { const k = `claim:${c.location}`; if (bool.has(k) && bool.get(k) !== c.claimed) errors.push({ path, code: "precondition.contradiction", message: `${c.location} must be both claimed and not` }); bool.set(k, c.claimed); break; }
+      case "children":
+        key = "children"; label = "children"; domain = { lo: 0, loInc: true, hi: Infinity, hiInc: false };
+        break;
+      case "site_feature": { const k = `feature:${c.feature}`; if (bool.has(k) && bool.get(k) !== c.present) errors.push({ path, code: "precondition.contradiction", message: `Land must both have and lack ${c.feature}` }); bool.set(k, c.present); break; }
       case "claims":
         key = "claims"; label = "claims"; domain = { lo: 0, loInc: true, hi: Infinity, hiInc: false };
         break;
@@ -202,7 +207,7 @@ function checkSatisfiability(conds: readonly Condition[], basePath: string, scop
 
   if (scope === "world") {
     conds.forEach((c, i) => {
-      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age" || c.type === "facility" || c.type === "law" || c.type === "claims"
+      const settlementOnly = c.type === "settlement_stat" || c.type === "settlement_kind" || c.type === "shortage" || c.type === "tension" || c.type === "settlement_age" || c.type === "facility" || c.type === "law" || c.type === "claims" || c.type === "children" || c.type === "site_feature"
         || ((c.type === "resource" || c.type === "population") && c.scope === "target");
       if (settlementOnly) {
         errors.push({ path: `${basePath}.${i}`, code: "scope.mismatch", message: `World-scoped events have no target settlement; use scope "world" on this condition or change the event scope` });
@@ -308,11 +313,14 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         if (!SECRET_BY_ID[e.secret]) errors.push({ path, code: "ref.secret", message: `Unknown secret "${e.secret}"` });
         break;
       case "ADD_WORLD_FLAG":
-      case "REMOVE_WORLD_FLAG":
+      case "REMOVE_WORLD_FLAG": {
         if (RESERVED_FLAG_PREFIXES.some((p) => e.flag.startsWith(p))) {
           errors.push({ path, code: "flag.reserved", message: `Flag "${e.flag}" is reserved. Secrets may only be revealed with REVEAL_SECRET` });
         }
+        const group = e.type === "ADD_WORLD_FLAG" ? EXCLUSIVE_FLAGS.find((g) => g.includes(e.flag)) : undefined;
+        if (group) warnings.push({ path, code: "flag.exclusive", message: `Setting ${e.flag} clears ${group.filter((f) => f !== e.flag).join(", ")}` });
         break;
+      }
       case "CREATE_HISTORICAL_EVENT":
         break;
     }
@@ -388,6 +396,21 @@ export function validateEventDefinition(raw: unknown, ctx: ValidationContext = E
   });
 
   // Templates
+  def.roles.forEach((r, i) => {
+    if (r.bondWith && !def.roles.some((o) => o.id === r.bondWith!.role && o !== r)) errors.push({ path: `roles.${i}.bondWith`, code: "ref.role", message: `Unknown role "${r.bondWith.role}"` });
+  });
+
+  // Generated drafts tell stories; they do not get to rewrite the world's fixed facts.
+  if (/^(ai|mock):/.test(def.source)) {
+    const fixed = new Set(["UNLOCK_TECHNOLOGY", "REVEAL_SECRET", "SCHEDULE_EVENT", "CEDE_CLAIM", "CLAIM_SITE"]);
+    const effects = [...def.effects, ...def.choices.flatMap((c) => [...c.effects, ...(c.memberEffects ?? []), ...(c.risk?.effects ?? [])])];
+    effects.forEach((e) => {
+      if (fixed.has(e.type)) errors.push({ path: "effects", code: "ai.restricted", message: `Generated events cannot use ${e.type}; technology, secrets, claims and follow-ups come from the simulation and hand-written content` });
+      if (e.type === "ADJUST_RESOURCE" && Math.abs(e.amount) > 30) errors.push({ path: "effects", code: "ai.restricted", message: `Generated events cannot move more than 30 of a resource at once (${e.amount})` });
+    });
+    if (def.scheduledOnly) errors.push({ path: "scheduledOnly", code: "ai.restricted", message: "Generated events cannot be scheduled-only follow-ups" });
+  }
+
   // Several people deciding for themselves must not be able to set rival outcomes at once.
   if ((def.participation ?? "roles") === "everyone" && def.resolution !== "vote") {
     const setters = def.choices.filter((c) => c.effects.some((e) => e.type === "ADD_WORLD_FLAG" || e.type === "REMOVE_WORLD_FLAG"));
@@ -432,4 +455,62 @@ export function validateStoryline(raw: unknown, ctx: ValidationContext = EMPTY_C
     });
   });
   return { valid: true, value: parsed.data, errors: [], warnings };
+}
+
+/** Flags the simulation itself reads or writes (outside content). */
+export const ENGINE_FLAGS = new Set([
+  "world.surface_open", "food.heirloom_seeds", "mystery.halcyon_archive", "mystery.vault12_opened", "society.truth_known",
+  "society.surface_first", "society.bunker_first", "society.open_gates", "society.closed_gates",
+  "governance.water_council", "governance.engineer_control", "society.founders_repudiated",
+  // Read by the civilization line.
+  "food.surface_farming", "culture.school", "trade.caravan", "governance.assembly", "power.first_light",
+]);
+
+function allEffects(d: EventDefinition): Effect[] {
+  return [...d.effects, ...d.choices.flatMap((c) => [...c.effects, ...(c.memberEffects ?? []), ...(c.risk?.effects ?? [])])];
+}
+function allConditions(d: EventDefinition): Condition[] {
+  return [...d.preconditions, ...d.choices.flatMap((c) => c.requires)];
+}
+
+/**
+ * Checks across the whole content set that one definition alone cannot see:
+ * follow-ups that do not exist or are not scheduled-only, scheduled-only
+ * events nobody schedules (unreachable), conditions on flags nothing sets, and
+ * flags that are set but never read.
+ */
+export function validateBundle(events: readonly EventDefinition[]): { errors: ValidationIssue[]; warnings: ValidationIssue[] } {
+  const errors: ValidationIssue[] = [];
+  const warnings: ValidationIssue[] = [];
+  const byId = new Map(events.map((e) => [e.id, e]));
+  const scheduled = new Set<string>();
+  const setFlags = new Set<string>();
+  const readFlags = new Set<string>();
+  for (const d of events) {
+    for (const e of allEffects(d)) {
+      if (e.type === "SCHEDULE_EVENT") {
+        scheduled.add(e.event);
+        const t = byId.get(e.event);
+        if (!t) errors.push({ path: `${d.id}`, code: "ref.event", message: `${d.id} schedules unknown event "${e.event}"` });
+        else if (!t.scheduledOnly) errors.push({ path: `${d.id}`, code: "schedule.target", message: `${d.id} schedules ${e.event}, which is not scheduledOnly and could also fire by chance` });
+      }
+      if (e.type === "ADD_WORLD_FLAG") setFlags.add(e.flag);
+    }
+    for (const c of allConditions(d)) if (c.type === "flag") readFlags.add(c.flag);
+  }
+  for (const d of events) {
+    if (d.scheduledOnly && !scheduled.has(d.id)) errors.push({ path: d.id, code: "event.unreachable", message: `${d.id} is scheduledOnly but nothing schedules it` });
+    for (const c of allConditions(d)) {
+      if (c.type === "flag" && c.present && !setFlags.has(c.flag) && !ENGINE_FLAGS.has(c.flag)) {
+        errors.push({ path: d.id, code: "event.unreachable", message: `${d.id} needs flag ${c.flag}, which nothing sets` });
+      }
+    }
+  }
+  // One side of a rival pair counts as read when the other side is: it is what clears it.
+  const read = (f: string) => readFlags.has(f) || ENGINE_FLAGS.has(f);
+  for (const f of setFlags) {
+    const group = EXCLUSIVE_FLAGS.find((g) => g.includes(f));
+    if (!read(f) && !(group && group.some(read))) warnings.push({ path: f, code: "flag.unread", message: `Flag ${f} is set but nothing reads it` });
+  }
+  return { errors, warnings };
 }

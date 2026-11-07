@@ -14,7 +14,11 @@
     {
       "id": "friend",
       "minAge": 10,
-      "familiarWith": "you"
+      "familiarWith": "you",
+      "bondWith": {
+        "role": "you",
+        "min": 10
+      }
     }
   ],
   "effects": [],

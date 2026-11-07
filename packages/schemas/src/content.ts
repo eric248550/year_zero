@@ -65,6 +65,10 @@ export const ConditionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("law"), law: z.enum(LAWS), active: z.boolean() }).strict(),
   /** How many sites the target settlement has claimed. */
   z.object({ type: z.literal("claims"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
+  /** Children (under 16) living in the target settlement. */
+  z.object({ type: z.literal("children"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
+  /** The land the target settlement stands on has (or lacks) this feature: fertile, river, ruins… */
+  z.object({ type: z.literal("site_feature"), feature: z.enum(["bunker", "river", "fertile", "ruins", "seed_cache", "relay", "sealed_bunker", "clean_aquifer"]), present: z.boolean() }).strict(),
   /** A site is claimed by anyone (or nobody). */
   z.object({ type: z.literal("site_claimed"), location: z.string(), claimed: z.boolean() }).strict(),
 ]);
@@ -94,6 +98,10 @@ export const RoleSchema = z.object({
   familiarWith: z.string().optional(),
   /** Only characters working on an active project (optionally of this branch). Fills {{project}}. */
   onProject: z.union([z.literal(true), z.enum(BRANCHES)]).optional(),
+  /** Only characters with this relationship strength toward the character in another role. */
+  bondWith: z.object({ role: z.string(), min: z.number().min(-100).max(100).optional(), max: z.number().min(-100).max(100).optional() }).strict().optional(),
+  /** Only characters born before this tick (e.g. -10: old enough to remember the bunker before the doors opened). */
+  bornBefore: z.number().int().optional(),
   /** Only characters who have learned this specialty. */
   specialty: z.enum(SPECIALTIES).optional(),
   /** Minimum attribute values (worlds without attributes treat everyone as 50). */
@@ -195,7 +203,8 @@ export const EffectSchema = z.discriminatedUnion("type", [
     approach: z.enum(PROJECT_APPROACHES).optional(),
   }).strict(),
   /** Raise (or fully rebuild) a building in the target settlement. */
-  z.object({ type: z.literal("BUILD_FACILITY"), facility: z.enum(FACILITIES) }).strict(),
+  /** Raise a building; with `seasons` it is a construction site until then (and works only once finished). */
+  z.object({ type: z.literal("BUILD_FACILITY"), facility: z.enum(FACILITIES), seasons: z.number().int().min(1).max(12).optional() }).strict(),
   /** Wear down or repair a building that exists; "any" picks the one in best shape. */
   z.object({ type: z.literal("CHANGE_FACILITY"), facility: z.union([z.enum(FACILITIES), z.literal("any")]), delta: z.number().int().min(-100).max(100) }).strict(),
   z.object({ type: z.literal("ENACT_LAW"), law: z.enum(LAWS) }).strict(),

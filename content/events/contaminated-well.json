@@ -17,6 +17,10 @@
       "type": "technology",
       "tech": "water_purification",
       "has": false
+    },
+    {
+      "type": "settlement_kind",
+      "kind": "bunker"
     }
   ],
   "roles": [

@@ -432,7 +432,7 @@ export function personalEligible(state: WorldState, def: EventDefinition, player
   const anchorId = def.scope === "world" ? null : home.id;
   if (!candidatesForRole(state, youRole, anchorId, new Set()).some((c) => c.id === me.id)) return false;
   const others = def.roles.filter((r) => r !== youRole && !r.optional);
-  return others.every((r) => candidatesForRole(state, r, anchorId, new Set([me.id])).length > 0);
+  return others.every((r) => candidatesForRole(state, r, anchorId, new Set([me.id]), { [youRole.id]: me.id }).length > 0);
 }
 
 /**

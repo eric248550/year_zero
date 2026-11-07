@@ -36,11 +36,6 @@
       ],
       "effects": [
         {
-          "type": "ADJUST_RESOURCE",
-          "resource": "knowledge",
-          "amount": 15
-        },
-        {
           "type": "CHANGE_SETTLEMENT_STAT",
           "stat": "morale",
           "delta": 4
@@ -50,6 +45,11 @@
           "resource": "knowledge",
           "amount": 5,
           "target": "all_settlements"
+        },
+        {
+          "type": "ADJUST_RESOURCE",
+          "resource": "knowledge",
+          "amount": 5
         }
       ],
       "outcome": "一年後，每個聚落都有了自己的書架。{{scholar}}的字跡出現在每一本抄本上。"

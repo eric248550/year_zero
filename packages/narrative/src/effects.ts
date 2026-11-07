@@ -1,6 +1,7 @@
 import {
   EFFECT_TYPES,
   LOCATION_BY_ID,
+  EXCLUSIVE_FLAGS,
   RESERVED_FLAG_PREFIXES,
   SECRET_BY_ID,
   TECH_BY_ID,
@@ -192,10 +193,10 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       const [s] = targetSettlements(state, "settlement", ctx);
       const rival = rivalOf(state, s!);
       if (!rival) return;
-      // Only what the other side actually has changes hands.
-      const got = Math.min(effect.get.amount, rival.resources[effect.get.resource]);
-      if (got <= 0) return;
-      const share = got / effect.get.amount;
+      // Only what both sides actually have changes hands, in the agreed proportion.
+      const share = Math.min(1, rival.resources[effect.get.resource] / effect.get.amount, effect.give ? s!.resources[effect.give.resource] / effect.give.amount : 1);
+      if (share <= 0) return;
+      const got = effect.get.amount * share;
       const move = (from: Settlement, to: Settlement, r: ResourceId, n: number) => {
         const amount = Math.min(round2(n), from.resources[r]);
         if (amount <= 0) return;
@@ -231,6 +232,13 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
     }
     case "BUILD_FACILITY": {
       const [s] = targetSettlements(state, "settlement", ctx);
+      if (effect.seasons) {
+        if (s!.building?.[effect.facility] !== undefined) return; // already being built
+        const due = (ctx.season ?? ctx.tick * 4) + effect.seasons;
+        s!.building = { ...(s!.building ?? {}), [effect.facility]: due };
+        record(rec, `settlements.${s!.id}.building.${effect.facility}`, `${s!.name} builds ${effect.facility}`, null, due);
+        return;
+      }
       const before = s!.facilities?.[effect.facility] ?? null;
       s!.facilities = { ...(s!.facilities ?? {}), [effect.facility]: 100 };
       record(rec, `settlements.${s!.id}.facilities.${effect.facility}`, `${s!.name} ${effect.facility}`, before, 100);
@@ -331,6 +339,13 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
     case "ADD_WORLD_FLAG": {
       if (RESERVED_FLAG_PREFIXES.some((p) => effect.flag.startsWith(p))) {
         throw new EffectError(`Flag "${effect.flag}" is in a reserved namespace; secrets can only be revealed with REVEAL_SECRET`);
+      }
+      // Rival outcomes cannot both hold: this one replaces the others in its group.
+      for (const other of EXCLUSIVE_FLAGS.find((g) => g.includes(effect.flag)) ?? []) {
+        if (other === effect.flag || state.flags[other] === undefined) continue;
+        record(rec, `flags.${other}`, `Flag ${other}`, state.flags[other]!, null);
+        delete state.flags[other];
+        delete state.flagOrigins[other];
       }
       const before = state.flags[effect.flag] ?? null;
       state.flags[effect.flag] = effect.value;

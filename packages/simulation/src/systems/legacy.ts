@@ -50,6 +50,21 @@ export function hasLaw(s: Settlement | undefined, law: LawId): boolean {
 export function facilities(ctx: TickContext): void {
   const st = ctx.state;
   for (const s of activeSettlements(st)) {
+    // Construction sites whose season has come are finished.
+    for (const [id, due] of Object.entries(s.building ?? {}) as [FacilityId, number][]) {
+      if (due >= (st.tick + 1) * 4) continue;
+      delete s.building![id];
+      s.facilities = { ...(s.facilities ?? {}), [id]: 100 };
+      ctx.system({
+        category: "settlement",
+        importance: "notable",
+        title: say(st).facilityDoneTitle(s.name, facilityName(st, id)),
+        text: say(st).facilityDoneText(s.name, facilityName(st, id)),
+        settlementIds: [s.id],
+        characterIds: st.characters.filter((c) => c.deathTick === null && c.controllerId && c.homeId === s.id).map((c) => c.id),
+        changes: [{ path: `settlements.${s.id}.facilities.${id}`, label: `${s.name} ${id}`, before: null, after: 100 }],
+      });
+    }
     for (const [id, cond] of Object.entries(s.facilities ?? {}) as [FacilityId, number][]) {
       const paid = s.resources.materials >= LEGACY.upkeep;
       if (paid) s.resources.materials = round2(s.resources.materials - LEGACY.upkeep);

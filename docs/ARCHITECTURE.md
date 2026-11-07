@@ -79,6 +79,20 @@ rejectedEvents, metrics }`. Phases:
    location `claimedBy` (yearly yields, envy), character `specialties` (project
    work ×1.5, taught to the young), and inherited bonds on death
    (`inheritBonds`).
+   Integrity: rival outcomes are grouped in `EXCLUSIVE_FLAGS` (setting one clears
+   the rest); votes use configurable `VOTING` weights (answering player 4,
+   absent player 1, NPC 1) via `tallyVotes`; `EXCHANGE` trades both sides in the
+   same proportion, capped by what each has; births never pair close kin;
+   `checkInvariants` also checks lineage, references to people, overdue
+   follow-ups and rival flags. Roles can require `bondWith`, `bornBefore`,
+   `specialty`; conditions include `children` and `site_feature`.
+   `validateBundle` checks the whole content set (unreachable follow-ups, flags
+   nothing sets or reads); generated (AI/mock) drafts cannot unlock technology,
+   reveal secrets, claim sites, schedule follow-ups or move more than 30 of a
+   resource. `pnpm sim:report [worlds] [years]` runs seeded worlds and writes
+   `docs/sim-report.json`. Studio `/debug` shows pending decisions, follow-ups,
+   people away, construction, projects, rejected events/actions, transfers
+   between settlements and state changes by path.
 9. narrative phase (storylets)
 10. abandonment, collapse and milestones
 

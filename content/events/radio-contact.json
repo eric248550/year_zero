@@ -64,11 +64,6 @@
         {
           "type": "ADD_WORLD_FLAG",
           "flag": "trade.radio"
-        },
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "materials",
-          "amount": 3
         }
       ],
       "outcome": "無線電被收進櫃子裡，電池留給真正需要的時候。"

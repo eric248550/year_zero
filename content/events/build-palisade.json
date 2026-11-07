@@ -43,7 +43,8 @@
       "effects": [
         {
           "type": "BUILD_FACILITY",
-          "facility": "palisade"
+          "facility": "palisade",
+          "seasons": 2
         },
         {
           "type": "CHANGE_TENSION",

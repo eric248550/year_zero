@@ -56,6 +56,7 @@ export default async function StoryPage() {
           <StatusDot status={status} />
           <Pill tone={statusTone(status)}>{term.status(status)}</Pill>
           <Link href="/simulate" className="truncate text-xs text-ink-3 hover:text-ink">{summary.name} · {t("story.switchWorld")}</Link>
+          <Link href="/debug" className="ml-auto text-xs text-ink-3 hover:text-ink">{t("nav.debug")}</Link>
         </div>
         <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="num text-4xl font-semibold tracking-tight">{currentYear(state)}</span>

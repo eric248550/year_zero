@@ -19,6 +19,10 @@
       "type": "population",
       "op": ">=",
       "value": 8
+    },
+    {
+      "type": "settlement_kind",
+      "kind": "bunker"
     }
   ],
   "roles": [

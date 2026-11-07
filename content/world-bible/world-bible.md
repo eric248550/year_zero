@@ -216,6 +216,12 @@
 12. **科技只能做出來。** 不要用 `UNLOCK_TECHNOLOGY`。事件可以讓一個進行中的專案
     前進或倒退：`CHANGE_PROJECT`（`tech` 指定科技，或 `role` 指定某人正在做的
     專案），條件 `project` 可以判斷某項科技有沒有人在做。
+15. **角色要真的存在。** 「朋友」用 `bondWith`（例如 `{"role": "you", "min": 10}`），
+    「記得門打開以前的事」用 `bornBefore`，跟孩子有關的事件用 `children` 條件，
+    跟土地有關的（播種、挖井）用 `site_feature`。施工用 `BUILD_FACILITY` 的
+    `seasons`，蓋好之前沒有作用。互斥的結果（派系、治理方式）列在
+    `EXCLUSIVE_FLAGS`，設定一個會清掉另一個。`pnpm content:validate` 會檢查整批
+    內容：沒人排程的後續、沒人設定的旗標、設了卻沒人讀的旗標。
 14. **讓選擇留下痕跡。** 優先使用會持續存在的結果，而不是一次性的數值：蓋或
     毀一座設施（`BUILD_FACILITY`、`CHANGE_FACILITY`）、立或廢一條法律
     （`ENACT_LAW`、`REPEAL_LAW`）、佔或讓一個據點（`CLAIM_SITE`、`CEDE_CLAIM`）、

@@ -76,6 +76,7 @@ function multipliers(ctx: TickContext, s: Settlement) {
   if (features.includes("river")) water *= 1.15;
   if (t("water_wheel")) water *= 1.1;
   if (working(s, "well")) water *= 1.1;
+  if (ctx.state.flags["governance.engineer_control"]) water *= 1.1;
   water *= grid;
   let materials = 1;
   if (features.includes("ruins")) materials *= 1.4;
@@ -187,7 +188,11 @@ export function wellbeing(ctx: TickContext): void {
     morale -= d.food * 40 + d.water * 45;
     if (crowded) morale -= 15;
     if (st.flags["society.truth_known"]) morale -= 4;
-    if (st.flags["governance.ration_council"]) morale += 3;
+    // Who runs the water: an elected council is trusted; engineers in charge are efficient but resented.
+    if (st.flags["governance.water_council"]) morale += 3;
+    if (st.flags["governance.engineer_control"]) morale -= 2;
+    // The founders' memorial was torn down: Haven Deep's oldest families never forgave it.
+    if (st.flags["society.founders_repudiated"] && s.kind === "bunker") morale -= 3;
     if (st.flags["society.closed_gates"]) morale += 2;
     if (working(s, "meeting_hall")) morale += 3;
     if (hasLaw(s, "rationing")) morale -= 3;

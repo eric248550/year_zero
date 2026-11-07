@@ -14,7 +14,8 @@
     {
       "id": "elder",
       "minAge": 60,
-      "familiarWith": "you"
+      "familiarWith": "you",
+      "bornBefore": -15
     }
   ],
   "effects": [],

@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-0.7.0";
+export const RULES_VERSION = "rules-0.8.0";
 
 export const START_YEAR = 2131;
 
@@ -87,20 +87,20 @@ const tech = (id: string, name: string, branch: BranchId, tier: 1 | 2 | 3 | 4, p
 
 export const TECHNOLOGIES: readonly TechnologyInfo[] = [
   // Farming: seeds → fields → breeding → large-scale farming
-  tech("hydroponics", "Seed Trays & Hydroponics", "farming", 1, [], "Saved seed and nutrient-loop grow racks that do not depend on poisoned soil.", "Food production +25%."),
-  tech("irrigation", "Irrigated Fields", "farming", 2, ["hydroponics", "water_wheel"], "Channels and wheel-lifted water that turn surface ground into fields.", "Surface settlements: food production +30%."),
-  tech("crop_genetics", "Selective Breeding", "farming", 3, ["irrigation", "schooling"], "Generations of careful selection for hardy, climate-resilient cultivars.", "Food production +30%."),
-  tech("mass_farming", "Large-Scale Agriculture", "farming", 4, ["crop_genetics", "machining"], "Ploughs, seed drills and shared granaries feeding more than one town.", "Food production +30%, food keeps longer."),
+  tech("hydroponics", "Seed Trays & Hydroponics", "farming", 1, [], "Saved seed and nutrient-loop grow racks that do not depend on poisoned soil.", "Food production +20%."),
+  tech("irrigation", "Irrigated Fields", "farming", 2, ["hydroponics", "water_wheel"], "Channels and wheel-lifted water that turn surface ground into fields.", "Surface settlements: food production +25%."),
+  tech("crop_genetics", "Selective Breeding", "farming", 3, ["irrigation", "schooling"], "Generations of careful selection for hardy, climate-resilient cultivars.", "Food production +15%."),
+  tech("mass_farming", "Large-Scale Agriculture", "farming", 4, ["crop_genetics", "machining"], "Ploughs, seed drills and shared granaries feeding more than one town.", "Food production +15%, food spoils half as fast."),
   // Materials & industry: salvage → workshop → metallurgy → machine building
   tech("salvage_tools", "Salvage Tooling", "industry", 1, [], "Cutting rigs and hand tools reforged from ruin scrap.", "Materials production +40%."),
   tech("workshop", "Workshops", "industry", 2, ["salvage_tools", "archives"], "Benches, jigs and patterns so things are made, not only found.", "Materials +20%, settlements grow for less."),
   tech("metallurgy", "Metallurgy", "industry", 3, ["workshop", "mechanical_power"], "Furnaces hot enough to melt scrap into new metal.", "Materials +20%, settlement capacity +5."),
-  tech("machining", "Machine Building", "industry", 4, ["metallurgy", "apprenticeship"], "Lathes and gears made by people who were taught to make them.", "All production +10%."),
+  tech("machining", "Machine Building", "industry", 4, ["metallurgy", "apprenticeship"], "Lathes and gears made by people who were taught to make them.", "Water and materials production +10%."),
   // Energy & infrastructure: water power → mechanical power → local electricity → grid
   tech("water_wheel", "Water Power", "energy", 1, [], "Wheels on the river that lift water and turn grindstones.", "Water +10%, materials +10%."),
-  tech("mechanical_power", "Mechanical Power", "energy", 2, ["water_wheel", "workshop"], "Shafts, belts and pumps that carry the river's strength into workshops.", "Food +10%, materials +10%."),
+  tech("mechanical_power", "Mechanical Power", "energy", 2, ["water_wheel", "workshop"], "Shafts, belts and pumps that carry the river's strength into workshops.", "Materials +10%."),
   tech("solar_power", "Local Electricity", "energy", 3, ["mechanical_power"], "Salvaged panels and a rebuilt dynamo: light after dark in one town.", "Knowledge +20%, materials +10%."),
-  tech("power_grid", "Power Grid", "energy", 4, ["solar_power", "metallurgy"], "A shared electrical grid linking settlements.", "Settlement capacity +10, production +10%."),
+  tech("power_grid", "Power Grid", "energy", 4, ["solar_power", "metallurgy"], "A shared electrical grid linking settlements.", "Settlement capacity +10, water and materials production +10%."),
   // Medicine & population: public health → clinics → antibiotics → population growth
   tech("water_purification", "Public Health", "medicine", 1, [], "Filters, boiling and latrines rebuilt from bunker manuals.", "Water +30%, health +4, fewer contamination events."),
   tech("field_medicine", "Clinics", "medicine", 2, ["water_purification", "apprenticeship"], "A place to bring the sick, and people trained to treat them.", "Mortality -20%, health recovers faster."),
@@ -305,6 +305,19 @@ export type EventScope = (typeof EVENT_SCOPES)[number];
 
 export const IMPORTANCE = ["minor", "notable", "major", "critical"] as const;
 export type Importance = (typeof IMPORTANCE)[number];
+
+/**
+ * Flags that cannot hold at the same time: setting one clears the others in
+ * its group (a later decision replaces an earlier one).
+ */
+export const EXCLUSIVE_FLAGS: readonly (readonly string[])[] = [
+  ["society.surface_first", "society.bunker_first"],
+  ["society.open_gates", "society.closed_gates"],
+  ["governance.assembly", "governance.elder_council"],
+  ["governance.water_council", "governance.engineer_control"],
+  ["society.truth_known", "society.secret_kept"],
+  ["mystery.vault12_opened", "mystery.vault12_left_sealed"],
+];
 
 /** Flags in these namespaces cannot be written by ADD/REMOVE_WORLD_FLAG. */
 export const RESERVED_FLAG_PREFIXES = ["secret.", "system."] as const;

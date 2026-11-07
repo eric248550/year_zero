@@ -47,7 +47,8 @@
       "effects": [
         {
           "type": "BUILD_FACILITY",
-          "facility": "granary"
+          "facility": "granary",
+          "seasons": 2
         }
       ],
       "outcome": "{{builder}}帶人蓋起一座架高的穀倉，通風口開得剛剛好。存糧不會再一季一季地爛掉了。"

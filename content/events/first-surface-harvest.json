@@ -13,11 +13,6 @@
       "type": "flag",
       "flag": "food.surface_farming",
       "present": false
-    },
-    {
-      "type": "technology",
-      "tech": "hydroponics",
-      "has": true
     }
   ],
   "roles": [

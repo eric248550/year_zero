@@ -259,7 +259,8 @@ export function projects(ctx: TickContext): void {
     if (!p.leadId && crew[0]) p.leadId = crew[0].id;
     const npcs = [...(lead && !lead.controllerId ? [lead] : []), ...crew];
     p.crewIds = npcs.map((c) => c.id);
-    const members = p.memberIds.map((id) => getCharacter(st, id)!);
+    // A member who is away (an expedition, a long job) stays on it but cannot work this year.
+    const members = p.memberIds.map((id) => getCharacter(st, id)!).filter((c) => !isAway(st, c));
 
     const approach = APPROACH_INFO[p.approach ?? "steady"];
     let work = npcs.reduce((n, c) => n + workOf(st, c, tech), 0) + members.reduce((n, c) => n + workOf(st, c, tech) * PROJECTS.playerFocus, 0);
@@ -271,6 +272,13 @@ export function projects(ctx: TickContext): void {
       work = Math.min(work, spent / perWork);
     }
     work = round2(work);
+    // Who did the work, in proportion to what each put in.
+    const raw = [...npcs.map((c) => [c.id, workOf(st, c, tech)] as const), ...members.map((c) => [c.id, workOf(st, c, tech) * PROJECTS.playerFocus] as const)];
+    const total = raw.reduce((n, [, w]) => n + w, 0);
+    if (work > 0 && total > 0) {
+      p.contributions ??= {};
+      for (const [id, w] of raw) p.contributions[id] = round2((p.contributions[id] ?? 0) + (work * w) / total);
+    }
     p.lastGain = work;
     p.idleYears = npcs.length + members.length > 0 ? 0 : p.idleYears + 1;
     const name = techText(st, tech.id).name;
@@ -333,7 +341,9 @@ export function projects(ctx: TickContext): void {
   st.projects = keep;
 }
 
-function complete(ctx: TickContext, p: Project, s: Settlement, tech: TechnologyInfo, ids: string[]): void {
+function complete(ctx: TickContext, p: Project, s: Settlement, tech: TechnologyInfo, current: string[]): void {
+  // Everyone who ever put work in is credited, not only this year's crew.
+  const ids = [...new Set([p.leadId, ...current, ...Object.keys(p.contributions ?? {})].filter((id) => id && getCharacter(ctx.state, id)))];
   const st = ctx.state;
   const rec = newRecorder();
   unlockTechnology(st, tech.id, rec);

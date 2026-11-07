@@ -15,7 +15,8 @@
     {
       "id": "asker",
       "minAge": 16,
-      "familiarWith": "you"
+      "familiarWith": "you",
+      "profession": "Farmer"
     }
   ],
   "effects": [],

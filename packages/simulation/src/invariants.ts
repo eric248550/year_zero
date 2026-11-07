@@ -1,4 +1,4 @@
-import { RESOURCES, TECH_BY_ID, type HistoricalEvent, type WorldState } from "@genesis/schemas";
+import { EXCLUSIVE_FLAGS, RESOURCES, TECH_BY_ID, type HistoricalEvent, type WorldState } from "@genesis/schemas";
 
 /** Structural invariants that must hold after every tick. Returns human-readable violations. */
 export function checkInvariants(state: WorldState, history: readonly HistoricalEvent[] = []): string[] {
@@ -64,6 +64,39 @@ export function checkInvariants(state: WorldState, history: readonly HistoricalE
   }
   if (new Set(state.technologies).size !== state.technologies.length) v.push("Duplicate technology entries");
   for (const key of Object.keys(state.flags)) if (key.startsWith("secret.") || key.startsWith("system.")) v.push(`Reserved flag written: ${key}`);
+  // People referenced anywhere must exist; people doing things must be alive.
+  const byId = new Map(state.characters.map((c) => [c.id, c]));
+  for (const c of state.characters) {
+    for (const pid of c.parentIds) {
+      const parent = byId.get(pid);
+      if (!parent) v.push(`${c.id} has unknown parent ${pid}`);
+      else {
+        if (parent.birthTick > c.birthTick - 12) v.push(`${c.id} born to ${pid}, who was under 12`);
+        if (parent.deathTick !== null && parent.deathTick < c.birthTick) v.push(`${c.id} born after parent ${pid} died`);
+      }
+    }
+    if (c.parentIds.length === 2) {
+      const [a2, b2] = c.parentIds.map((id) => byId.get(id));
+      if (a2 && b2 && (a2.parentIds.includes(b2.id) || b2.parentIds.includes(a2.id) || a2.parentIds.some((x) => b2.parentIds.includes(x)))) v.push(`${c.id} has close kin as parents`);
+    }
+    for (const cid of c.caretakerIds ?? []) if (!byId.has(cid)) v.push(`${c.id} cared for by unknown ${cid}`);
+  }
+  for (const p of state.projects ?? []) {
+    if (p.leadId && !byId.has(p.leadId)) v.push(`Project ${p.id} led by unknown ${p.leadId}`);
+    for (const m of p.memberIds) if (!byId.has(m)) v.push(`Project ${p.id} has unknown member ${m}`);
+  }
+  for (const d of state.pendingDecisions ?? []) for (const id of d.participants) if (!byId.has(id)) v.push(`Decision ${d.id} has unknown participant ${id}`);
+  for (const x of state.scheduled ?? []) {
+    for (const id of Object.values(x.roles)) if (!byId.has(id)) v.push(`Scheduled ${x.id} names unknown ${id}`);
+    if (x.dueSeason < state.tick * 4) v.push(`Scheduled ${x.id} is overdue`);
+  }
+  for (const key of Object.keys(state.relationships)) {
+    const [a3, b3] = key.split("|");
+    if (!a3 || !b3 || !byId.has(a3) || !byId.has(b3)) v.push(`Relationship ${key} names an unknown character`);
+  }
+  for (const l of state.locations) if (l.claimedBy && !ids.has(l.claimedBy)) v.push(`${l.id} claimed by unknown ${l.claimedBy}`);
+  for (const s of state.settlements) for (const [f, cond] of Object.entries(s.facilities ?? {})) if (cond === undefined || cond < 0 || cond > 100) v.push(`${s.name} ${f} condition out of range`);
+  for (const g of EXCLUSIVE_FLAGS) if (g.filter((f) => state.flags[f] !== undefined).length > 1) v.push(`Rival flags held together: ${g.join(", ")}`);
   const hIds = new Set<string>();
   for (const h of history) {
     if (hIds.has(h.id)) v.push(`Duplicate history id ${h.id}`);
