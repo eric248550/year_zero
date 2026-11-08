@@ -31,6 +31,7 @@ export function describeEffect(e: Effect): string {
     case "CHANGE_FERTILITY": return `Fertility ${e.delta >= 0 ? "+" : ""}${e.delta}`;
     case "SET_FARM_PLAN": return `Farm plan: ${e.plan}`;
     case "CHANGE_CROPS": return `Crops ${Math.round(e.fraction * 100)}%`;
+    case "SET_PRIORITY": return `Settlement priority: ${e.priority ?? "none"}`;
     case "PRIORITIZE_BRANCH": return `Council prioritises ${e.branch}`;
     case "PROPOSE": return `Propose (${e.kind}${e.domain ? ` · ${e.domain}` : ""}): ${e.title}`;
     case "RESOLVE_PROPOSAL": return e.approve ? "Carry out the proposal" : "Drop the proposal";

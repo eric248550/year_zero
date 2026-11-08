@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FACILITIES, FARM_PLANS, GOODS, LAWS, POLICIES, PROCESSES, PROFESSIONS, PROJECT_APPROACHES, SPECIALTIES } from "./catalog";
+import { FACILITIES, FARM_PLANS, GOODS, LAWS, POLICIES, PRIORITIES, PROCESSES, PROFESSIONS, PROJECT_APPROACHES, SPECIALTIES } from "./catalog";
 
 export const ResourceSetSchema = z.object({
   food: z.number().min(0),
@@ -50,6 +50,8 @@ export const SettlementSchema = z.object({
   laws: z.array(z.enum(LAWS)).optional(),
   /** What has been cut, dug and made here (timber, ore, metal, tools and components, medicine). */
   goods: z.partialRecord(z.enum(GOODS), z.number().min(0)).optional(),
+  /** What this settlement has decided to put first. Absent = nothing in particular. */
+  priority: z.enum(PRIORITIES).optional(),
   /** Lasting improvements made to a building (0–2). */
   upgrades: z.partialRecord(z.enum(FACILITIES), z.number().int().min(0)).optional(),
   /** Lasting improvements to how things are produced (0–3), and to public health. */
@@ -141,6 +143,8 @@ export const PlayerSchema = z.object({
   personal: z.record(z.string(), z.object({ last: z.number().int(), count: z.number().int() })).optional(),
   /** Things this player should hear about (proposals decided, work finished), newest last. */
   notices: z.array(z.object({ id: z.string(), tick: z.number().int(), title: z.string(), text: z.string() })).optional(),
+  /** Tick of this player's last action, so they can be shown what happened since. */
+  lastActionTick: z.number().int().optional(),
   /** Counter for notice ids. */
   nextNotice: z.number().int().optional(),
 });
@@ -351,6 +355,10 @@ export const WorldStateSchema = z.object({
     materialsBySource: z.object({ salvage: z.number(), timber: z.number(), ore: z.number() }).optional(),
     /** Manufactured so far: raw inputs and finished goods, for balance reports. */
     made: z.partialRecord(z.enum(GOODS), z.number()).optional(),
+    /** Goods and supplies carried between settlements. */
+    trade: z.number().optional(),
+    /** Lifetime totals for balance reports. */
+    flow: z.record(z.string(), z.number()).optional(),
   }),
   /**
    * Multiplayer state. Optional so worlds that never had a player keep the

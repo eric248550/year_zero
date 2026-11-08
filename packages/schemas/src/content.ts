@@ -13,7 +13,7 @@ import {
   PROJECT_APPROACHES,
   FACILITIES,
   LAWS,
-  SPECIALTIES, GOODS } from "./catalog";
+  SPECIALTIES, GOODS, PRIORITIES } from "./catalog";
 import { ATTRIBUTES, FlagValueSchema } from "./world";
 
 /* ------------------------------------------------------------------ */
@@ -168,6 +168,7 @@ export const EFFECT_TYPES = [
   "SET_FARM_PLAN",
   "CHANGE_CROPS",
   "PRIORITIZE_BRANCH",
+  "SET_PRIORITY",
   "PROPOSE",
   "RESOLVE_PROPOSAL",
   "SPEND",
@@ -270,6 +271,7 @@ export const EffectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("SPEND"), costs: CostSchema, goods: z.partialRecord(z.enum(GOODS), z.number().min(0)).optional() }).strict(),
   /** The council starts the next project in this branch first (sets the research focus). */
   z.object({ type: z.literal("PRIORITIZE_BRANCH"), branch: z.enum(BRANCHES) }).strict(),
+  z.object({ type: z.literal("SET_PRIORITY"), priority: z.enum(PRIORITIES).nullable() }).strict(),
   /** The target settlement hands its oldest claim to its rival. */
   z.object({ type: z.literal("CEDE_CLAIM") }).strict(),
   z.object({ type: z.literal("ADD_SPECIALTY"), role: z.string(), specialty: z.enum(SPECIALTIES) }).strict(),

@@ -18,11 +18,12 @@ import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { initAttributes } from "./attributes";
-import { cancelWork, startWork, workBlocker } from "./work";
+import { closeKin } from "./demographics";
+import { cancelWork, proposePriority, startWork, workBlocker } from "./work";
 import { activeProjects, donateToProject, joinProject, logProject, projectBlocker, projectFor, proposableBranches, startProject } from "./projects";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "START_PROJECT" | "JOIN_PROJECT" | "PROJECT_APPROACH" | "DONATE_PROJECT" | "START_WORK" | "CANCEL_WORK">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "START_PROJECT" | "JOIN_PROJECT" | "PROJECT_APPROACH" | "DONATE_PROJECT" | "START_WORK" | "CANCEL_WORK" | "PROPOSE_PRIORITY">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -278,6 +279,17 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (a.requestId && [...(st.activities ?? []), ...(st.activityLog ?? [])].some((x) => x.characterId === me.id && x.requestId === a.requestId)) return "That was already submitted";
       return workBlocker(st, me, a.action, a.target, ctx.season);
     }
+    case "PROPOSE_PRIORITY": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      if (characterAge(st, me) < ADULT_AGE) return "You are too young to speak for the settlement";
+      if (isAwayNow(st, me)) return "You are away and cannot speak for the settlement until you are back";
+      const home = getSettlement(st, me.homeId);
+      if (!home) return "Your settlement is gone";
+      if ((home.priority ?? null) === a.priority) return "That is already how things are";
+      if (st.proposals?.some((p) => p.status === "open" && p.settlementId === home.id && p.key === "settlement-priority")) return "Someone has already proposed this; it is waiting for a decision";
+      return null;
+    }
     case "CANCEL_WORK": {
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
@@ -442,7 +454,10 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
       }
       const home = ctx.rng.pick(activeSettlements(st));
       const adults = residents(st, home.id).filter((c) => characterAge(st, c) >= 18 && characterAge(st, c) <= 45);
-      const parents = ctx.rng.shuffle(adults).slice(0, 2);
+      // Two people who are not close kin; one parent if there is no such pair.
+      const [first, ...others] = ctx.rng.shuffle(adults);
+      const second = first ? others.find((o) => !closeKin(first, o)) : undefined;
+      const parents = [first, second].filter((x): x is Character => !!x);
       const name = randomName(ctx.rng, parents[0]?.familyName, st.locale);
       const baby: Character = {
         id: newCharacterId(st),
@@ -531,6 +546,10 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
     case "START_WORK": {
       const me = playerCharacter(st, a.playerId)!;
       startWork(ctx, me, a.action, a.target, a.requestId);
+      return;
+    }
+    case "PROPOSE_PRIORITY": {
+      proposePriority(ctx, playerCharacter(st, a.playerId)!, a.priority);
       return;
     }
     case "CANCEL_WORK": {

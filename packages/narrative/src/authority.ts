@@ -71,6 +71,7 @@ export function proposalKey(effects: readonly Effect[]): string {
     switch (e.type) {
       case "SET_FARM_PLAN": return "farm-plan";
       case "PRIORITIZE_BRANCH": return "research-priority";
+      case "SET_PRIORITY": return "settlement-priority";
       case "CLAIM_SITE": return `claim:${e.location}`;
       case "ENACT_LAW": case "REPEAL_LAW": return `law:${e.law}`;
       case "BUILD_FACILITY": case "CHANGE_FACILITY": return `facility:${e.facility}`;

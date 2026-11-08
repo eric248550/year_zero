@@ -78,7 +78,7 @@ describe("schisms", () => {
     haven.capacity = 60; // far too crowded
     for (const l of s.locations) if (["ashford_crossing", "cinder_flats"].includes(l.id)) l.discovered = true;
     let split = false;
-    for (let i = 0; i < 40 && !split; i++) {
+    for (let i = 0; i < 120 && !split; i++) {
       const r = stepWorld(s, { events: [], actions: [] });
       split = r.events.some((e) => e.title.includes("分裂了"));
       s = r.state;

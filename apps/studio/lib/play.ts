@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
 import { characterAge, fullName, getCharacter, population, relationshipKey, governanceOf, powerAt, powerLevel, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
-import { BRANCH_INFO, CLAIM_YIELD, FACILITY_INFO, FACILITY_WORKING, GOODS, GOOD_INFO, LAW_INFO, PRACTICE, SPECIALTY_INFO, TECH_BY_ID, WORK_BY_ID, ZH_CATALOG, type Activity, type FacilityId, type LawId, type SpecialtyId } from "@genesis/schemas";
+import { BRANCH_INFO, PRIORITIES, PRIORITY_INFO, type PriorityId, CLAIM_YIELD, FACILITY_INFO, FACILITY_WORKING, GOODS, GOOD_INFO, LAW_INFO, PRACTICE, SPECIALTY_INFO, TECH_BY_ID, WORK_BY_ID, ZH_CATALOG, type Activity, type FacilityId, type LawId, type SpecialtyId } from "@genesis/schemas";
 import { activeProjects, nextFree, openWork, projectBlocker, proposableBranches, startableTechs, workEstimate, workOptions, type WorkOptionView } from "@genesis/simulation";
 import type { ProjectsView } from "@/components/play/projects";
 import type { DecisionView } from "@/components/play/decision-card";
@@ -240,6 +240,7 @@ export function projectsFor(state: WorldState, c: Character, term: Term): Projec
       branch: term.branch(tech.branch),
       effect: term.techEffect(p.techId),
       percent: Math.min(100, Math.round((p.progress / tech.cost) * 100)),
+      etaYear: p.lastGain > 0 ? state.startYear + state.tick + Math.max(1, Math.ceil((tech.cost - p.progress) / p.lastGain)) : null,
       yearsLeft: p.lastGain > 0 ? Math.max(1, Math.ceil((tech.cost - p.progress) / p.lastGain)) : null,
       lead: p.leadId ? name(p.leadId) : null,
       leadIsMe: p.leadId === c.id,
@@ -385,7 +386,9 @@ export interface WorkView {
   /** The coming year's four seasons: what is planned in each, or null. */
   calendar: (string | null)[];
   current: { id: string; name: string; target: string | null; when: string; status: Activity["status"]; canCancel: boolean }[];
-  options: WorkOptionView[];
+  options: (WorkOptionView & { finishLabel: string })[];
+  /** What this settlement has put first, and what could be proposed instead. */
+  priority: { current: string | null; choices: { id: string | null; label: string }[]; open: boolean };
   recent: { id: string; year: number; name: string; status: Activity["status"]; text: string | null }[];
 }
 
@@ -416,7 +419,16 @@ export function workFor(state: WorldState, c: Character, zh: boolean): WorkView 
     seasonNames,
     calendar,
     current: open.map((a) => ({ id: a.id, name: label(a), target: targetLabel(a), when: `${state.startYear + Math.floor(a.dueSeason / 4)} ${seasons[a.dueSeason % 4]}`, status: a.status, canCancel: a.startSeason >= base })),
-    options,
+    options: options.map((o) => ({ ...o, finishLabel: `${state.startYear + Math.floor(o.finishSeason / 4)} ${seasons[o.finishSeason % 4]}` })),
+    priority: (() => {
+      const home = state.settlements.find((x) => x.id === c.homeId);
+      const label = (id: PriorityId) => (zh ? PRIORITY_INFO[id].zh : PRIORITY_INFO[id].name);
+      return {
+        current: home?.priority ? label(home.priority) : null,
+        choices: [...PRIORITIES.filter((id) => id !== home?.priority).map((id) => ({ id: id as string | null, label: label(id) })), ...(home?.priority ? [{ id: null, label: zh ? "不特別偏重" : "Nothing in particular" }] : [])],
+        open: !!state.proposals?.some((p) => p.status === "open" && p.settlementId === c.homeId && p.key === "settlement-priority"),
+      };
+    })(),
     recent: (state.activityLog ?? []).filter((a) => a.characterId === c.id).slice(-5).reverse().map((a) => ({ id: a.id, year: state.startYear + (a.resolvedTick ?? 0), name: label(a), status: a.status, text: a.result ?? null })),
   };
 }
@@ -438,4 +450,37 @@ export function impactOf(state: WorldState, c: Character, zh: boolean): ImpactVi
     return { name: techText(state, p.techId).name, share: Math.round(((p.contributions?.[c.id] ?? 0) / Math.max(0.01, total)) * 100) };
   });
   return { finished, deeds, learning, projects };
+}
+
+export interface YearReportView {
+  years: number;
+  done: { key: string; text: string; detail?: string | null }[];
+  share: string | null;
+  changed: { key: string; text: string; detail?: string | null }[];
+  open: { key: string; text: string; detail?: string | null }[];
+  problems: { key: string; text: string; detail?: string | null }[];
+}
+
+/** Everything that happened since this player last did anything: their work, the town, what is new, what is wrong. */
+export function yearReportFor(ctx: PlayContext, zh: boolean): YearReportView | null {
+  const { state, character: c, player, runId } = ctx;
+  if (!c || !player) return null;
+  const home = state.settlements.find((s) => s.id === c.homeId);
+  if (!home) return null;
+  const since = Math.max(state.tick - 12, Math.min(state.tick - 1, player.lastActionTick ?? state.tick - 1));
+  const items = queryHistory(db(), runId, { settlementId: home.id, fromYear: state.startYear + since + 1, order: "desc", limit: 120 }).items;
+  const detail = (e: (typeof items)[number]) => e.changes.filter((x) => typeof x.before === "number" && typeof x.after === "number").slice(0, 3).map((x) => `${x.label} ${x.before} → ${x.after}`).join("、") || null;
+  const mine = items.filter((e) => e.characterIds[0] === c.id && e.trigger?.summary?.startsWith("Work "));
+  const done = mine.slice(0, 6).map((e) => ({ key: e.id, text: e.title, detail: detail(e) }));
+  const changed = items.filter((e) => e.importance !== "minor" && !e.trigger?.summary?.startsWith("Work ") && (e.category === "settlement" || e.category === "technology")).slice(0, 6).map((e) => ({ key: e.id, text: e.title, detail: e.characterIds.includes(c.id) ? (zh ? "你有參與。" : "You had a hand in this.") : null }));
+  const newTech = Object.entries(state.techUnlockedAt).filter(([, t]) => t > since).map(([id]) => ({ key: `t-${id}`, text: zh ? `現在會「${techText(state, id).name}」了。` : `${techText(state, id).name} is now known.`, detail: techText(state, id).effect }));
+  const newSites = state.locations.filter((l) => (l.discoveredTick ?? -1) > since).map((l) => ({ key: `l-${l.id}`, text: zh ? `地圖上多了${(ZH_CATALOG.locationName as Record<string, string>)[l.id] ?? l.id}。` : `${l.id} is on the map.`, detail: null }));
+  const problems = [
+    ...(home.shortage.food > 0 ? [{ key: "food", text: zh ? "聚落正在缺糧。" : "The settlement is short of food.", detail: null }] : []),
+    ...(home.shortage.water > 0 ? [{ key: "water", text: zh ? "聚落正在缺水。" : "The settlement is short of water.", detail: null }] : []),
+    ...(Object.entries(home.facilities ?? {}) as [FacilityId, number][]).filter(([, cond]) => cond < FACILITY_WORKING).map(([f]) => ({ key: f, text: zh ? `${ZH_CATALOG.facility[f]}壞了，需要修理。` : `The ${FACILITY_INFO[f].name} is broken and needs repair.`, detail: null })),
+    ...((home.goods?.parts ?? 0) < 3 && Object.keys(home.facilities ?? {}).length > 0 ? [{ key: "parts", text: zh ? "工具零件快用完了，機械會開始磨損。" : "Tools and components are nearly out; machines will start to wear.", detail: null }] : []),
+  ];
+  const n = mine.length;
+  return { years: state.tick - since, done, share: n > 0 ? (zh ? `這段時間你完成了 ${n} 件工作。` : `You finished ${n} pieces of work in this time.`) : null, changed, open: [...newTech, ...newSites].slice(0, 6), problems };
 }

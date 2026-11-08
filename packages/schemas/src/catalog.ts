@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-1.2.0";
+export const RULES_VERSION = "rules-1.3.0";
 
 export const START_YEAR = 2131;
 
@@ -209,8 +209,8 @@ export const INDUSTRY = {
   /** Metal kept for tools before any goes into building materials; one metal makes this many. */
   metalReserve: 15,
   metalToMaterials: 2,
-  /** Above this stock of materials, finite ore is left in the ground and metal is kept as metal. */
-  enoughMaterials: 150,
+  /** Metal goes into building materials only when stocks fall below this: finite ore is for making things. */
+  enoughMaterials: 30,
   /** Scrap a working workshop with tools recovers from what wears out (engineers alone: 30%). */
   workshopRecycle: 0.6,
   /** Share of effort that goes to camps and mines while salvage still lasts. */
@@ -224,7 +224,34 @@ export const INDUSTRY = {
   havenParts: 40,
   havenMedicine: 12,
   founderParts: 4,
+  /** Share of a machine's worn-out parts a workshop recovers as metal (each part holds half a metal). */
+  scrapShare: 0.4,
+  /** Ore a claimed site with a deposit yields its claimant each year, if they have tools. */
+  claimOre: 8,
 } as const;
+
+/**
+ * What a settlement has decided to put first. It is a decision people make (by
+ * proposal), and it works only through what it changes: who the young train as
+ * and what gets built next. "hoard" is the choice to build nothing new.
+ */
+export const PRIORITIES = ["food", "industry", "knowledge", "expansion", "health", "hoard"] as const;
+export type PriorityId = (typeof PRIORITIES)[number];
+export const PRIORITY_INFO: Record<PriorityId, { name: string; zh: string; profession: Profession | null; builds: FacilityId[] }> = {
+  food: { name: "Food first", zh: "糧食優先", profession: "Farmer", builds: ["well", "watermill", "granary"] },
+  industry: { name: "Industry first", zh: "工業優先", profession: "Engineer", builds: ["lumber_camp", "forge", "workshop", "mine", "watermill", "generator"] },
+  knowledge: { name: "Learning first", zh: "學問優先", profession: "Scientist", builds: ["solar_array", "battery_bank", "power_lines", "generator"] },
+  expansion: { name: "Reach outward", zh: "向外拓展", profession: "Scout", builds: ["well", "lumber_camp"] },
+  health: { name: "Health first", zh: "健康優先", profession: "Medic", builds: ["well", "clinic"] },
+  hoard: { name: "Build nothing new", zh: "暫停新建", profession: null, builds: [] },
+};
+/** Share of each new generation a priority pulls into its trade. */
+export const PRIORITY_PULL = 0.14;
+/** Share a place's land pulls by itself toward the trade it suits. */
+export const LAND_PULL = 0.08;
+/** Buildings a settlement puts up on its own initiative: this many, plus one per NPC_BUILD_PEOPLE residents. Players can go beyond it. */
+export const NPC_BUILD_BASE = 2;
+export const NPC_BUILD_PEOPLE = 25;
 
 /** A season of relevant work is one point of practice; this many make a specialty. */
 export const PRACTICE = { threshold: 8 } as const;
@@ -245,6 +272,9 @@ export interface WorkActionInfo {
   /** Changes a shared asset: only the person in charge acts directly, others propose it. */
   shared?: "domain" | "settlement";
   target?: WorkTarget;
+  /** What can go wrong, in words (never the odds). */
+  zhRisk?: string;
+  risk?: string;
   /** Specialty this work counts as practice for. */
   practice?: SpecialtyId;
 }
@@ -271,6 +301,15 @@ export const WORK_ACTIONS: readonly WorkActionInfo[] = [
   { id: "sco_salvage", profession: "Scout", seasons: 2, away: true, target: "site_salvage", practice: "wayfinding", name: "Salvage a site", zh: "搜刮遺址", hint: "Bring back what is left at a known site.", zhHint: "去已知的遺址，把還能用的帶回來。" },
   { id: "sco_expedition", profession: "Scout", seasons: 1, shared: "settlement", target: "site_claim", name: "Propose an outpost", zh: "提議建立據點", hint: "Claiming a site is the settlement's decision.", zhHint: "佔地是聚落的事，通過後由你帶隊前往。" },
 ];
+const RISKS: Record<string, [string, string]> = {
+  sci_experiment: ["可能失敗，用料照樣用掉。", "It can fail; the materials are spent either way."],
+  sco_explore: ["可能空手而回，也可能受傷。", "You may find nothing, and may come back hurt."],
+  sco_salvage: ["遺址可能已經被搜光。", "The site may already be picked clean."],
+  sco_expedition: ["聚落可能不同意；佔地會讓鄰居眼紅。", "The settlement may refuse; claims breed envy."],
+  med_allocate: ["沒分到的人會不滿，士氣下降。", "Those left out resent it; morale falls."],
+  farm_tend: ["天候不好時，收成仍可能很差。", "A bad year can still ruin the harvest."],
+};
+for (const a of WORK_ACTIONS as WorkActionInfo[]) { const r = RISKS[a.id]; if (r) { a.zhRisk = r[0]; a.risk = r[1]; } }
 export const WORK_BY_ID: Record<string, WorkActionInfo> = Object.fromEntries(WORK_ACTIONS.map((a) => [a.id, a]));
 
 /** Kinds of production a scientist can improve, a few percent per level. */

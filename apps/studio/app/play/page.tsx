@@ -11,8 +11,9 @@ import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
 import { Projects } from "@/components/play/projects";
 import { WorkPanel } from "@/components/play/work";
+import { YearReport } from "@/components/play/year-report";
 import { redirect } from "next/navigation";
-import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor, homeOf, personalOf, legacyOf, workFor, impactOf } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor, homeOf, personalOf, legacyOf, workFor, impactOf, yearReportFor } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -111,6 +112,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
       <div className="mt-3"><CivilizationCard civ={civilization(state)} t={t} compact /></div>
 
       <Inbox items={inboxFor(ctx)} scope={`${ctx.runId}:${player.id}`} />
+      {(() => { const r = yearReportFor(ctx, zh); return r ? <YearReport v={r} t={t as never} /> : null; })()}
 
       <SectionTitle>{t("play.decisions.title")}</SectionTitle>
       <DecisionList decisions={decisions} />

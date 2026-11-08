@@ -7,14 +7,14 @@ import { resourceName, say } from "@genesis/narrative";
 
 /** Tunable economic constants. Changing these changes RULES_VERSION semantics. */
 export const ECONOMY = {
-  foodPerLabor: 1.0,
+  foodPerLabor: 0.85,
   foodPerFarmer: 1.5,
-  waterPerLabor: 1.3,
+  waterPerLabor: 1.2,
   forageFoodPerScout: 0.6,
   materialsPerEngineer: 1.4,
   materialsPerLabor: 0.15,
-  knowledgePerScientist: 2.0,
-  knowledgePerLabor: 0.1,
+  knowledgePerScientist: 1.4,
+  knowledgePerLabor: 0.05,
   bunkerWaterReclaimer: 5,
   adultNeed: 1,
   childNeed: 0.6,
@@ -130,6 +130,8 @@ export function produce(ctx: TickContext): void {
     };
     for (const r of Object.keys(out) as ResourceId[]) s.resources[r] = round2(s.resources[r] + out[r]);
     manufacture(ctx, s, w.engineers);
+    const flow = (ctx.state.stats.flow ??= {});
+    for (const r of Object.keys(out) as ResourceId[]) flow[`made_${r}`] = round2((flow[`made_${r}`] ?? 0) + out[r]);
   }
 }
 
@@ -154,8 +156,8 @@ export function materialsFrom(ctx: TickContext, s: Settlement, loc: LocationStat
   const cutEffort = canCut ? (canDig ? raw / 2 : raw) : 0;
   const digEffort = canDig ? raw - cutEffort : 0;
   const timber = round2(Math.min(cutEffort * camp * tools, loc.timber ?? 0, salvageLeft ? Math.max(0, INDUSTRY.target.timber - good(s, "timber")) : Infinity));
-  const orePlenty = salvageLeft || s.resources.materials >= INDUSTRY.enoughMaterials;
-  const ore = round2(Math.min(digEffort * mine * tools, loc.ore ?? 0, orePlenty ? Math.max(0, INDUSTRY.target.ore - good(s, "ore")) : Infinity));
+  // Ore is finite: it is dug to meet the forge's need, never just because there are hands free.
+  const ore = round2(Math.min(digEffort * mine * tools, loc.ore ?? 0, Math.max(0, INDUSTRY.target.ore - good(s, "ore"))));
   const spent = timber / (camp * tools) + (ore > 0 ? ore / (mine * tools) : 0);
   loc.timber = round2((loc.timber ?? 0) - timber);
   loc.ore = round2((loc.ore ?? 0) - ore);
@@ -266,6 +268,8 @@ export function consume(ctx: TickContext): void {
     }
     ctx.deficits.set(s.id, deficit);
 
+    const flow = (ctx.state.stats.flow ??= {});
+    flow.eaten = round2((flow.eaten ?? 0) + need);
     const upkeep = w.residents * ECONOMY.materialsUpkeepPerResident + s.level * ECONOMY.materialsUpkeepPerLevel + (hasLaw(s, "sanitation") ? 2 : 0);
     if (s.resources.materials < upkeep) s.morale = Math.max(0, s.morale - 3); // infrastructure decays
     const paid = Math.min(upkeep, s.resources.materials);
@@ -273,6 +277,8 @@ export function consume(ctx: TickContext): void {
     const recycle = level(s, "workshop") > 0 && good(s, "parts") > 0 ? INDUSTRY.workshopRecycle : ECONOMY.recycleShare;
     const recycled = w.engineers > 0 ? paid * recycle : 0;
     s.resources.materials = round2(Math.max(0, s.resources.materials - paid + recycled));
+    flow.upkeep = round2((flow.upkeep ?? 0) + paid);
+    flow.recycled = round2((flow.recycled ?? 0) + recycled);
   }
 }
 

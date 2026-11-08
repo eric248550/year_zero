@@ -69,6 +69,8 @@ export function WorkPanel({ v }: { v: WorkView }) {
                         {o.targets.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
                       </select>
                     )}
+                    {o.risk && <p className="text-[11px] text-warn">{t("play.work.risk")}：{o.risk}</p>}
+                    <p className="text-[11px] text-ink-3">{t("play.work.finish", { when: o.finishLabel })}</p>
                     {o.costs.length > 0 && (
                       <p className="text-[11px] text-ink-3">{t("play.work.cost")}：{o.costs.map((c) => <span key={c.name} className={clsx("mr-2", c.have < c.amount && !o.proposes && "text-warn")}>{c.name} {c.amount}<span className="text-ink-3">（{t("play.work.have", { n: c.have })}）</span></span>)}</p>
                     )}
@@ -83,6 +85,16 @@ export function WorkPanel({ v }: { v: WorkView }) {
             );
           })}
         </ul>
+      )}
+
+      {v.canPlan && (
+        <div className="border-t border-line pt-3">
+          <h3 className="label-xs mb-1">{t("play.work.priority")}</h3>
+          <p className="mb-2 text-[11px] text-ink-3">{v.priority.current ? t("play.work.priorityNow", { what: v.priority.current }) : t("play.work.priorityNone")} {t("play.work.priorityHint")}</p>
+          {v.priority.open ? <p className="text-xs text-signal">{t("play.work.priorityOpen")}</p> : (
+            <div className="flex flex-wrap gap-1.5">{v.priority.choices.map((p) => <button key={p.label} type="button" disabled={busy} onClick={() => act({ type: "PROPOSE_PRIORITY", priority: p.id })} className="min-h-9 rounded-lg border border-line-strong px-2.5 text-xs hover:bg-surface-2 disabled:opacity-50">{p.label}</button>)}</div>
+          )}
+        </div>
       )}
 
       {v.recent.length > 0 && (

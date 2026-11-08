@@ -63,10 +63,12 @@ export const PROJECTS = {
   /** Years with nobody on it before a project is set aside. */
   stallYears: 3,
   /** The council runs one project, plus one per this many people (up to the max). */
-  peoplePerCouncilProject: 40,
-  maxCouncilProjects: 5,
+  peoplePerCouncilProject: 70,
+  maxCouncilProjects: 3,
   /** New council projects per year. */
-  councilStartsPerYear: 2,
+  councilStartsPerYear: 1,
+  /** Crew a project led by someone who chose it can draw, against one the council runs. */
+  ledByPlayer: 1.5,
 } as const;
 
 export function activeProjects(st: WorldState): Project[] {
@@ -181,9 +183,8 @@ export function councilCandidates(st: WorldState): TechnologyInfo[] {
   const focus = st.researchFocus;
   return startableTechs(st).sort((a, b) =>
     Number(b.id === focus) - Number(a.id === focus) ||
-    Number(busyBranches.has(a.branch)) - Number(busyBranches.has(b.branch)) ||
-    a.tier - b.tier ||
-    order.indexOf(a.branch) - order.indexOf(b.branch) ||
+    // The council's policy decides what comes first; it does not work evenly through the tree.
+    (a.tier + order.indexOf(a.branch) * 0.6 + (busyBranches.has(a.branch) ? 1 : 0)) - (b.tier + order.indexOf(b.branch) * 0.6 + (busyBranches.has(b.branch) ? 1 : 0)) ||
     (a.id < b.id ? -1 : 1));
 }
 
@@ -279,8 +280,9 @@ export function projects(ctx: TickContext): void {
     const tech = TECH_BY_ID[p.techId]!;
     const profession = BRANCH_INFO[tech.branch].profession;
     const attr = BRANCH_INFO[tech.branch].attribute;
-    const cap = PROJECTS.crewBase + PROJECTS.crewPerTier * tech.tier;
     const lead = getCharacter(st, p.leadId);
+    // People turn out for a project someone is visibly driving.
+    const cap = Math.round((PROJECTS.crewBase + PROJECTS.crewPerTier * tech.tier) * (lead?.controllerId ? PROJECTS.ledByPlayer : 1));
     const crew = residents(st, s.id)
       .filter((c) => !c.controllerId && !taken.has(c.id) && !isAway(st, c) && c.profession === profession && characterAge(st, c) >= ADULT_AGE)
       .sort((a, b) => (b.attributes?.[attr] ?? 0) - (a.attributes?.[attr] ?? 0) || (a.id < b.id ? -1 : 1))

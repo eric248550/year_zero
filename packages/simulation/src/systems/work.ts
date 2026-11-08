@@ -10,6 +10,9 @@ import {
   MAX_PROCESS,
   MAX_UPGRADE,
   MECHANICAL,
+  NPC_BUILD_BASE,
+  NPC_BUILD_PEOPLE,
+  PRIORITY_INFO,
   PROCESSES,
   RESOURCES,
   SPECIALTY_INFO,
@@ -23,6 +26,7 @@ import {
   type Character,
   type FacilityId,
   type GoodId,
+  type PriorityId,
   type ResourceId,
   type Settlement,
   type StateChange,
@@ -129,6 +133,12 @@ function setFacility(s: Settlement, f: FacilityId, value: number, changes: State
   const after = round2(Math.max(0, Math.min(100, value)));
   s.facilities = { ...(s.facilities ?? {}), [f]: after };
   changes.push({ path: `settlements.${s.id}.facilities.${f}`, label: `${s.name} ${f}`, before, after });
+}
+
+/** Whether a settlement would put up another building without someone choosing to. */
+export function mayAddBuilding(st: WorldState, s: Settlement): boolean {
+  const up = Object.values(s.facilities ?? {}).filter((c) => (c ?? 0) >= 30).length + Object.keys(s.building ?? {}).length;
+  return s.priority !== "hoard" && up < NPC_BUILD_BASE + Math.floor(residents(st, s.id).length / NPC_BUILD_PEOPLE);
 }
 
 const standing = (s: Settlement) => Object.entries(s.facilities ?? {}) as [FacilityId, number][];
@@ -240,7 +250,8 @@ const RULES: Record<string, Rule> = {
       return { title: tx(st, `蓋一座${facilityName(st, target as FacilityId)}（${i.materials} 份物資${i.parts ? `、${i.parts} 份零件` : ""}，${i.seasons} 季）`, `Build a ${target}`), tags: ["industry", "growth"], domain: "Engineer", effects: [{ type: "SPEND", costs: { materials: i.materials }, ...(i.parts ? { goods: { parts: i.parts } } : {}) } as Effect, { type: "BUILD_FACILITY", facility: target as FacilityId, seasons: i.seasons } as Effect] };
     },
     finish: (ctx, a, c, s) => ({ ok: true, title: tx(ctx.state, `${fullName(c)}蓋好了${facilityName(ctx.state, a.target as FacilityId)}`, `${fullName(c)} finished the ${a.target}`), text: tx(ctx.state, `${s.name}多了一座${facilityName(ctx.state, a.target as FacilityId)}。它會一直在，直到沒人保養為止。`, `${s.name} now has a ${a.target}.`), changes: [], important: true }),
-    npc: (_st, s, target) => { const i = INFRASTRUCTURE[target as FacilityId]; return i && s.resources.materials >= i.materials + (i.deposit ? 0 : 20) ? 2 : 0; },
+    // On their own initiative people respect what the settlement decided and what its people can tend.
+    npc: (st, s, target) => { const i = INFRASTRUCTURE[target as FacilityId]; return i && mayAddBuilding(st, s) && s.resources.materials >= i.materials + (i.deposit ? 0 : 20) ? 2 : 0; },
   },
   eng_inspect: {
     blocker: (st, s) => (standing(s).filter(([, cond]) => cond >= 30).length === 0 ? tx(st, "這裡沒有能保養的設施", "Nothing here to service") : null),
@@ -593,6 +604,9 @@ export interface WorkOptionView {
   id: string;
   name: string;
   hint: string;
+  risk: string | null;
+  /** Season index it would finish if started next. */
+  finishSeason: number;
   seasons: number;
   away: boolean;
   proposes: boolean;
@@ -623,7 +637,7 @@ export function workOptions(st: WorldState, c: Character): WorkOptionView[] {
       ? targets.length === 0 ? tx(st, "現在沒有可以做的對象", "Nothing to do this to right now") : null
       : workBlocker(st, c, info.id, undefined, base);
     return {
-      id: info.id, name: zh ? info.zh : info.name, hint: zh ? info.zhHint : info.hint, seasons, away: !!info.away, proposes, costs,
+      id: info.id, name: zh ? info.zh : info.name, hint: zh ? info.zhHint : info.hint, risk: (zh ? info.zhRisk : info.risk) ?? null, finishSeason: nextFree(st, c, base) + seasons - 1, seasons, away: !!info.away, proposes, costs,
       targets: targets ? targets.map((t) => ({ ...t, blocker: workBlocker(st, c, info.id, t.id, base) })) : null,
       blocker,
     };
@@ -687,6 +701,23 @@ export function startWork(ctx: TickContext, c: Character, actionId: string, targ
   }
   ctx.forgetCommitments();
   return activity;
+}
+
+/** Put a settlement-wide priority to whoever governs the settlement. */
+export function proposePriority(ctx: TickContext, c: Character, priority: PriorityId | null): void {
+  const st = ctx.state;
+  const s = getSettlement(st, c.homeId)!;
+  const name = priority ? (isZh(st) ? PRIORITY_INFO[priority].zh : PRIORITY_INFO[priority].name) : tx(st, "不特別偏重什麼", "nothing in particular");
+  const title = tx(st, `${s.name}往後：${name}`, `${s.name}: ${name}`);
+  const e = ctx.system({
+    category: "governance", importance: "minor", title: tx(st, `${fullName(c)}提議：${title}`, `${fullName(c)} proposes: ${title}`), text: tx(st, "交給負責決定的人了。", "It is with the people who decide."),
+    settlementIds: [s.id], characterIds: [c.id], summary: "Player action (logged for replay)",
+  });
+  const rec = newRecorder();
+  ctx.state = transact(st, (d) => applyEffect(d, { type: "PROPOSE", kind: "settlement", title, tags: ["community"], effects: [{ type: "SET_PRIORITY", priority }] } as Effect, {
+    tick: d.tick, settlementId: s.id, roles: { you: c.id }, historyId: e.id, title, scope: "settlement", category: "governance", storylineIds: [], season: ctx.season,
+  }, rec)).state;
+  e.changes.push(...rec.changes);
 }
 
 function refund(s: Settlement, paid: Bundle): void {
@@ -822,6 +853,7 @@ export function shareGoods(ctx: TickContext): void {
       const amount = Math.min(8, Math.floor(good(donor, g) - 16));
       addGood(donor, g, -amount);
       addGood(needy, g, amount);
+      st.stats.trade = round2((st.stats.trade ?? 0) + amount);
     }
   }
 }

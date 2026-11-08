@@ -14,6 +14,7 @@ export interface ProjectItem {
   effect: string;
   percent: number;
   yearsLeft: number | null;
+  etaYear: number | null;
   lead: string | null;
   leadIsMe: boolean;
   people: number;
@@ -70,7 +71,7 @@ export function Projects({ v }: { v: ProjectsView }) {
               <p className="text-[11px] leading-snug text-ink-3">
                 {p.lead ? t(p.leadIsMe ? "play.proj.leadMe" : "play.proj.lead", { name: p.lead }) : t("play.proj.noLead")} · {t("play.proj.people", { n: p.people })}
                 {p.players.length > 0 && <> · {t("play.proj.players", { names: p.players.join("、") })}</>}
-                {p.yearsLeft !== null && <> · {t("play.proj.years", { n: p.yearsLeft })}</>}
+                {p.yearsLeft !== null && <> · {t("play.proj.years", { n: p.yearsLeft })}</>}{p.etaYear !== null && <> · {t("play.proj.eta", { year: p.etaYear })}</>}
               </p>
               <p className="text-[11px] leading-snug text-ink-2">{p.effect}</p>
               {p.leadIsMe ? (

@@ -2,6 +2,9 @@ import {
   CLAIM_SEED,
   INDUSTRY,
   MECHANICAL,
+  NPC_BUILD_BASE,
+  NPC_BUILD_PEOPLE,
+  PRIORITY_INFO,
   CLAIM_YIELD,
   LAND,
   INFRASTRUCTURE,
@@ -79,7 +82,10 @@ export function infrastructure(ctx: TickContext): void {
   for (const s of activeSettlements(st)) {
     if (residents(st, s.id).length < 8 || Object.keys(s.building ?? {}).length > 0) continue;
     const features = LOCATION_BY_ID[s.locationId]?.features ?? [];
-    for (const [f, info] of Object.entries(INFRASTRUCTURE) as [FacilityId, NonNullable<(typeof INFRASTRUCTURE)[FacilityId]>][]) {
+    const order = PRIORITY_ORDER(s);
+    const standing = Object.values(s.facilities ?? {}).filter((c) => (c ?? 0) >= FACILITY_WORKING).length;
+    const canAddNew = s.priority !== "hoard" && standing < NPC_BUILD_BASE + Math.floor(residents(st, s.id).length / NPC_BUILD_PEOPLE);
+    for (const [f, info] of order) {
       if (!st.technologies.includes(info.tech) || (info.needs && !features.includes(info.needs))) continue;
       if (info.after && facilityLevel(s, info.after) <= 0) continue; // a generator needs a water mill to turn it
       const here = st.locations.find((l) => l.id === s.locationId);
@@ -88,6 +94,8 @@ export function infrastructure(ctx: TickContext): void {
       // Worn below 60: repair it (half the cost). Missing or broken: build it.
       const repair = cond >= FACILITY_WORKING && cond < 60;
       if (cond >= FACILITY_WORKING && !repair) continue;
+      // Past what its people can tend, or when it has chosen not to build, a settlement only keeps up what it has.
+      if (!repair && !canAddNew) continue;
       const cost = repair ? Math.ceil(info.materials / 2) : info.materials;
       // Keep enough for a year of upkeep and emergencies, except for the camps and mines that will make more.
       if (s.resources.materials < cost + (info.deposit ? 0 : 20)) continue;
@@ -115,6 +123,13 @@ export function infrastructure(ctx: TickContext): void {
   }
 }
 
+/** What a settlement builds next: what it has chosen to put first, then the usual order. */
+function PRIORITY_ORDER(s: Settlement): [FacilityId, NonNullable<(typeof INFRASTRUCTURE)[FacilityId]>][] {
+  const all = Object.entries(INFRASTRUCTURE) as [FacilityId, NonNullable<(typeof INFRASTRUCTURE)[FacilityId]>][];
+  const first = s.priority ? PRIORITY_INFO[s.priority].builds : [];
+  return [...all.filter(([f]) => first.includes(f)).sort((a, b) => first.indexOf(a[0]) - first.indexOf(b[0])), ...all.filter(([f]) => !first.includes(f))];
+}
+
 export function hasLaw(s: Settlement | undefined, law: LawId): boolean {
   return !!s?.laws?.includes(law);
 }
@@ -131,7 +146,11 @@ export function facilities(ctx: TickContext): void {
       // Machines also need tools and components, or they slowly wear out even when materials are paid.
       const machine = MECHANICAL.includes(id);
       const serviced = !machine || good(s, "parts") >= INDUSTRY.machineUpkeep;
-      if (machine && serviced) addGood(s, "parts", -INDUSTRY.machineUpkeep);
+      if (machine && serviced) {
+        addGood(s, "parts", -INDUSTRY.machineUpkeep);
+        // Worn parts go back in the crucible: a part holds half a metal, and only some of it comes back.
+        if (level(s, "workshop") > 0) addGood(s, "metal", round2((INDUSTRY.machineUpkeep * INDUSTRY.scrapShare) / INDUSTRY.craft.parts));
+      }
       const after = Math.max(0, Math.min(100, cond + (paid ? (serviced ? LEGACY.mend : -LEGACY.unserviced) : -LEGACY.decay)));
       s.facilities![id] = after;
       if (cond >= FACILITY_WORKING && after < FACILITY_WORKING) {
@@ -215,6 +234,15 @@ export function claims(ctx: TickContext): void {
       const got = pool ? Math.min(n, loc[pool] ?? 0) : n;
       if (pool) loc[pool] = round2((loc[pool] ?? 0) - got);
       owner.resources[r] = round2(owner.resources[r] + got);
+    }
+    // A deposit on claimed ground is worked by the claimant's people; it needs tools and runs out like any other.
+    if ((loc.ore ?? 0) > 0 && good(owner, "parts") > 0) {
+      const dug = Math.min(INDUSTRY.claimOre, loc.ore ?? 0);
+      loc.ore = round2((loc.ore ?? 0) - dug);
+      addGood(owner, "ore", dug);
+      addGood(owner, "parts", -Math.min(good(owner, "parts"), round2(dug * INDUSTRY.toolWear)));
+      const made = (st.stats.made ??= {});
+      made.ore = round2((made.ore ?? 0) + dug);
     }
     const seed = CLAIM_SEED[loc.id];
     if (seed) { owner.farm ??= { seeds: 0, fertility: 100, crops: [], harvests: 0 }; owner.farm.seeds = round2(owner.farm.seeds + seed); }

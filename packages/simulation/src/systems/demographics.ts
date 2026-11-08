@@ -1,4 +1,4 @@
-import { ADULT_AGE, POLICY_INFO, PROFESSIONS, type Character, type Profession, type Settlement } from "@genesis/schemas";
+import { ADULT_AGE, POLICY_INFO, PROFESSIONS, type Character, type Profession, type Settlement, LAND_PULL, LOCATION_BY_ID, PRIORITY_INFO, PRIORITY_PULL } from "@genesis/schemas";
 import { characterAge, fullName, hasTech, inheritBonds, residents } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
@@ -168,7 +168,15 @@ export function births(ctx: TickContext): void {
 /** Pick the profession most under-represented relative to the policy mix. */
 export function chooseProfession(ctx: TickContext, s: Settlement): Profession {
   const st = ctx.state;
-  const mix = POLICY_INFO[st.policy].professionMix;
+  const mix: Record<Profession, number> = { ...POLICY_INFO[st.policy].professionMix };
+  // What the land suits, and what the settlement has decided to put first, shape who the young become.
+  const land = LOCATION_BY_ID[s.locationId]?.features ?? [];
+  const here = st.locations.find((l) => l.id === s.locationId);
+  if (land.includes("fertile")) mix.Farmer += LAND_PULL;
+  if (land.includes("ruins") || (here?.ore ?? 0) > 0) mix.Engineer += LAND_PULL;
+  if (s.kind === "bunker") mix.Scientist += LAND_PULL;
+  const focus = s.priority ? PRIORITY_INFO[s.priority].profession : null;
+  if (focus) mix[focus] += PRIORITY_PULL;
   const adults = residents(st, s.id).filter((c) => c.profession !== null);
   const total = Math.max(1, adults.length);
   const gaps = PROFESSIONS.map((p) => ({

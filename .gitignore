@@ -10,3 +10,4 @@ data/*.db-*
 .DS_Store
 coverage
 data/backups/
+docs/scenarios/**/*.worlds.json

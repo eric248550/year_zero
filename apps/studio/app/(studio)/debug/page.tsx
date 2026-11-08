@@ -186,9 +186,19 @@ function SimReport({ t }: { t: T }) {
   const show = (v: unknown): string => (typeof v === "object" && v !== null ? Object.entries(v).map(([k, x]) => `${k} ${String(x)}`).join(" · ") : String(v));
   const list = (v: unknown) => ((v as string[] | undefined) ?? []);
   const ev = (r.events ?? {}) as Record<string, unknown>;
+  const scenarioFile = [resolve(process.cwd(), "docs/scenarios/after/summary.json"), resolve(process.cwd(), "../../docs/scenarios/after/summary.json")].find((f) => existsSync(f));
+  type Sc = { milestones: Record<string, { reached: number; median: number | null }>; trends: Record<string, Record<string, number | null>>; shortagePct: number; lowMaterialsPct: number; trade: number; facilitySimilarity: number; professionSpread: number; oreGoneMedian: number | null; projectsWithPlayerPct: number; workPlayer: number; workNpc: number; collapses: number; crises: number; recoveryYearsMedian: number | null; stalledProjects: number };
+  const scenarios = scenarioFile ? Object.entries(JSON.parse(readFileSync(scenarioFile, "utf8")) as Record<string, Sc>) : [];
   return (
     <div className="space-y-4">
       <p className="text-xs text-ink-3">{t("debug.sim.hint", { worlds: String(r.worlds), years: String(r.years) })}</p>
+      <Block title={t("debug.sim.scenarios")} empty={scenarios.length === 0}>
+        {scenarios.map(([k, v]) => {
+          const y = v.trends["150"] ?? {};
+          const end = v.trends["300"] ?? {};
+          return <Row key={k} title={k}>{t("debug.sim.scenarioRow", { renewal: v.milestones.renewal?.reached ?? 0, year: String(v.milestones.renewal?.median ?? "—"), pop: String(y.pop ?? "—"), techs: String(y.techs ?? "—"), machines: String(y.machines ?? "—") })} · {t("debug.sim.scenarioDetail", { short: v.shortagePct, low: v.lowMaterialsPct, trade: v.trade, same: v.facilitySimilarity, spread: v.professionSpread, ore: String(v.oreGoneMedian ?? "—"), parts: String(end.parts ?? "—"), player: v.projectsWithPlayerPct, workP: v.workPlayer, workN: v.workNpc, crises: v.crises, recover: String(v.recoveryYearsMedian ?? "—"), stalled: v.stalledProjects })}</Row>;
+        })}
+      </Block>
       <Block title={t("debug.sim.civ")} empty={false}>
         {kv(r.civilization).map(([k, v]) => <Row key={k} title={k}>{show(v)}</Row>)}
         <Row title={t("debug.sim.unfinished")}>{String(r.unfinishedCivilizations)} · {String(r.medianNote)}</Row>

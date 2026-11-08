@@ -44,6 +44,7 @@ describe("goods come from somewhere", () => {
     for (let i = 0; i < 8 && s.settlements.filter((x) => x.status === "active").length < 2; i++) s = stepWorld(s, { events: [], actions: [] }).state;
     const [a, b] = s.settlements.filter((x) => x.status === "active");
     s.tensions = { [tensionKey(a!.id, b!.id)]: 1 };
+    for (const x of [a!, b!]) { x.resources.food = 200; x.resources.materials = 200; x.resources.water = 200; }
     const trade = def({ id: "trade-test", scope: "settlement", preconditions: [{ type: "settlement_kind", kind: "bunker" }], choices: [{ id: "go", label: "Go", effects: [{ type: "EXCHANGE", get: { resource: "materials", amount: 20 }, give: { resource: "food", amount: 10 } }] }] });
     const r = stepWorld(s, { events: [trade], actions: [] });
     const e = r.events.find((x) => x.definitionId === "trade-test")!;

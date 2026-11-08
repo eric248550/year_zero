@@ -34,7 +34,8 @@ describe("P0.1 event eligibility", () => {
     let s = played(createWorld({ seed: 40 }), "f", "Farmer");
     s.pendingDecisions = [];
     expect(eligible(s, "farmer-seed-plan", "f")).toBe(false); // not on a project
-    s = stepWorld(s, { events: [], actions: [] }).state;
+    // The council opens one project a year.
+    for (let i = 0; i < 6 && !(activeProjects(s).some((p) => TECH_BY_ID[p.techId]!.branch === "farming") && activeProjects(s).some((p) => TECH_BY_ID[p.techId]!.branch !== "farming")); i++) s = stepWorld(s, { events: [], actions: [] }).state;
     const farm = activeProjects(s).find((p) => TECH_BY_ID[p.techId]!.branch === "farming")!;
     const other = activeProjects(s).find((p) => TECH_BY_ID[p.techId]!.branch !== "farming" && p.settlementId === farm.settlementId)!;
     s = applyImmediate(s, { type: "JOIN_PROJECT", playerId: "f", projectId: other.id }).state;

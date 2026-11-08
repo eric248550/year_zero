@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PROFESSIONS, PROJECT_APPROACHES, RESOURCES } from "./catalog";
+import { PRIORITIES, PROFESSIONS, PROJECT_APPROACHES, RESOURCES } from "./catalog";
 import { PolicySchema } from "./world";
 
 /**
@@ -17,7 +17,7 @@ export const ORIGIN_IDS = ["haven_deep", "surface_born", "wanderer", "vault12"] 
 export type OriginId = (typeof ORIGIN_IDS)[number];
 
 /** Actions taken by individual players (as opposed to developer/council directives). */
-export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME", "START_PROJECT", "JOIN_PROJECT", "PROJECT_APPROACH", "DONATE_PROJECT", "START_WORK", "CANCEL_WORK"] as const;
+export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME", "START_PROJECT", "JOIN_PROJECT", "PROJECT_APPROACH", "DONATE_PROJECT", "START_WORK", "CANCEL_WORK", "PROPOSE_PRIORITY"] as const;
 
 /** The first-session prologue: three small choices whose results show at once. Order matters. */
 export const PROLOGUE_STEPS = {
@@ -82,6 +82,10 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("START_WORK"), playerId: PlayerIdSchema, action: z.string(), target: z.string().max(40).optional(), requestId: z.string().max(64).optional() }).strict(),
   /** Call off work that has not begun; what was paid goes back. */
   z.object({ type: z.literal("CANCEL_WORK"), playerId: PlayerIdSchema, activityId: z.string() }).strict(),
+  /** Ask your settlement to put something first (null: nothing in particular). Goes to whoever governs it. */
+  z.object({ type: z.literal("PROPOSE_PRIORITY"), playerId: PlayerIdSchema, priority: z.enum(PRIORITIES).nullable() }).strict(),
+  /** Council directive: a settlement's priority, without a vote. */
+  z.object({ type: z.literal("SET_PRIORITY"), settlementId: z.string(), priority: z.enum(PRIORITIES).nullable() }).strict(),
   z.object({ type: z.literal("SET_POLICY"), policy: PolicySchema }).strict(),
   z.object({ type: z.literal("SET_RESEARCH_FOCUS"), tech: z.string().nullable() }).strict(),
   z.object({

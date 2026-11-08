@@ -255,6 +255,13 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       }
       return;
     }
+    case "SET_PRIORITY": {
+      const [s] = targetSettlements(state, "settlement", ctx);
+      const before = s!.priority ?? null;
+      if (effect.priority) s!.priority = effect.priority; else delete s!.priority;
+      record(rec, `settlements.${s!.id}.priority`, `${s!.name} priority`, before, effect.priority);
+      return;
+    }
     case "PRIORITIZE_BRANCH": {
       const active = new Set((state.projects ?? []).map((p) => p.techId));
       const next = TECHNOLOGIES.filter((t) => t.branch === effect.branch && !state.technologies.includes(t.id) && !active.has(t.id) && t.prerequisites.every((p) => state.technologies.includes(p)))

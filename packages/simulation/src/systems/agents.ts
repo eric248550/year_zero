@@ -21,6 +21,8 @@ export function validateAction(ctx: TickContext, raw: unknown): string | null {
   switch (a.type) {
     case "SET_POLICY":
       return null;
+    case "SET_PRIORITY":
+      return getSettlement(st, a.settlementId)?.status === "active" ? null : "Settlement is not active";
     case "SET_RESEARCH_FOCUS": {
       if (a.tech === null) return null;
       const t = TECH_BY_ID[a.tech];
@@ -80,6 +82,11 @@ export function applyAction(ctx: TickContext, a: PlayerAction): void {
       const before = st.policy;
       st.policy = a.policy;
       directive(ctx, `Council adopts the ${POLICY_INFO[a.policy].name}`, POLICY_INFO[a.policy].description, [], [{ path: "policy", label: "Policy", before, after: a.policy }]);
+      return;
+    }
+    case "SET_PRIORITY": {
+      const s = getSettlement(st, a.settlementId)!;
+      if (a.priority) s.priority = a.priority; else delete s.priority;
       return;
     }
     case "SET_RESEARCH_FOCUS": {
@@ -168,6 +175,7 @@ export function councilDecisions(ctx: TickContext): void {
       if (surplus < 5) continue;
       if (!aidAllowed(ctx, donor, needy, r)) continue;
       const amount = round2(Math.min(surplus * 0.5, population(st, needy.id) * 1.5));
+      st.stats.trade = round2((st.stats.trade ?? 0) + amount);
       const rec = newRecorder();
       spendResources(donor, { [r]: amount }, rec);
       const before = needy.resources[r];
@@ -194,6 +202,7 @@ export function councilDecisions(ctx: TickContext): void {
       .sort((a, b) => b.resources.materials - a.resources.materials || (a.id < b.id ? -1 : 1))[0];
     if (!donor) continue;
     const amount = Math.min(30, Math.round(donor.resources.materials - 60));
+    st.stats.trade = round2((st.stats.trade ?? 0) + amount);
     const rec = newRecorder();
     spendResources(donor, { materials: amount }, rec);
     const before = needy.resources.materials;

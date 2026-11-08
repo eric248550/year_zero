@@ -5,6 +5,8 @@ import type { I18n } from "./i18n/core";
 export function describeAction(a: PlayerAction, { t, term }: Pick<I18n, "t" | "term">): string {
   switch (a.type) {
     case "START_WORK": return a.action;
+    case "PROPOSE_PRIORITY": return a.priority ?? "—";
+    case "SET_PRIORITY": return `${a.settlementId}: ${a.priority ?? "—"}`;
     case "CANCEL_WORK": return a.activityId;
     case "SET_POLICY": return t("action.desc.policy", { policy: term.policyName(a.policy) });
     case "SET_RESEARCH_FOCUS": return a.tech ? t("action.desc.focus", { tech: term.techName(a.tech) }) : t("action.desc.clearFocus");

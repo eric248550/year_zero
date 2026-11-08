@@ -42,6 +42,7 @@ export function applyImmediate(prev: WorldState, raw: unknown, events: readonly 
   applyAction(ctx, action);
   if (action.type === "CHOOSE") resolveIfEveryoneChose(ctx, action.decisionId, events);
   proposalNotices(ctx.state);
+  if ("playerId" in action) { const p = ctx.state.players?.[action.playerId]; if (p) p.lastActionTick = ctx.state.tick; }
   ctx.state.rng = rng.state;
   return { state: ctx.state, events: ctx.events, action, rejected: null };
 }
