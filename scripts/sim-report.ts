@@ -11,8 +11,8 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContentDir } from "@genesis/narrative/node";
-import { activeProjects, applyImmediate, checkInvariants, civilization, CIV_STAGES, createWorld, playerCharacter, stepWorld } from "@genesis/simulation";
-import { BRANCH_INFO, TECHNOLOGIES, TECH_BY_ID, type WorldState } from "@genesis/schemas";
+import { activeProjects, applyImmediate, checkInvariants, civilization, CIV_STAGES, createWorld, playerCharacter, stepWorld, workOptions } from "@genesis/simulation";
+import { BRANCH_INFO, GOODS, TECHNOLOGIES, TECH_BY_ID, WORK_BY_ID, type WorldState } from "@genesis/schemas";
 
 /** Players who show up: each joins a project of their own trade where they live, if there is one. */
 /** A third player joins as a surface-born farmer once a surface settlement has stood for a year. */
@@ -31,6 +31,26 @@ function joinProjects(s: WorldState): WorldState {
     if (!me || activeProjects(s).some((p) => p.memberIds.includes(me.id))) continue;
     const p = activeProjects(s).find((x) => x.settlementId === me.homeId && BRANCH_INFO[TECH_BY_ID[x.techId]!.branch].profession === me.profession);
     if (p) { const r = applyImmediate(s, { type: "JOIN_PROJECT", playerId: id, projectId: p.id }, events); if (!r.rejected) s = r.state; }
+  }
+  return s;
+}
+
+/** Players who act: each year they fill their plan from their own profession's list, the same list the app shows. */
+function planYear(s: WorldState): WorldState {
+  for (const id of ["p1", "p2", "p3"]) {
+    for (let i = 0; i < 4; i++) {
+      const me = playerCharacter(s, id);
+      if (!me) break;
+      // Scouts are on the road every other year, so they are home for the rest of the story.
+      if (me.profession === "Scout" && s.tick % 2 === 1) break;
+      const pick = workOptions(s, me).flatMap((o) => (o.targets ? o.targets.filter((t) => !t.blocker).map((t) => ({ action: o.id, target: t.id as string | undefined })) : o.blocker ? [] : [{ action: o.id, target: undefined as string | undefined }]));
+      if (pick.length === 0) break;
+      // A different choice each time, from the state of the world (no extra randomness).
+      const c = pick[(s.tick + i) % pick.length]!;
+      const r = applyImmediate(s, { type: "START_WORK", playerId: id, action: c.action, ...(c.target ? { target: c.target } : {}) }, events);
+      if (r.rejected) break;
+      s = r.state;
+    }
   }
   return s;
 }
@@ -71,6 +91,11 @@ const t0 = Date.now();
 const stageYearsThisWorld = new Map<string, number>();
 let exhaustedSites = 0;
 const techDone = new Map<string, number>();
+const workDone: Record<string, { done: number; byPlayers: number }> = {};
+const afterSalvage = { years: 0, stocked: 0, parts: 0 };
+const made: Record<string, number> = {};
+const endStock: Record<string, number[]> = {};
+let worldsWithMetal = 0, worldsWithParts = 0;
 const countsThisWorld = new Map<string, number>();
 
 for (let seed = 1; seed <= SEEDS; seed++) {
@@ -83,6 +108,7 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   for (let y = 0; y < YEARS; y++) {
     if (y >= 10) s = surfaceFarmer(s);
     s = joinProjects(s);
+    s = planYear(s);
     const r = stepWorld(s, { events, actions: [] });
     s = r.state;
     ticks++;
@@ -93,6 +119,8 @@ for (let seed = 1; seed <= SEEDS; seed++) {
         countsThisWorld.set(e.definitionId, (countsThisWorld.get(e.definitionId) ?? 0) + 1);
         if (!seen.has(e.definitionId)) { seen.add(e.definitionId); worldsFiring.set(e.definitionId, (worldsFiring.get(e.definitionId) ?? 0) + 1); }
       }
+      const work = e.trigger?.summary?.match(/^Work w-\d+: (\w+)$/)?.[1];
+      if (work && e.characterIds[0]) { const k = `${WORK_BY_ID[work]!.profession}.${work}`; (workDone[k] ??= { done: 0, byPlayers: 0 }).done++; if (s.characters.find((c) => c.id === e.characterIds[0])?.controllerId) workDone[k]!.byPlayers++; }
       if (e.changes.some((c) => c.path.endsWith(".status") && c.after === "abandoned")) collapses++;
       if (e.title.includes("搶了")) { raids++; w.raids++; }
       if (e.title.includes("分裂了")) { schisms++; w.schisms++; }
@@ -103,6 +131,8 @@ for (let seed = 1; seed <= SEEDS; seed++) {
     const pop = s.characters.filter((c) => c.deathTick === null).length;
     low = Math.min(low, pop);
     for (const x of s.settlements.filter((z) => z.status === "active")) {
+      const here = s.locations.find((l) => l.id === x.locationId);
+      if ((here?.salvage ?? 1) <= 0) { afterSalvage.years++; if (x.resources.materials >= 15) afterSalvage.stocked++; if ((x.goods?.parts ?? 0) > 0) afterSalvage.parts++; }
       w.settlementYears++;
       if (x.shortage.food > 0 || x.shortage.water > 0) w.shortYears++;
       if (x.resources.materials < 15) w.starvedYears++;
@@ -114,6 +144,10 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   }
   minPop.push(low);
   w.renewal = stageYearsThisWorld.get("renewal") ?? null;
+  if (s.stats.made?.metal) worldsWithMetal++;
+  if (s.stats.made?.parts) worldsWithParts++;
+  for (const [g, n] of Object.entries(s.stats.made ?? {})) made[g] = (made[g] ?? 0) + (n ?? 0);
+  for (const g of GOODS) (endStock[g] ??= []).push(s.settlements.filter((z) => z.status === "active").reduce((n, z) => n + (z.goods?.[g] ?? 0), 0));
   w.techs = s.technologies.length;
   for (const t of s.technologies) techDone.set(t, (techDone.get(t) ?? 0) + 1);
   w.longProjects = (s.projects ?? []).filter((p) => s.tick - p.startedTick > 30).length;
@@ -216,6 +250,11 @@ const report = {
       materialsBySource: { salvage: pct(tot.salvage, all), timber: pct(tot.timber, all), ore: pct(tot.ore, all) },
       surfaceSettlementsWithOwnExtraction: pct(worlds.reduce((n, x) => n + x.sustainable, 0), worlds.reduce((n, x) => n + x.surface, 0)),
       note: "Own extraction = a working lumber camp or mine at year " + YEARS + ".",
+      manufacturedPerWorld: Object.fromEntries(Object.entries(made).map(([g, n]) => [g, Math.round(n / SEEDS)])),
+      worldsThatSmeltedMetal: `${worldsWithMetal}/${SEEDS}`,
+      worldsThatMadeParts: `${worldsWithParts}/${SEEDS}`,
+      stockAtEndMedian: Object.fromEntries(Object.entries(endStock).map(([g, v]) => [g, Math.round(quant(v, 0.5) ?? 0)])),
+      afterLocalSalvageRanOut: { settlementYears: afterSalvage.years, keptMaterials15OrMore: pct(afterSalvage.stocked, afterSalvage.years), hadToolsAndComponents: pct(afterSalvage.parts, afterSalvage.years) },
     };
   })(),
   projects: {
@@ -240,6 +279,7 @@ const report = {
       proposalsExecuted: Math.round((g.reduce((n, x) => n + (x.proposals.executed ?? 0), 0) / g.length) * 10) / 10,
     }]));
   })(),
+  work: { note: "Completed work per world, all characters and those played by the three test players", ...Object.fromEntries(Object.entries(workDone).sort().map(([k, v]) => [k, { perWorld: Math.round((v.done / SEEDS) * 10) / 10, byPlayersPerWorld: Math.round((v.byPlayers / SEEDS) * 10) / 10 }])) },
   topRejections: [...rejections.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, n]) => `${n}× ${k}`),
   invariantFailures,
 };

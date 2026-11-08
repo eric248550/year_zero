@@ -58,7 +58,7 @@
           "text": "在大突波之後重建發電機，加裝了斷路器"
         }
       ],
-      "outcome": "{{engineer}}花了一季，用回收來的繼電器做出斷路器，把燒斷的輸電線重新接好。修好之前，這裡分到的電只剩一半。"
+      "outcome": "{{engineer}}開始用回收來的繼電器做斷路器，重接燒斷的輸電線，要一季才修得好。修好之前，這裡分到的電只剩一半。"
     },
     {
       "id": "ration_power",
@@ -87,7 +87,7 @@
     "headline": "{{settlement}}的電網突波",
     "text": "一道閃電讓突波沿著輸電線竄進{{settlement}}。{{engineer}}聞到了銅線燒焦的味道，半條線路都燒斷了。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed"
 }

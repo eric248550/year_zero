@@ -53,9 +53,10 @@
           "delta": 2
         },
         {
-          "type": "ADD_SPECIALTY",
+          "type": "PRACTICE",
           "role": "you",
-          "specialty": "wiring"
+          "specialty": "wiring",
+          "amount": 1
         },
         {
           "type": "CHANGE_FACILITY",
@@ -106,7 +107,7 @@
     "headline": "{{lead}}找{{you}}裝太陽能板",
     "text": "{{lead}}扛著一塊太陽能板經過，看到{{you}}：「來幫個忙？兩個人比較快。」"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

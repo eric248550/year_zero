@@ -85,7 +85,8 @@ describe("professions", () => {
     expect(farm).toBeDefined();
     s = applyImmediate(s, { type: "JOIN_PROJECT", playerId: "f", projectId: farm!.id }).state;
     const only = seedContent.events.filter((d) => d.id === "farmer-seed-plan").map((d) => ({ ...d, chance: 1 }));
-    s = stepWorld(s, { events: only, actions: [] }).state;
+    // A personal event comes up some years and not others.
+    for (let i = 0; i < 12 && !s.pendingDecisions?.some((x) => x.definitionId === "farmer-seed-plan"); i++) s = stepWorld(s, { events: only, actions: [] }).state;
     const p = s.pendingDecisions?.find((x) => x.definitionId === "farmer-seed-plan");
     expect(p).toBeDefined();
     const before = activeProjects(s).find((x) => x.id === farm!.id)!;

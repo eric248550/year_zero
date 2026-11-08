@@ -12,7 +12,7 @@ import {
 } from "@genesis/schemas";
 import { applyEffects, newRecorder, spendResources, transact, type ChangeRecorder, type EffectContext } from "./effects";
 import { EffectError } from "./errors";
-import { allocateHistoryId, characterAge, currentYear, fullName, getCharacter, round2 } from "./queries";
+import { allocateHistoryId, characterAge, currentYear, fullName, getCharacter, isAwayNow, round2 } from "./queries";
 import { renderTemplate } from "./template";
 import { listNames, say, templateValues } from "./texts";
 
@@ -62,7 +62,7 @@ export function isPlayerControlled(c: Character | undefined): boolean {
 export function participantsFor(state: WorldState, def: EventDefinition, settlementId: string | null, roles: Record<string, string>): string[] {
   if ((def.participation ?? "roles") === "everyone") {
     return state.characters
-      .filter((c) => c.deathTick === null && (settlementId === null || c.homeId === settlementId) && characterAge(state, c) >= PARTICIPATION_MIN_AGE)
+      .filter((c) => c.deathTick === null && (settlementId === null || c.homeId === settlementId) && characterAge(state, c) >= PARTICIPATION_MIN_AGE && !isAwayNow(state, c))
       .map((c) => c.id);
   }
   return [...new Set(Object.values(roles))];
@@ -294,6 +294,9 @@ function resolveGroup(
   const riskChance = choice.risk ? round2(collective ? choice.risk.chance : choice.risk.chance / Math.sqrt(members.length)) : 0;
   const riskRolls = members.map((_, i) => (choice.risk && (!collective || i === 0) ? rng.next() : 1));
 
+  // A personal event reaches each player on their own; what it does for the whole settlement happens once.
+  const sharedKey = def.tags?.includes("personal") && p.settlementId ? `${def.id}|${p.settlementId}|${p.firedTick}` : null;
+  const sharedRepeat = !!sharedKey && !!state.sharedRewards?.includes(sharedKey);
   const baseCtx = (draft: WorldState, historyId: string, actor: string): EffectContext => ({
     tick: draft.tick,
     settlementId: p.settlementId,
@@ -305,6 +308,7 @@ function resolveGroup(
     category: def.category,
     storylineIds: def.storylineIds,
     season,
+    sharedRepeat,
   });
 
   // Group-level part: costs + choice effects, once. Atomic.
@@ -320,6 +324,7 @@ function resolveGroup(
         spendResources(draftSettlement, choice.costs, rec);
       }
       applyEffects(draft, choice.effects, baseCtx(draft, historyId, members[0]!.characterId), rec);
+      if (sharedKey && !sharedRepeat) (draft.sharedRewards ??= []).push(sharedKey);
     }).state;
   } catch (err) {
     if (err instanceof EffectError) return { error: err.message };

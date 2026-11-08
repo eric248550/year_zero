@@ -4,6 +4,8 @@ import type { I18n } from "./i18n/core";
 /** Human-readable summary of a developer action (shared by server and client components). */
 export function describeAction(a: PlayerAction, { t, term }: Pick<I18n, "t" | "term">): string {
   switch (a.type) {
+    case "START_WORK": return a.action;
+    case "CANCEL_WORK": return a.activityId;
     case "SET_POLICY": return t("action.desc.policy", { policy: term.policyName(a.policy) });
     case "SET_RESEARCH_FOCUS": return a.tech ? t("action.desc.focus", { tech: term.techName(a.tech) }) : t("action.desc.clearFocus");
     case "FOUND_SETTLEMENT": return t("action.desc.found", { location: term.locationName(a.locationId), settlers: a.settlers, from: a.fromSettlementId });

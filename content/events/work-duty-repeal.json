@@ -15,6 +15,11 @@
       "stat": "morale",
       "op": "<",
       "value": 50
+    },
+    {
+      "type": "project",
+      "tech": "any",
+      "active": true
     }
   ],
   "roles": [],
@@ -60,7 +65,7 @@
     "headline": "{{settlement}}要不要廢除義務勞動",
     "text": "有人在工地上倒下了。晚上的大會上，越來越多人說：夠了。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

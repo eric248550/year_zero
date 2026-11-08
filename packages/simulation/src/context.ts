@@ -11,7 +11,35 @@ export class TickContext {
   births = 0;
   deaths = 0;
 
+  /** True inside stepWorld; false for a player acting between years. */
+  inTick = false;
+  private committed: Map<string, number> | null = null;
+
   constructor(public state: WorldState, public readonly rng: Rng) {}
+
+  /** The first season not yet lived: this year's spring inside a tick, the coming spring between ticks. */
+  get season(): number {
+    return (this.inTick ? this.state.tick : this.state.tick + 1) * 4;
+  }
+
+  /** Share of this year a person has left after the work they have committed to. */
+  freeShare(characterId: string): number {
+    if (!this.committed) {
+      this.committed = new Map();
+      const from = this.state.tick * 4;
+      const to = from + 4;
+      for (const a of this.state.activities ?? []) {
+        const n = Math.max(0, Math.min(to, a.dueSeason + 1) - Math.max(from, a.startSeason));
+        if (n > 0) this.committed.set(a.characterId, (this.committed.get(a.characterId) ?? 0) + n);
+      }
+    }
+    return Math.max(0, 1 - (this.committed.get(characterId) ?? 0) / 4);
+  }
+
+  /** Commitments changed: recount next time. */
+  forgetCommitments(): void {
+    this.committed = null;
+  }
 
   /** Record a system-generated historical event (rules, not narrative content). */
   system(input: {

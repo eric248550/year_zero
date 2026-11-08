@@ -59,7 +59,7 @@
           }
         ]
       },
-      "outcome": "挖到第十二米，水滲出來了。{{settlement}}有了自己的井。"
+      "outcome": "{{digger}}帶人開挖。再過一季才會挖到水。"
     },
     {
       "id": "no",
@@ -81,7 +81,7 @@
     "headline": "{{settlement}}要不要挖井",
     "text": "{{digger}}指著地上一塊顏色比較深的土：「下面有水。給我一季的時間和一點物資。」"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

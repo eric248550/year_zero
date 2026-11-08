@@ -13,6 +13,11 @@
     {
       "type": "settlement_kind",
       "kind": "settlement"
+    },
+    {
+      "type": "facility",
+      "facility": "fields",
+      "working": true
     }
   ],
   "roles": [],
@@ -47,7 +52,7 @@
     "headline": "沙塵暴襲擊{{settlement}}",
     "text": "{{year}} 年的某天中午，{{settlement}}的天空變成了赭黃色。整整九天，沒有人敢出門；田裡的苗被沙埋了三成。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed"
 }

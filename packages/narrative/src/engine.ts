@@ -16,7 +16,7 @@ import { causesFor, evaluateAll } from "./conditions";
 import { applyEffects, canAfford, newRecorder, spendResources, transact, worstFacility, type EffectContext } from "./effects";
 import type { Effect } from "@genesis/schemas";
 import { EffectError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, nearestUnknown, rivalOf, round2 } from "./queries";
+import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, nearestUnknown, rivalOf, round2, hasOpenWork, isAwayNow } from "./queries";
 import { proposalKey } from "./authority";
 import { candidatesForRole, resolveRoles, rolesSatisfiable } from "./roles";
 import { renderTemplate } from "./template";
@@ -180,9 +180,9 @@ export function effectBlocker(state: WorldState, e: Effect, s: Settlement | null
       // The outcome is checked when it arrives. But nobody can be on two trips at once.
       const busy = (e.away ?? []).map((r) => roles?.[r]).find((id) => {
         const c = id ? getCharacter(state, id) : undefined;
-        return c?.awayUntil !== undefined && c.awayUntil >= state.tick * 4;
+        return !!c && (isAwayNow(state, c) || hasOpenWork(state, c.id));
       });
-      return busy ? "Already away on another trip" : null;
+      return busy ? "Already away, or committed to other work" : null;
     }
     default:
       return null;

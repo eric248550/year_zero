@@ -85,9 +85,10 @@
           "delta": 2
         },
         {
-          "type": "ADD_SPECIALTY",
+          "type": "PRACTICE",
           "role": "you",
-          "specialty": "wayfinding"
+          "specialty": "wayfinding",
+          "amount": 1
         }
       ],
       "outcome": "多走了三天，帶回來的東西不多，但人都平安。"
@@ -134,7 +135,7 @@
     "headline": "{{you}}要決定往哪裡走",
     "text": "「{{project}}」缺一批東西。{{you}}知道幾個地方：一片危險的廢墟、一條遠但安全的路，還有一個願意交易的聚落。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

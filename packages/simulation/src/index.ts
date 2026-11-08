@@ -16,5 +16,7 @@ export { availableOrigins, successionCandidates, bondKind, playerCharacter, getP
 export { playerUpkeep } from "./systems/players";
 export { TRAITS } from "./names";
 export { rollAttributes, healthMortality } from "./systems/attributes";
+export { WORK, nextFree, openWork, workBlocker, workOptions, type WorkOptionView } from "./systems/work";
+export { manufacture } from "./systems/economy";
 export { LEGACY, claims, construction, facilities, infrastructure, level, teaching, working, hasLaw } from "./systems/legacy";
 export { civilization, CIV_STAGES, type CivilizationStatus } from "./civilization";

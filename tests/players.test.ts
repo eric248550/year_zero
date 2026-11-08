@@ -88,7 +88,10 @@ describe("everyone decides for themselves", () => {
     const a = playerCharacter(s, "a")!;
     const b = playerCharacter(s, "b")!;
     expect(pending[0]!.participants).toEqual(expect.arrayContaining([a.id, b.id]));
-    expect(pending[0]!.participants.length).toBe(residents(s, "s-haven").filter((c) => characterAge(s, c) >= 12).length);
+    const everyone = residents(s, "s-haven").filter((c) => characterAge(s, c) >= 12).map((c) => c.id);
+    // Everyone at home takes part; the few scouts out on the road this year do not.
+    expect(pending[0]!.participants.every((id) => everyone.includes(id))).toBe(true);
+    expect(pending[0]!.participants.length).toBeGreaterThan(everyone.length - 8);
 
     const r = step(s, [
       { type: "CHOOSE", playerId: "a", decisionId: pending[0]!.id, choiceId: "go" },

@@ -51,7 +51,7 @@
           "seasons": 2
         }
       ],
-      "outcome": "{{builder}}帶人蓋起一座架高的穀倉，通風口開得剛剛好。存糧不會再一季一季地爛掉了。"
+      "outcome": "{{builder}}帶人動工，要蓋一座架高的穀倉。兩季後完工，存糧就不會再一季一季地爛掉了。"
     },
     {
       "id": "no",
@@ -73,7 +73,7 @@
     "headline": "{{settlement}}的穀倉",
     "text": "糧食多到放不下，角落的麻袋開始發霉。有人提議：該蓋一座像樣的穀倉了。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

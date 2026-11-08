@@ -12,7 +12,14 @@
       "player": true
     }
   ],
-  "effects": [],
+  "effects": [
+    {
+      "type": "ADJUST_ATTRIBUTE",
+      "role": "you",
+      "attribute": "health",
+      "delta": -4
+    }
+  ],
   "choices": [
     {
       "id": "rest",
@@ -25,7 +32,7 @@
           "type": "ADJUST_ATTRIBUTE",
           "role": "you",
           "attribute": "health",
-          "delta": 4
+          "delta": 6
         },
         {
           "type": "ADJUST_RESOURCE",
@@ -46,13 +53,14 @@
         {
           "type": "ADJUST_RESOURCE",
           "resource": "materials",
-          "amount": 2
+          "amount": 2,
+          "from": "salvage"
         },
         {
           "type": "ADJUST_ATTRIBUTE",
           "role": "you",
           "attribute": "health",
-          "delta": -6
+          "delta": -3
         }
       ],
       "outcome": "{{you}}咬著牙把活做完。事情做完了，身體卻更虛了。",
@@ -80,7 +88,7 @@
     "headline": "{{you}}發燒了",
     "text": "一早醒來，{{you}}渾身發燙、頭重腳輕。今天輪到你的活還沒人接手。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

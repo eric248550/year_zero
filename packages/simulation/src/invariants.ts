@@ -103,6 +103,17 @@ export function checkInvariants(state: WorldState, history: readonly HistoricalE
     if (openKeys.has(k)) v.push(`Two open proposals for ${k}`);
     openKeys.add(k);
   }
+  const busy = new Map<string, [number, number][]>();
+  for (const a of state.activities ?? []) {
+    if (!byId.has(a.characterId)) v.push(`Activity ${a.id} names unknown ${a.characterId}`);
+    if (a.dueSeason < a.startSeason) v.push(`Activity ${a.id} ends before it starts`);
+    if (a.dueSeason < (state.tick + 1) * 4 && (state.tick > 0)) v.push(`Activity ${a.id} was not resolved on time`);
+    const list = busy.get(a.characterId) ?? [];
+    if (list.some(([s, e]) => a.startSeason <= e && s <= a.dueSeason)) v.push(`${a.characterId} has overlapping work`);
+    list.push([a.startSeason, a.dueSeason]);
+    busy.set(a.characterId, list);
+  }
+  for (const s of state.settlements) for (const [g, n] of Object.entries(s.goods ?? {})) if (n === undefined || !Number.isFinite(n) || n < 0) v.push(`${s.name} ${g} is invalid (${n})`);
   const sched = new Set<string>();
   for (const x of state.scheduled ?? []) { if (sched.has(x.id)) v.push(`Duplicate scheduled ${x.id}`); sched.add(x.id); }
   for (const g of EXCLUSIVE_FLAGS) if (g.filter((f) => state.flags[f] !== undefined).length > 1) v.push(`Rival flags held together: ${g.join(", ")}`);

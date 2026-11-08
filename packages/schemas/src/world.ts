@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FACILITIES, FARM_PLANS, LAWS, POLICIES, PROFESSIONS, PROJECT_APPROACHES, SPECIALTIES } from "./catalog";
+import { FACILITIES, FARM_PLANS, GOODS, LAWS, POLICIES, PROCESSES, PROFESSIONS, PROJECT_APPROACHES, SPECIALTIES } from "./catalog";
 
 export const ResourceSetSchema = z.object({
   food: z.number().min(0),
@@ -48,6 +48,12 @@ export const SettlementSchema = z.object({
   expanding: z.number().int().optional(),
   /** Laws in force. */
   laws: z.array(z.enum(LAWS)).optional(),
+  /** What has been cut, dug and made here (timber, ore, metal, tools and components, medicine). */
+  goods: z.partialRecord(z.enum(GOODS), z.number().min(0)).optional(),
+  /** Lasting improvements made to a building (0–2). */
+  upgrades: z.partialRecord(z.enum(FACILITIES), z.number().int().min(0)).optional(),
+  /** Lasting improvements to how things are produced (0–3), and to public health. */
+  processes: z.partialRecord(z.enum([...PROCESSES, "health"]), z.number().int().min(0)).optional(),
 });
 export type Settlement = z.infer<typeof SettlementSchema>;
 
@@ -109,6 +115,8 @@ export const CharacterSchema = z.object({
   specialties: z.array(z.enum(SPECIALTIES)).optional(),
   /** Away (on an expedition, a long job) until this season index (tick * 4 + season). */
   awayUntil: z.number().int().optional(),
+  /** Seasons of relevant work done toward a specialty. */
+  practice: z.partialRecord(z.enum(SPECIALTIES), z.number().min(0)).optional(),
 });
 export type Character = z.infer<typeof CharacterSchema>;
 
@@ -131,6 +139,10 @@ export const PlayerSchema = z.object({
   prologue: z.array(z.string()).optional(),
   /** Personal events this player has had: definition id -> last tick and count. */
   personal: z.record(z.string(), z.object({ last: z.number().int(), count: z.number().int() })).optional(),
+  /** Things this player should hear about (proposals decided, work finished), newest last. */
+  notices: z.array(z.object({ id: z.string(), tick: z.number().int(), title: z.string(), text: z.string() })).optional(),
+  /** Counter for notice ids. */
+  nextNotice: z.number().int().optional(),
 });
 export type Player = z.infer<typeof PlayerSchema>;
 
@@ -256,6 +268,12 @@ export const ProposalSchema = z.object({
   key: z.string(),
   createdTick: z.number().int(),
   status: z.enum(["open", "executed", "rejected", "failed"]),
+  /** Tick the decision closes, answered or not: nobody can hold it open by staying away. */
+  deadlineTick: z.number().int().optional(),
+  /** Why an approved proposal could not be carried out. */
+  failReason: z.string().optional(),
+  /** Its people have been told how it ended. */
+  notified: z.boolean().optional(),
   deciders: z.array(z.string()),
   approvedBy: z.array(z.string()),
   rejectedBy: z.array(z.string()),
@@ -264,6 +282,31 @@ export const ProposalSchema = z.object({
   historyId: z.string().optional(),
 });
 export type Proposal = z.infer<typeof ProposalSchema>;
+
+export const ACTIVITY_STATUSES = ["planned", "in_progress", "completed", "failed", "interrupted", "cancelled"] as const;
+export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
+const CostBundle = z.object({ resources: z.partialRecord(z.enum(["food", "water", "materials", "knowledge"]), z.number().min(0)), goods: z.partialRecord(z.enum(GOODS), z.number().min(0)) });
+/**
+ * One piece of work a character has committed to. Occupies the seasons from
+ * startSeason to dueSeason inclusive; resolved once, when dueSeason is simulated.
+ */
+export const ActivitySchema = z.object({
+  id: z.string(),
+  actionId: z.string(),
+  characterId: z.string(),
+  settlementId: z.string(),
+  target: z.string().optional(),
+  startSeason: z.number().int(),
+  dueSeason: z.number().int(),
+  status: z.enum(ACTIVITY_STATUSES),
+  /** What was paid up front (returned if it is cancelled before it starts). */
+  paid: CostBundle,
+  /** A client's id for this submission: the same one is never accepted twice. */
+  requestId: z.string().optional(),
+  result: z.string().optional(),
+  resolvedTick: z.number().int().optional(),
+});
+export type Activity = z.infer<typeof ActivitySchema>;
 
 export const WORLD_LOCALES = ["en", "zh-TW"] as const;
 export type WorldLocale = (typeof WORLD_LOCALES)[number];
@@ -300,12 +343,14 @@ export const WorldStateSchema = z.object({
     counts: z.record(z.string(), z.number().int()),
     lastHistoryId: z.record(z.string(), z.string()),
   }),
-  counters: z.object({ nextCharacter: z.number().int(), nextHistory: z.number().int(), nextSettlement: z.number().int(), nextProject: z.number().int().optional() }),
+  counters: z.object({ nextCharacter: z.number().int(), nextHistory: z.number().int(), nextSettlement: z.number().int(), nextProject: z.number().int().optional(), nextActivity: z.number().int().optional() }),
   milestones: z.array(z.string()),
   stats: z.object({
     births: z.number().int(), deaths: z.number().int(), peakPopulation: z.number().int(),
     /** Materials produced so far, by where they came from. */
     materialsBySource: z.object({ salvage: z.number(), timber: z.number(), ore: z.number() }).optional(),
+    /** Manufactured so far: raw inputs and finished goods, for balance reports. */
+    made: z.partialRecord(z.enum(GOODS), z.number()).optional(),
   }),
   /**
    * Multiplayer state. Optional so worlds that never had a player keep the
@@ -320,5 +365,13 @@ export const WorldStateSchema = z.object({
   /** Follow-up events waiting for their season (an expedition's return, a harvest). */
   scheduled: z.array(ScheduledEventSchema).optional(),
   proposals: z.array(ProposalSchema).optional(),
+  /** Work under way or planned, for players and NPCs. */
+  activities: z.array(ActivitySchema).optional(),
+  /** Players' finished work, most recent last (kept short). */
+  activityLog: z.array(ActivitySchema).optional(),
+  /** Research notes: technology id -> share of its work already done on paper. */
+  techNotes: z.record(z.string(), z.number()).optional(),
+  /** Settlement-wide rewards of personal events already given this round. */
+  sharedRewards: z.array(z.string()).optional(),
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;

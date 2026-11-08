@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Rng, type EventDefinition, type WorldState } from "@genesis/schemas";
-import { checkEligibility, choiceAvailability, powerLevel, validateEventDefinition } from "@genesis/narrative";
+import { checkEligibility, choiceAvailability, powerAt, powerLevel, validateEventDefinition } from "@genesis/narrative";
 import { TickContext, applyImmediate, checkInvariants, createWorld, hashState, playerCharacter, stepWorld } from "@genesis/simulation";
 import { applyPlayerAction, createRun, importSeedContent, migrateDb, openDb, stepRun, verifyReplay } from "@genesis/database";
 import { harvest, sowing } from "../packages/simulation/src/systems/farming";
@@ -196,9 +196,12 @@ describe("power and infrastructure", () => {
     expect(checkEligibility(s, byId("first-light")).eligible).toBe(false);
     h.facilities = { solar_array: 100 };
     expect(powerLevel(s, h)).toBe(0.5);
-    expect(checkEligibility(s, byId("first-light")).eligible).toBe(true);
+    expect(powerAt(s, h)).toEqual({ day: 1, night: 0 });
+    expect(checkEligibility(s, byId("first-light")).eligible).toBe(false); // sunshine does not light the night
     h.facilities = { solar_array: 100, battery_bank: 100 };
     expect(powerLevel(s, h)).toBe(1);
+    expect(powerAt(s, h)).toEqual({ day: 1, night: 1 });
+    expect(checkEligibility(s, byId("first-light")).eligible).toBe(true);
     h.facilities = { solar_array: 50, battery_bank: 100 };
     expect(powerLevel(s, h)).toBe(0.5);
   });

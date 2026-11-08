@@ -1,7 +1,7 @@
 import {
   ADULT_AGE,
   BRANCH_INFO,
-  FARM,
+  FARM, INDUSTRY,
   LAND,
   LOCATIONS,
   SPECIALTIES,
@@ -87,6 +87,8 @@ export function createWorld(options: CreateWorldOptions): WorldState {
         shortageOrigin: { food: null, water: null },
         // The bunker grows in racks; its seed bank is what the first farmers will carry up.
         farm: { seeds: FARM.havenSeed, fertility: 100, crops: [], harvests: 0 },
+        // The last of the old world's tools and medicine.
+        goods: { parts: INDUSTRY.havenParts, medicine: INDUSTRY.havenMedicine },
       },
     ],
     locations: LOCATIONS.map((l) => ({

@@ -34,11 +34,6 @@
           "role": "you",
           "attribute": "survival",
           "delta": 2
-        },
-        {
-          "type": "ADD_SPECIALTY",
-          "role": "you",
-          "specialty": "grafting"
         }
       ],
       "outcome": "{{you}}把苗圃分成四塊，每塊種不同的東西。進度慢，但每一塊都看得清楚。"
@@ -105,7 +100,7 @@
     "headline": "{{you}}要決定怎麼試種",
     "text": "「{{project}}」的苗圃整好了，種子也分好了。大家看著{{you}}：這一季要怎麼種？"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

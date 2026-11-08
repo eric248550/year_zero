@@ -114,21 +114,19 @@ describe("who may change shared things", () => {
 });
 
 describe("materials come from somewhere", () => {
-  it("salvage first, then timber from the forest, then ore; ore needs a forge to be fully usable", () => {
+  it("salvage gives materials; timber and ore go to the store and are not materials yet", () => {
     const s = createWorld({ seed: 115 });
     const h = s.settlements[0]!;
     const loc = s.locations.find((l) => l.id === h.locationId)!;
-    loc.salvage = 5; loc.timber = 10; loc.ore = 100;
+    loc.salvage = 0; loc.timber = 10; loc.ore = 100;
     h.facilities = { lumber_camp: 100, mine: 100 };
+    h.goods = { parts: 10 };
     const ctx = new TickContext(s, new Rng(1));
-    const got = materialsFrom(ctx, h, loc, 40);
-    expect(loc.salvage).toBe(0);
+    expect(materialsFrom(ctx, h, loc, 40)).toBe(0); // no salvage left, so no materials directly
+    expect(h.goods.timber).toBe(10);
     expect(loc.timber).toBe(0);
-    expect(loc.ore).toBe(75);
-    expect(got).toBeCloseTo(5 + 10 + 25 * 0.5, 5);
-    h.facilities = { lumber_camp: 100, mine: 100, forge: 100 };
-    loc.ore = 100;
-    expect(materialsFrom(ctx, h, loc, 40)).toBeCloseTo(40, 5);
+    expect(h.goods.ore).toBe(20);
+    expect(loc.ore).toBe(80);
   });
 
   it("with nothing left to dig or cut, work makes no materials", () => {

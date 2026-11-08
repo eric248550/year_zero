@@ -51,7 +51,7 @@
           "delta": 5
         }
       ],
-      "outcome": "一個月後，{{settlement}}四周立起了一圈木樁和鐵板。{{rival}}的人說，這是把他們當賊。"
+      "outcome": "{{settlement}}開始立木樁、釘鐵板，要兩季才圍得起來。{{rival}}的人說，這是把他們當賊。"
     },
     {
       "id": "no",
@@ -81,7 +81,7 @@
     "headline": "{{settlement}}要不要築牆",
     "text": "{{speaker}}在大會上說：「{{rival}}遲早會來搶。我們得有一道牆。」"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

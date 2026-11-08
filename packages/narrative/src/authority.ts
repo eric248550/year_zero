@@ -1,5 +1,5 @@
 import { ADULT_AGE, type Character, type Effect, type Profession, type Settlement, type WorldState } from "@genesis/schemas";
-import { characterAge, residents } from "./queries";
+import { characterAge, isAwayNow, residents } from "./queries";
 
 /**
  * Who may change what in a settlement.
@@ -22,7 +22,8 @@ const SKILL: Record<Profession, "survival" | "knowledge" | "social"> = {
 };
 
 function adults(state: WorldState, s: Settlement): Character[] {
-  return residents(state, s.id).filter((c) => characterAge(state, c) >= ADULT_AGE);
+  // Someone away cannot speak for the settlement until they are back.
+  return residents(state, s.id).filter((c) => characterAge(state, c) >= ADULT_AGE && !isAwayNow(state, c));
 }
 
 /** The head of a profession in a settlement (most skilled, then oldest, then id). */

@@ -86,7 +86,8 @@
         {
           "type": "ADJUST_RESOURCE",
           "resource": "food",
-          "amount": 4
+          "amount": 4,
+          "from": "wild"
         }
       ],
       "outcome": "孩子們學會了怎麼種菜、怎麼修水管。只是，沒有人學會讀字。"
@@ -104,7 +105,7 @@
     "headline": "{{child}}問：「字要怎麼念？」",
     "text": "{{child}}撿到一本破舊的圖畫書，翻來翻去，卻看不懂上面的字。{{settlement}}裡像這樣的孩子已經不少了。{{teacher}}說：「給我一間屋子，我來教。」"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

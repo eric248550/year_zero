@@ -26,6 +26,7 @@ export function describeEffect(e: Effect): string {
     case "CLAIM_SITE": return `Claim ${LOCATION_BY_ID[e.location]?.name ?? e.location}`;
     case "CEDE_CLAIM": return "Hand a claimed site to the rival";
     case "ADD_SPECIALTY": return `${e.role} learns ${e.specialty}`;
+    case "PRACTICE": return `${e.role} practises ${e.specialty}`;
     case "ADD_SEEDS": return `${e.amount >= 0 ? "+" : ""}${e.amount} seed`;
     case "CHANGE_FERTILITY": return `Fertility ${e.delta >= 0 ? "+" : ""}${e.delta}`;
     case "SET_FARM_PLAN": return `Farm plan: ${e.plan}`;

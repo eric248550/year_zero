@@ -37,6 +37,12 @@
   ],
   "effects": [
     {
+      "type": "ADJUST_ATTRIBUTE",
+      "role": "victim",
+      "attribute": "health",
+      "delta": -10
+    },
+    {
       "type": "CHANGE_SETTLEMENT_STAT",
       "stat": "health",
       "delta": -10
@@ -133,7 +139,7 @@
     "headline": "{{settlement}}的井水疫病",
     "text": "水快不夠用了，{{settlement}}的人開始從舊維修隧道裡的滲水處取水。幾天之內，{{victim}}和其他人都發起了高燒。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed"
 }

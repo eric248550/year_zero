@@ -17,7 +17,7 @@ export const ORIGIN_IDS = ["haven_deep", "surface_born", "wanderer", "vault12"] 
 export type OriginId = (typeof ORIGIN_IDS)[number];
 
 /** Actions taken by individual players (as opposed to developer/council directives). */
-export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME", "START_PROJECT", "JOIN_PROJECT", "PROJECT_APPROACH", "DONATE_PROJECT"] as const;
+export const PLAYER_ACTION_TYPES = ["JOIN_WORLD", "CHOOSE", "CONTINUE_AS", "CARE_FOR", "INVITE", "LEAVE_WORLD", "PROLOGUE", "RENAME", "START_PROJECT", "JOIN_PROJECT", "PROJECT_APPROACH", "DONATE_PROJECT", "START_WORK", "CANCEL_WORK"] as const;
 
 /** The first-session prologue: three small choices whose results show at once. Order matters. */
 export const PROLOGUE_STEPS = {
@@ -78,6 +78,10 @@ export const PlayerActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("PROJECT_APPROACH"), playerId: PlayerIdSchema, approach: z.enum(PROJECT_APPROACHES) }).strict(),
   /** A member puts some of the settlement's materials into their project (once a year). */
   z.object({ type: z.literal("DONATE_PROJECT"), playerId: PlayerIdSchema, amount: z.number().int().min(5).max(50) }).strict(),
+  /** Commit to a piece of work from your profession's list. */
+  z.object({ type: z.literal("START_WORK"), playerId: PlayerIdSchema, action: z.string(), target: z.string().max(40).optional(), requestId: z.string().max(64).optional() }).strict(),
+  /** Call off work that has not begun; what was paid goes back. */
+  z.object({ type: z.literal("CANCEL_WORK"), playerId: PlayerIdSchema, activityId: z.string() }).strict(),
   z.object({ type: z.literal("SET_POLICY"), policy: PolicySchema }).strict(),
   z.object({ type: z.literal("SET_RESEARCH_FOCUS"), tech: z.string().nullable() }).strict(),
   z.object({

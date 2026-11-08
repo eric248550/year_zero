@@ -2,6 +2,7 @@ import { PLAYER_ACTION_TYPES, PlayerActionSchema, Rng, type EventDefinition, typ
 import { choiceAvailability, getCharacter, resolvePendingDecisions } from "@genesis/narrative";
 import { TickContext } from "./context";
 import { applyAction, validateAction } from "./systems/agents";
+import { proposalNotices } from "./systems/governance";
 
 const IMMEDIATE = new Set<string>(PLAYER_ACTION_TYPES);
 
@@ -40,6 +41,7 @@ export function applyImmediate(prev: WorldState, raw: unknown, events: readonly 
   const action = PlayerActionSchema.parse(raw);
   applyAction(ctx, action);
   if (action.type === "CHOOSE") resolveIfEveryoneChose(ctx, action.decisionId, events);
+  proposalNotices(ctx.state);
   ctx.state.rng = rng.state;
   return { state: ctx.state, events: ctx.events, action, rejected: null };
 }

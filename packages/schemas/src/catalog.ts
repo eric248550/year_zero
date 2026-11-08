@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-1.1.0";
+export const RULES_VERSION = "rules-1.2.0";
 
 export const START_YEAR = 2131;
 
@@ -72,6 +72,8 @@ export interface TechnologyInfo {
   cost: number;
   /** Materials spent when a project to build it starts. */
   materials: number;
+  /** Tools and components spent when a project to build it starts (advanced work only). */
+  parts: number;
   prerequisites: string[];
   /** Minimum living population required before a project can start. */
   minPopulation?: number;
@@ -82,7 +84,7 @@ export interface TechnologyInfo {
 /** Work needed per tier, and materials per tier for building-heavy branches. */
 const WORK = [0, 30, 80, 150, 240] as const;
 const tech = (id: string, name: string, branch: BranchId, tier: 1 | 2 | 3 | 4, prerequisites: string[], description: string, effect: string, extra: Partial<TechnologyInfo> = {}): TechnologyInfo => ({
-  id, name, branch, tier, cost: WORK[tier], materials: (branch === "industry" || branch === "energy" ? 40 : 20) * tier, prerequisites, description, effect, ...extra,
+  id, name, branch, tier, cost: WORK[tier], materials: (branch === "industry" || branch === "energy" ? 40 : 20) * tier, parts: tier >= 3 && (branch === "industry" || branch === "energy") ? (tier - 2) * 12 : 0, prerequisites, description, effect, ...extra,
 });
 
 export const TECHNOLOGIES: readonly TechnologyInfo[] = [
@@ -117,7 +119,7 @@ export const TECHNOLOGIES: readonly TechnologyInfo[] = [
   tech("radio", "Shortwave Radio", "society", 2, ["pathfinding", "workshop"], "Rebuilt transceivers that can hear — and be heard — across the wastes.", "Exploration chance +50%."),
   tech("trade_routes", "Trade Routes", "society", 3, ["homesteading", "workshop"], "Regular caravans, fair measures and goods moving between towns.", "Morale +3, settlements share surplus more readily."),
   tech("civic_charter", "Civic Charter", "society", 4, ["trade_routes", "apprenticeship"], "A written compact for councils, justice and shared stores.", "Morale +10 baseline, fewer disputes.", { minPopulation: 150 }),
-];
+].map((t) => (t.id === "mass_farming" ? { ...t, parts: 15 } : t));
 
 export const TECH_IDS = TECHNOLOGIES.map((t) => t.id);
 
@@ -130,13 +132,13 @@ export const TECH_IDS = TECHNOLOGIES.map((t) => t.id);
  * it up, neglect, storms and raids wear it down; below 30 it is broken and does
  * nothing until repaired.
  */
-export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall", "fields", "watermill", "generator", "solar_array", "battery_bank", "power_lines", "lumber_camp", "mine"] as const;
+export const FACILITIES = ["granary", "well", "clinic", "forge", "schoolhouse", "palisade", "watchtower", "greenhouse", "meeting_hall", "fields", "watermill", "generator", "solar_array", "battery_bank", "power_lines", "lumber_camp", "mine", "workshop"] as const;
 export type FacilityId = (typeof FACILITIES)[number];
 export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }> = {
   granary: { name: "Granary", effect: "Food spoils half as fast." },
   well: { name: "Well", effect: "Water +10%." },
   clinic: { name: "Clinic", effect: "Health +5, fewer deaths." },
-  forge: { name: "Forge", effect: "Materials +10%." },
+  forge: { name: "Forge", effect: "Smelts ore and fuel into usable metal; materials +10%." },
   schoolhouse: { name: "Schoolhouse", effect: "Knowledge +10%, children learn faster." },
   palisade: { name: "Palisade", effect: "Raids on this settlement take half as much and kill less." },
   watchtower: { name: "Watchtower", effect: "Exploration +20%, raids on it are less likely." },
@@ -145,11 +147,12 @@ export const FACILITY_INFO: Record<FacilityId, { name: string; effect: string }>
   fields: { name: "Fields", effect: "Sown surface land. Without fields a surface settlement grows only 60% of its food; irrigation adds 25% more." },
   watermill: { name: "Water Mill", effect: "Water power: water and materials +10% (needs a river)." },
   generator: { name: "Generator", effect: "A dynamo driven by the water mill: steady electric power, day and night." },
-  solar_array: { name: "Solar Array", effect: "Electric power by day; half of it without a battery bank to carry it through the night." },
-  battery_bank: { name: "Battery Bank", effect: "Stores the solar array's power for the night." },
+  solar_array: { name: "Solar Array", effect: "Electric power by day only; dark at night without a battery bank." },
+  battery_bank: { name: "Battery Bank", effect: "Stores the day's solar power for the night." },
   power_lines: { name: "Power Lines", effect: "Joins the power grid: shares electricity with every other connected settlement." },
-  lumber_camp: { name: "Lumber Camp", effect: "Cuts the site's timber into materials; the forest grows back." },
-  mine: { name: "Mine", effect: "Digs the site's ore; half of it is usable unless a forge smelts it." },
+  lumber_camp: { name: "Lumber Camp", effect: "Cuts the site's timber; the forest grows back." },
+  mine: { name: "Mine", effect: "Digs the site's ore. Ore is useless until a forge smelts it." },
+  workshop: { name: "Workshop", effect: "Turns metal and timber into tools and components." },
 };
 export const FACILITY_WORKING = 30;
 /** Finishing these technologies raises a building in the settlement that built them. */
@@ -159,20 +162,124 @@ export const TECH_FACILITY: Partial<Record<string, FacilityId>> = {
   water_wheel: "watermill", solar_power: "solar_array", power_grid: "power_lines",
 };
 /** Technologies whose benefit needs the building on site; knowing them elsewhere lets a settlement build it. */
-export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; materials: number; seasons: number; needs?: LocationFeature; after?: FacilityId; deposit?: "timber" | "ore" }>> = {
-  // Extraction first: a settlement that can make its own materials can build everything else.
+export const INFRASTRUCTURE: Partial<Record<FacilityId, { tech: string; materials: number; parts?: number; seasons: number; needs?: LocationFeature; after?: FacilityId; deposit?: "timber" | "ore" }>> = {
+  // Extraction and industry first: a settlement that can make its own goods can build everything else.
   lumber_camp: { tech: "salvage_tools", materials: 10, seasons: 1, deposit: "timber" },
-  mine: { tech: "workshop", materials: 30, seasons: 2, deposit: "ore" },
-  watermill: { tech: "water_wheel", materials: 25, seasons: 2, needs: "river" },
-  solar_array: { tech: "solar_power", materials: 40, seasons: 2 },
-  battery_bank: { tech: "metallurgy", materials: 30, seasons: 2, after: "solar_array" },
-  generator: { tech: "mechanical_power", materials: 35, seasons: 2, after: "watermill" },
-  power_lines: { tech: "power_grid", materials: 30, seasons: 2 },
   forge: { tech: "workshop", materials: 25, seasons: 2 },
+  workshop: { tech: "workshop", materials: 20, seasons: 2 },
+  mine: { tech: "workshop", materials: 30, seasons: 2, deposit: "ore" },
+  watermill: { tech: "water_wheel", materials: 25, parts: 4, seasons: 2, needs: "river" },
+  solar_array: { tech: "solar_power", materials: 40, parts: 12, seasons: 2 },
+  battery_bank: { tech: "metallurgy", materials: 30, parts: 12, seasons: 2, after: "solar_array" },
+  generator: { tech: "mechanical_power", materials: 35, parts: 10, seasons: 2, after: "watermill" },
+  power_lines: { tech: "power_grid", materials: 30, parts: 12, seasons: 2 },
   well: { tech: "water_purification", materials: 15, seasons: 1 },
   clinic: { tech: "field_medicine", materials: 20, seasons: 2 },
   granary: { tech: "mass_farming", materials: 25, seasons: 2 },
 };
+/** Machinery needs tools and components to keep running; without them it slowly wears out. */
+export const MECHANICAL: readonly FacilityId[] = ["watermill", "generator", "solar_array", "battery_bank", "power_lines", "mine", "forge", "workshop"];
+
+/**
+ * What a settlement manufactures, on top of the four shared resources.
+ * Forest → timber; mine → ore; ore + fuel + forge → metal; metal/timber +
+ * workshop + labour → tools and components. Timber is also the fuel.
+ */
+export const GOODS = ["timber", "ore", "metal", "parts", "medicine"] as const;
+export type GoodId = (typeof GOODS)[number];
+export const GOOD_INFO: Record<GoodId, { name: string; zh: string }> = {
+  timber: { name: "Timber", zh: "木材" },
+  ore: { name: "Ore", zh: "礦石" },
+  metal: { name: "Metal", zh: "金屬" },
+  parts: { name: "Tools & components", zh: "工具零件" },
+  medicine: { name: "Medicine", zh: "藥品" },
+};
+export const INDUSTRY = {
+  /** 2 ore + 1 timber (fuel) → 1 metal, at a working forge. */
+  smelt: { ore: 2, timber: 1, metal: 1 },
+  /** 1 metal + 1 timber → 2 tools and components, at a working workshop. */
+  craft: { metal: 1, timber: 1, parts: 2 },
+  /** Batches each engineer runs in a year as routine work. */
+  smeltPerEngineer: 1.2,
+  craftPerEngineer: 0.8,
+  /** Routine work stops stocking a good beyond these. */
+  target: { timber: 60, ore: 40, metal: 30, parts: 30 } as Record<"timber" | "ore" | "metal" | "parts", number>,
+  /** Timber kept for fuel and tools before any is sawn into building materials. */
+  timberReserve: 25,
+  /** Metal kept for tools before any goes into building materials; one metal makes this many. */
+  metalReserve: 15,
+  metalToMaterials: 2,
+  /** Above this stock of materials, finite ore is left in the ground and metal is kept as metal. */
+  enoughMaterials: 150,
+  /** Scrap a working workshop with tools recovers from what wears out (engineers alone: 30%). */
+  workshopRecycle: 0.6,
+  /** Share of effort that goes to camps and mines while salvage still lasts. */
+  extractionShare: 0.3,
+  /** Tools worn per unit cut or dug; without tools extraction runs at half pace. */
+  toolWear: 0.02,
+  noTools: 0.5,
+  /** Parts per working machine per year. */
+  machineUpkeep: 0.2,
+  /** What Haven Deep has left of the old world's tools and medicine. */
+  havenParts: 40,
+  havenMedicine: 12,
+  founderParts: 4,
+} as const;
+
+/** A season of relevant work is one point of practice; this many make a specialty. */
+export const PRACTICE = { threshold: 8 } as const;
+
+/** Everyday work a character chooses to do. Same rules for players and NPCs (systems/work.ts). */
+export type WorkTarget = "facility_new" | "facility_repair" | "facility_upgrade" | "process" | "tech" | "branch" | "group" | "site_salvage" | "site_claim" | "patient";
+export interface WorkActionInfo {
+  id: string;
+  profession: Profession;
+  /** Seasons of the character's time it takes. */
+  seasons: number;
+  name: string;
+  zh: string;
+  hint: string;
+  zhHint: string;
+  /** Away from home while doing it. */
+  away?: boolean;
+  /** Changes a shared asset: only the person in charge acts directly, others propose it. */
+  shared?: "domain" | "settlement";
+  target?: WorkTarget;
+  /** Specialty this work counts as practice for. */
+  practice?: SpecialtyId;
+}
+export const WORK_ACTIONS: readonly WorkActionInfo[] = [
+  { id: "farm_clear", profession: "Farmer", seasons: 2, shared: "domain", name: "Break new fields", zh: "開墾田地", hint: "Turn open ground into working fields.", zhHint: "把荒地整成能播種的田，往後年年有收成。" },
+  { id: "farm_tend", profession: "Farmer", seasons: 1, practice: "grafting", name: "Tend the crops", zh: "照料作物", hint: "More grain from what is in the ground (or from the racks).", zhHint: "除草、灌溉。田裡的作物收成更多；在地堡是照料種植架。" },
+  { id: "farm_soil", profession: "Farmer", seasons: 2, name: "Improve the soil", zh: "改良土壤", hint: "Compost and marl: fertility stays up for years.", zhHint: "堆肥翻土，土壤肥力提升，往後每次收成都受益。" },
+  { id: "farm_seed", profession: "Farmer", seasons: 1, practice: "grafting", name: "Select and save seed", zh: "選種留種", hint: "Pick the best grain and put it by as seed.", zhHint: "從存糧挑出好種，轉成來年的種子。" },
+  { id: "eng_build", profession: "Engineer", seasons: 2, shared: "domain", target: "facility_new", name: "Build", zh: "興建設施", hint: "Raise a building the settlement knows how to make.", zhHint: "蓋一座聚落已經會蓋的設施。" },
+  { id: "eng_inspect", profession: "Engineer", seasons: 1, practice: "wiring", name: "Inspect and service", zh: "巡檢保養", hint: "Every working building is a little better for it.", zhHint: "逐一檢查保養，所有運作中的設施狀況提升。" },
+  { id: "eng_repair", profession: "Engineer", seasons: 1, target: "facility_repair", practice: "wiring", name: "Repair", zh: "修理設施", hint: "Restore a worn or broken building.", zhHint: "把破損的設施修回來。" },
+  { id: "eng_improve", profession: "Engineer", seasons: 2, target: "facility_upgrade", practice: "smithing", name: "Improve", zh: "改良設施", hint: "A lasting upgrade: the building gives more.", zhHint: "加裝改良，設施的效果永久提升。" },
+  { id: "eng_smelt", profession: "Engineer", seasons: 2, practice: "smithing", name: "Run the forge", zh: "開爐煉鐵", hint: "Ore and fuel into usable metal.", zhHint: "把礦石和燃料（木材）煉成能用的金屬。" },
+  { id: "eng_craft", profession: "Engineer", seasons: 1, practice: "smithing", name: "Make tools", zh: "製作工具零件", hint: "Metal and timber into tools and components.", zhHint: "用金屬和木材做出工具與零件。" },
+  { id: "sci_experiment", profession: "Scientist", seasons: 2, practice: "archivist", name: "Run an experiment", zh: "進行實驗", hint: "May fail. Success adds knowledge and helps the current project.", zhHint: "可能失敗。成功會增加知識，也推進手上的專案。" },
+  { id: "sci_process", profession: "Scientist", seasons: 3, target: "process", name: "Improve a process", zh: "改良製程", hint: "A lasting gain in one kind of production.", zhHint: "讓聚落某一項生產永久提升。" },
+  { id: "sci_investigate", profession: "Scientist", seasons: 4, target: "tech", practice: "archivist", name: "Investigate a lost technology", zh: "研究未知技術", hint: "A year of study: notes that give its project a head start.", zhHint: "花一整年研究，留下筆記，日後專案能少走一段路。" },
+  { id: "sci_priority", profession: "Scientist", seasons: 1, shared: "settlement", target: "branch", name: "Argue for a research priority", zh: "提出研究方向", hint: "Goes to the settlement's governing body.", zhHint: "交給聚落的決策者決定下一個優先領域。" },
+  { id: "med_treat", profession: "Medic", seasons: 1, target: "patient", practice: "midwifery", name: "Treat a patient", zh: "診治病人", hint: "One dose for the person who needs it most.", zhHint: "用一份藥治療一位病人。" },
+  { id: "med_allocate", profession: "Medic", seasons: 1, target: "group", name: "Allocate the medicine", zh: "分配藥品", hint: "Four doses, one group. The others go without.", zhHint: "四份藥給一群人，其他人就沒有。" },
+  { id: "med_prepare", profession: "Medic", seasons: 1, practice: "midwifery", name: "Prepare medicine", zh: "調製藥品", hint: "Turn food and scraps into a few doses.", zhHint: "把食物和物資調製成幾份藥。" },
+  { id: "med_health", profession: "Medic", seasons: 2, name: "Improve public health", zh: "推動公共衛生", hint: "Better everyday health, for good.", zhHint: "教大家煮水、清理環境，聚落健康長期提升。" },
+  { id: "sco_explore", profession: "Scout", seasons: 3, away: true, practice: "wayfinding", name: "Explore", zh: "探索未知", hint: "Three seasons away, looking for somewhere new.", zhHint: "離開三季，尋找地圖上沒有的地方。" },
+  { id: "sco_salvage", profession: "Scout", seasons: 2, away: true, target: "site_salvage", practice: "wayfinding", name: "Salvage a site", zh: "搜刮遺址", hint: "Bring back what is left at a known site.", zhHint: "去已知的遺址，把還能用的帶回來。" },
+  { id: "sco_expedition", profession: "Scout", seasons: 1, shared: "settlement", target: "site_claim", name: "Propose an outpost", zh: "提議建立據點", hint: "Claiming a site is the settlement's decision.", zhHint: "佔地是聚落的事，通過後由你帶隊前往。" },
+];
+export const WORK_BY_ID: Record<string, WorkActionInfo> = Object.fromEntries(WORK_ACTIONS.map((a) => [a.id, a]));
+
+/** Kinds of production a scientist can improve, a few percent per level. */
+export const PROCESSES = ["food", "water", "materials", "knowledge"] as const;
+export type ProcessId = (typeof PROCESSES)[number];
+export const PROCESS_BONUS = 0.04;
+export const MAX_PROCESS = 3;
+export const MAX_UPGRADE = 2;
+export const UPGRADE_BONUS = 0.15;
 
 /** Rules a settlement lives by. Enacted and repealed by its people (usually a vote). */
 export const LAWS = ["rationing", "work_duty", "shared_stores", "curfew", "sanitation"] as const;
@@ -208,7 +315,7 @@ export const LAND = {
   wildRegrowth: 0.15,
   /** Standing timber per site (it grows back) and ore in the ground (it does not). */
   timberCap: { greenhollow: 400, ashford_crossing: 200, old_reservoir: 100 } as Partial<Record<string, number>>,
-  timberRegrowth: 0.1,
+  timberRegrowth: 0.2,
   ore: { old_reservoir: 1500, cinder_flats: 800, greenhollow: 400, signal_tower: 1500 } as Partial<Record<string, number>>,
 } as const;
 

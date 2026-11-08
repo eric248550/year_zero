@@ -3,9 +3,9 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { advanceClock, applyPlayerAction, getRun, getRunContent, listRuns, queryHistory, type ClockStatus } from "@genesis/database";
 import type { Character, EventDefinition, Player, WorldState } from "@genesis/schemas";
-import { characterAge, fullName, getCharacter, population, relationshipKey, governanceOf, powerLevel, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
-import { BRANCH_INFO, CLAIM_YIELD, FACILITY_INFO, FACILITY_WORKING, LAW_INFO, SPECIALTY_INFO, TECH_BY_ID, ZH_CATALOG, type FacilityId, type LawId, type SpecialtyId } from "@genesis/schemas";
-import { activeProjects, projectBlocker, proposableBranches, startableTechs, workEstimate } from "@genesis/simulation";
+import { characterAge, fullName, getCharacter, population, relationshipKey, governanceOf, powerAt, powerLevel, projectOf, renderTemplate, rivalOf, techText, tensionBetween } from "@genesis/narrative";
+import { BRANCH_INFO, CLAIM_YIELD, FACILITY_INFO, FACILITY_WORKING, GOODS, GOOD_INFO, LAW_INFO, PRACTICE, SPECIALTY_INFO, TECH_BY_ID, WORK_BY_ID, ZH_CATALOG, type Activity, type FacilityId, type LawId, type SpecialtyId } from "@genesis/schemas";
+import { activeProjects, nextFree, openWork, projectBlocker, proposableBranches, startableTechs, workEstimate, workOptions, type WorkOptionView } from "@genesis/simulation";
 import type { ProjectsView } from "@/components/play/projects";
 import type { DecisionView } from "@/components/play/decision-card";
 import { db } from "./server";
@@ -132,9 +132,10 @@ export function inboxFor(ctx: PlayContext): InboxItem[] {
   const { state, character, runId } = ctx;
   if (!character) return [];
   const open = new Set((state.pendingDecisions ?? []).filter((p) => p.participants.includes(character.id)).map((p) => p.id));
-  return queryHistory(db(), runId, { characterId: character.id, fromYear: state.startYear + state.tick - 1, order: "desc", limit: 12 })
+  const notices: InboxItem[] = (ctx.player?.notices ?? []).filter((n) => n.tick >= state.tick - 1).reverse().map((n) => ({ id: n.id, year: state.startYear + n.tick, title: n.title, text: n.text }));
+  return [...notices, ...queryHistory(db(), runId, { characterId: character.id, fromYear: state.startYear + state.tick - 1, order: "desc", limit: 12 })
     .items.filter((e) => e.characterIds[0] !== character.id && !open.has(e.id))
-    .map((e) => ({ id: e.id, year: e.year, title: e.title, text: e.text }));
+    .map((e) => ({ id: e.id, year: e.year, title: e.title, text: e.text }))];
 }
 
 /** Pending decisions this character takes part in, ready to render. */
@@ -288,13 +289,17 @@ export function neighboursOf(state: WorldState, c: Character): { name: string; t
     .sort((a, b) => b.tension - a.tension);
 }
 
-export interface ProposalView { title: string; proposer: string; status: "open" | "executed" | "rejected" | "failed"; deciders: string; yes: number; no: number; year: number }
+export interface ProposalView { title: string; proposer: string; status: "open" | "executed" | "rejected" | "failed"; deciders: string; yes: number; no: number; year: number; deadline: number | null; authority: "domain" | "settlement"; reason: string | null; mine: boolean }
 
 export interface HomeView {
   proposals: ProposalView[];
   governance: string;
   farm: { seeds: number; fertility: number; plan: string; growing: number; readyLabel: string | null; harvests: number } | null;
   power: number;
+  powerDay: number;
+  powerNight: number;
+  goods: { id: string; name: string; amount: number }[];
+  building: { name: string; when: string }[];
   salvage: number;
   wild: number;
   facilities: { id: string; name: string; effect: string; condition: number; working: boolean }[];
@@ -318,6 +323,8 @@ export function homeOf(state: WorldState, c: Character, zh: boolean): HomeView |
     title: p.title, proposer: name(p.proposerId), status: p.status, year: state.startYear + (p.resolvedTick ?? p.createdTick),
     deciders: p.kind === "domain" && p.deciders.length === 1 ? name(p.deciders[0]!) : p.deciders.length === 1 ? name(p.deciders[0]!) : `${p.deciders.length}`,
     yes: p.approvedBy.length, no: p.rejectedBy.length,
+    deadline: p.status === "open" && p.deadlineTick !== undefined ? state.startYear + p.deadlineTick : null,
+    authority: p.kind, reason: p.failReason ?? null, mine: p.proposerId === c.id,
   }));
   return {
     proposals,
@@ -327,6 +334,10 @@ export function homeOf(state: WorldState, c: Character, zh: boolean): HomeView |
       readyLabel: ready === null ? null : `${state.startYear + Math.floor(ready / 4)} ${seasons[ready % 4]}`, harvests: home.farm.harvests,
     } : null,
     power: Math.round(powerLevel(state, home) * 100),
+    powerDay: Math.round(powerAt(state, home).day * 100),
+    powerNight: Math.round(powerAt(state, home).night * 100),
+    goods: GOODS.map((g) => ({ id: g, name: zh ? GOOD_INFO[g].zh : GOOD_INFO[g].name, amount: Math.floor(home.goods?.[g] ?? 0) })),
+    building: (Object.entries(home.building ?? {}) as [FacilityId, number][]).map(([f, due]) => ({ name: zh ? ZH_CATALOG.facility[f] : FACILITY_INFO[f].name, when: `${state.startYear + Math.floor(due / 4)} ${seasons[due % 4]}` })),
     salvage: Math.round(loc?.salvage ?? 0),
     wild: Math.round(loc?.wild ?? 0),
     facilities: (Object.entries(home.facilities ?? {}) as [FacilityId, number][]).map(([id, condition]) => ({
@@ -364,4 +375,67 @@ export function legacyOf(state: WorldState, player: Player): { name: string; yea
       skills: (c.specialties ?? []).map((x) => (zh ? ZH_CATALOG.specialty[x] : SPECIALTY_INFO[x].name)),
     };
   }).filter((x): x is NonNullable<typeof x> => !!x);
+}
+
+export interface WorkView {
+  year: number;
+  canPlan: boolean;
+  reason: string | null;
+  seasonNames: string[];
+  /** The coming year's four seasons: what is planned in each, or null. */
+  calendar: (string | null)[];
+  current: { id: string; name: string; target: string | null; when: string; status: Activity["status"]; canCancel: boolean }[];
+  options: WorkOptionView[];
+  recent: { id: string; year: number; name: string; status: Activity["status"]; text: string | null }[];
+}
+
+/** What this character is doing, could do, and has done. */
+export function workFor(state: WorldState, c: Character, zh: boolean): WorkView {
+  const seasonNames = zh ? ["春", "夏", "秋", "冬"] : ["Spring", "Summer", "Autumn", "Winter"];
+  const seasons = zh ? ["春天", "夏天", "秋天", "冬天"] : ["spring", "summer", "autumn", "winter"];
+  const base = (state.tick + 1) * 4;
+  const label = (a: Activity) => (zh ? WORK_BY_ID[a.actionId]?.zh : WORK_BY_ID[a.actionId]?.name) ?? a.actionId;
+  const options = workOptions(state, c);
+  const targetLabel = (a: Activity) => {
+    if (!a.target) return null;
+    const id = a.target;
+    return getCharacter(state, id) ? fullName(getCharacter(state, id)!) : (zh && (ZH_CATALOG.facility as Record<string, string>)[id]) || (TECH_BY_ID[id] ? techText(state, id).name : (zh && (ZH_CATALOG.locationName as Record<string, string>)[id]) || id);
+  };
+  const open = openWork(state, c.id);
+  const calendar = [0, 1, 2, 3].map((i) => {
+    const season = base + i;
+    const a = open.find((x) => x.startSeason <= season && x.dueSeason >= season);
+    return a ? label(a) : c.awayUntil !== undefined && c.awayUntil >= season ? (zh ? "外出" : "Away") : null;
+  });
+  const adult = characterAge(state, c) >= 16;
+  const full = nextFree(state, c, base) >= base + 4;
+  return {
+    year: state.startYear + state.tick + 1,
+    canPlan: adult && !!c.profession && !full,
+    reason: !adult ? (zh ? "還太年輕，長大才能工作。" : "Too young to work yet.") : full ? (zh ? "這一年已經排滿了。" : "This year is fully planned.") : null,
+    seasonNames,
+    calendar,
+    current: open.map((a) => ({ id: a.id, name: label(a), target: targetLabel(a), when: `${state.startYear + Math.floor(a.dueSeason / 4)} ${seasons[a.dueSeason % 4]}`, status: a.status, canCancel: a.startSeason >= base })),
+    options,
+    recent: (state.activityLog ?? []).filter((a) => a.characterId === c.id).slice(-5).reverse().map((a) => ({ id: a.id, year: state.startYear + (a.resolvedTick ?? 0), name: label(a), status: a.status, text: a.result ?? null })),
+  };
+}
+
+export interface ImpactView {
+  finished: number;
+  deeds: { year: number; text: string }[];
+  learning: { name: string; have: number; need: number }[];
+  projects: { name: string; share: number }[];
+}
+
+/** What this person has left in the world: finished work, marks in the record, skills in the making. */
+export function impactOf(state: WorldState, c: Character, zh: boolean): ImpactView {
+  const finished = (state.activityLog ?? []).filter((a) => a.characterId === c.id && a.status === "completed").length;
+  const deeds = c.lifeEvents.filter((l) => l.historyId && l.tick > c.birthTick).slice(-6).reverse().map((l) => ({ year: state.startYear + l.tick, text: l.text }));
+  const learning = (Object.entries(c.practice ?? {}) as [SpecialtyId, number][]).filter(([x]) => !c.specialties?.includes(x)).map(([x, have]) => ({ name: zh ? ZH_CATALOG.specialty[x] : SPECIALTY_INFO[x].name, have, need: PRACTICE.threshold }));
+  const projects = activeProjects(state).filter((p) => (p.contributions?.[c.id] ?? 0) > 0).map((p) => {
+    const total = Object.values(p.contributions ?? {}).reduce((n, x) => n + x, 0);
+    return { name: techText(state, p.techId).name, share: Math.round(((p.contributions?.[c.id] ?? 0) / Math.max(0.01, total)) * 100) };
+  });
+  return { finished, deeds, learning, projects };
 }

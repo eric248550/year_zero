@@ -41,23 +41,31 @@
       ],
       "effects": [
         {
-          "type": "ADD_WORLD_FLAG",
-          "flag": "trade.road"
-        },
-        {
-          "type": "CHANGE_SETTLEMENT_STAT",
-          "stat": "morale",
-          "delta": 6
-        },
-        {
-          "type": "CHANGE_SETTLEMENT_STAT",
-          "stat": "capacity",
-          "delta": 5,
-          "target": "settlement"
+          "type": "AFTER",
+          "seasons": 4,
+          "title": "{{builder}}的路修好了",
+          "text": "{{builder}}帶著大家花了整整一年，填平坑洞、架起木橋。從今天起，商隊一個月就能來回一次。",
+          "effects": [
+            {
+              "type": "ADD_WORLD_FLAG",
+              "flag": "trade.road"
+            },
+            {
+              "type": "CHANGE_SETTLEMENT_STAT",
+              "stat": "morale",
+              "delta": 6
+            },
+            {
+              "type": "CHANGE_SETTLEMENT_STAT",
+              "stat": "capacity",
+              "delta": 5,
+              "target": "settlement"
+            }
+          ]
         }
       ],
-      "outcome": "{{builder}}帶著大家填平坑洞、架起木橋。之後，商隊一個月就能來回一次。",
-      "description": "花 20 份物資",
+      "outcome": "{{builder}}帶著大家動工了。要一整年才修得完，修好之前商隊還是得繞路。",
+      "description": "花 20 份物資，修一年",
       "costs": {
         "materials": 20
       }
@@ -84,7 +92,7 @@
     "headline": "{{builder}}想修一條路",
     "text": "{{builder}}攤開一張手畫的地圖：「從這裡到那裡，只要填平這三段，就不用再繞過那片沼澤。」"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

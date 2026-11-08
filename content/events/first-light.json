@@ -8,7 +8,8 @@
     {
       "type": "power",
       "op": ">=",
-      "value": 0.5
+      "value": 0.5,
+      "when": "night"
     },
     {
       "type": "flag",
@@ -82,7 +83,7 @@
     "headline": "{{settlement}}亮起了燈",
     "text": "太陽下山之後，{{settlement}}沒有像四十年來的每一個晚上那樣暗下來。燈泡閃了兩下，然後穩穩地亮著。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "participation": "everyone",

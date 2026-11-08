@@ -1,6 +1,8 @@
 import {
   ADULT_AGE,
+  UPGRADE_BONUS,
   type Character,
+  type GoodId,
   type ResourceId,
   LOCATION_BY_ID,
   type LocationState,
@@ -118,15 +120,27 @@ export function projectOf(state: WorldState, characterId: string): Project | und
 /** How much of its effect a building gives: 0 when missing or broken (below 30), else its condition as a share. */
 export function facilityLevel(s: Settlement | undefined, f: string): number {
   const c = (s?.facilities as Record<string, number> | undefined)?.[f] ?? 0;
-  return c >= 30 ? c / 100 : 0;
+  if (c < 30) return 0;
+  return (c / 100) * (1 + UPGRADE_BONUS * ((s?.upgrades as Record<string, number> | undefined)?.[f] ?? 0));
 }
 
-/** Power a settlement makes itself: the generator, plus the solar array (half of it without batteries). */
-export function ownPower(s: Settlement): number {
-  const solar = facilityLevel(s, "solar_array") * (facilityLevel(s, "battery_bank") > 0 ? 1 : 0.5);
+/**
+ * Electricity a settlement makes itself, by time of day. A generator runs day
+ * and night while its water mill turns; a solar array only makes power in
+ * daylight, and only what a battery bank stored is left after dark.
+ */
+export function ownPowerAt(s: Settlement): { day: number; night: number } {
+  const solar = Math.min(1, facilityLevel(s, "solar_array"));
+  const stored = Math.min(solar, facilityLevel(s, "battery_bank"));
   // A generator only turns while its water mill does.
-  const dynamo = facilityLevel(s, "generator") * (facilityLevel(s, "watermill") > 0 ? 1 : 0);
-  return Math.min(1, dynamo + solar);
+  const dynamo = Math.min(1, facilityLevel(s, "generator")) * (facilityLevel(s, "watermill") > 0 ? 1 : 0);
+  return { day: Math.min(1, dynamo + solar), night: Math.min(1, dynamo + stored) };
+}
+
+/** A day's worth of power, averaged over day and night. */
+export function ownPower(s: Settlement): number {
+  const { day, night } = ownPowerAt(s);
+  return Math.round(((day + night) / 2) * 1000) / 1000;
 }
 
 /**
@@ -134,11 +148,52 @@ export function ownPower(s: Settlement): number {
  * source through its power lines once the power grid is known.
  */
 export function powerLevel(state: WorldState, s: Settlement): number {
-  const own = ownPower(s);
-  const lines = facilityLevel(s, "power_lines");
+  const p = powerAt(state, s);
+  return Math.round(((p.day + p.night) / 2) * 1000) / 1000;
+}
+
+/** Electric power by time of day: the settlement's own, or what the grid brings through its lines. */
+export function powerAt(state: WorldState, s: Settlement): { day: number; night: number } {
+  const own = ownPowerAt(s);
+  const lines = Math.min(1, facilityLevel(s, "power_lines"));
   if (!lines || !state.technologies.includes("power_grid")) return own;
-  const grid = Math.max(0, ...activeSettlements(state).filter((o) => facilityLevel(o, "power_lines") > 0).map(ownPower));
-  return Math.max(own, Math.min(1, grid * lines));
+  const sources = activeSettlements(state).filter((o) => facilityLevel(o, "power_lines") > 0).map(ownPowerAt);
+  return {
+    day: Math.max(own.day, Math.min(1, Math.max(0, ...sources.map((x) => x.day)) * lines)),
+    night: Math.max(own.night, Math.min(1, Math.max(0, ...sources.map((x) => x.night)) * lines)),
+  };
+}
+
+/** The first season nothing has happened in yet: between years, spring of the coming year. */
+export function nextSeason(state: WorldState): number {
+  return (state.tick + 1) * 4;
+}
+
+export function isAwayNow(state: WorldState, c: Character): boolean {
+  return c.awayUntil !== undefined && c.awayUntil >= state.tick * 4;
+}
+
+/** Has this person committed their time to work that has not finished? */
+export function hasOpenWork(state: WorldState, characterId: string): boolean {
+  return (state.activities ?? []).some((a) => a.characterId === characterId);
+}
+
+export function good(s: Settlement | undefined, g: GoodId): number {
+  return s?.goods?.[g] ?? 0;
+}
+
+export function addGood(s: Settlement, g: GoodId, amount: number): void {
+  s.goods = { ...(s.goods ?? {}), [g]: round2(Math.max(0, good(s, g) + amount)) };
+}
+
+/** Tell a player something that happened to them. No-op for NPCs. */
+export function notify(state: WorldState, characterId: string, title: string, text: string): void {
+  const c = getCharacter(state, characterId);
+  const p = c?.controllerId ? state.players?.[c.controllerId] : undefined;
+  if (!p) return;
+  const n = p.nextNotice ?? 1;
+  p.nextNotice = n + 1;
+  p.notices = [...(p.notices ?? []), { id: `n-${p.id}-${n}`, tick: state.tick, title, text }].slice(-20);
 }
 
 /** The nearest site not yet found (hidden ones only come through the story). */

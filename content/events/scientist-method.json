@@ -64,9 +64,10 @@
           "delta": 3
         },
         {
-          "type": "ADD_SPECIALTY",
+          "type": "PRACTICE",
           "role": "you",
-          "specialty": "archivist"
+          "specialty": "archivist",
+          "amount": 2
         }
       ],
       "outcome": "{{you}}花了好幾個月重做每一個實驗。慢，但每個數字現在都可信。"
@@ -104,7 +105,7 @@
     "headline": "{{you}}翻開那份舊檔案",
     "text": "「{{project}}」卡在一個步驟上。檔案室裡有一份舊文件寫了做法，但缺了幾頁，有些數字也看不清楚。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

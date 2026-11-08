@@ -227,7 +227,7 @@ function checkConditionRefs(conds: readonly Condition[], basePath: string, ctx: 
   conds.forEach((c, i) => {
     const path = `${basePath}.${i}`;
     if (c.type === "site_claimed" && !LOCATION_BY_ID[c.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${c.location}"` });
-    if (c.type === "project" && !TECH_BY_ID[c.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${c.tech}"` });
+    if (c.type === "project" && c.tech !== "any" && !TECH_BY_ID[c.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${c.tech}"` });
     if (c.type === "technology" && !TECH_BY_ID[c.tech]) errors.push({ path, code: "ref.technology", message: `Unknown technology "${c.tech}"` });
     if (c.type === "location" && !LOCATION_BY_ID[c.location]) errors.push({ path, code: "ref.location", message: `Unknown location "${c.location}"` });
     if (c.type === "secret" && !SECRET_BY_ID[c.secret]) errors.push({ path, code: "ref.secret", message: `Unknown secret "${c.secret}"` });
@@ -273,6 +273,7 @@ function checkEffects(def: EventDefinition, effects: readonly Effect[], basePath
         if (e.progress === undefined && e.approach === undefined) errors.push({ path, code: "effect.invalid", message: "CHANGE_PROJECT changes nothing" });
         break;
       case "ADD_SPECIALTY":
+      case "PRACTICE":
         if (!roleIds.has(e.role)) errors.push({ path, code: "ref.role", message: `Unknown role "${e.role}"` });
         break;
       case "CLAIM_SITE":

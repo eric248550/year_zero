@@ -10,7 +10,7 @@ import {
   type Settlement,
   type WorldState,
 } from "@genesis/schemas";
-import { activeSettlements, characterAge, population, powerLevel, residents, rivalOf, round2, tensionBetween, totalResource } from "./queries";
+import { activeSettlements, characterAge, population, powerAt, powerLevel, residents, rivalOf, round2, tensionBetween, totalResource } from "./queries";
 
 export function compare(actual: number, op: ComparisonOp, expected: number): boolean {
   switch (op) {
@@ -58,7 +58,7 @@ export function describeCondition(c: Condition): string {
     case "salvage": return `Salvage left on the site ${c.op} ${c.value}`;
     case "seeds": return `Seed in store ${c.op} ${c.value}`;
     case "harvests": return `Harvests brought in ${c.op} ${c.value}`;
-    case "power": return `Electric power ${c.op} ${c.value}`;
+    case "power": return `Electric power${c.when ? ` at ${c.when === "night" ? "night" : "day"}` : ""} ${c.op} ${c.value}`;
     case "flag_any":
       return `${c.present ? "One of" : "None of"} flags ${c.flags.join(", ")} ${c.present ? "is set" : "is set"}`;
     case "farmable":
@@ -184,7 +184,8 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
     }
     case "power": {
       if (!s) return result(null, false);
-      const n = powerLevel(state, s);
+      const p = powerAt(state, s);
+      const n = c.when ? p[c.when] : powerLevel(state, s);
       return result(n, compare(n, c.op, c.value));
     }
     case "flag_any": {
@@ -228,7 +229,7 @@ export function evaluateCondition(state: WorldState, c: Condition, ctx: EvalCont
       return result(by, !!by === c.claimed);
     }
     case "project": {
-      const active = (state.projects ?? []).some((p) => p.techId === c.tech);
+      const active = (state.projects ?? []).some((p) => c.tech === "any" ? (!s || p.settlementId === s.id) : p.techId === c.tech);
       return result(active, active === c.active);
     }
     case "settlement_age": {

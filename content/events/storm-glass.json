@@ -42,7 +42,7 @@
           "seasons": 1
         }
       ],
-      "outcome": "大家把能找到的玻璃和塑膠布都拿來補，花了一季把溫室修好。"
+      "outcome": "大家把能找到的玻璃和塑膠布都拿來補，動手修溫室，要一季才修得好。"
     },
     {
       "id": "later",
@@ -64,7 +64,7 @@
     "headline": "暴風打碎了{{settlement}}的溫室",
     "text": "夜裡起了暴風。早上{{keeper}}推開門，溫室的玻璃碎了一地。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

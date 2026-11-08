@@ -19,6 +19,11 @@
       "type": "world_tick",
       "op": ">=",
       "value": 4
+    },
+    {
+      "type": "salvage",
+      "op": ">=",
+      "value": 1
     }
   ],
   "roles": [
@@ -93,7 +98,7 @@
     "headline": "{{engineer}}在屋頂上找到太陽能板",
     "text": "{{engineer}}從{{settlement}}附近一棟倒塌的倉庫爬上屋頂，發現一排沾滿灰的太陽能板。擦掉灰之後，玻璃底下的電池片還完好。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

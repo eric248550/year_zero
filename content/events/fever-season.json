@@ -36,6 +36,12 @@
   ],
   "effects": [
     {
+      "type": "ADJUST_ATTRIBUTE",
+      "role": "patient",
+      "attribute": "health",
+      "delta": -12
+    },
+    {
       "type": "CHANGE_SETTLEMENT_STAT",
       "stat": "health",
       "delta": -8
@@ -62,6 +68,12 @@
           "type": "ADD_LIFE_EVENT",
           "role": "medic",
           "text": "在熱病季照顧病人"
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "patient",
+          "attribute": "health",
+          "delta": 10
         }
       ],
       "outcome": "{{medic}}整整一個星期沒有闔眼。"
@@ -102,7 +114,7 @@
     "headline": "{{settlement}}的熱病季",
     "text": "一開始是{{patient}}：先是咳嗽，接著開始發抖。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed"
 }

@@ -13,6 +13,8 @@ import { claims, construction, facilities, infrastructure, land, teaching } from
 import { harvest, seedSharing, sowing } from "./systems/farming";
 import { abandonment, milestones } from "./systems/settlements";
 import { playerUpkeep } from "./systems/players";
+import { beginWork, npcWork, resolveWork, shareGoods } from "./systems/work";
+import { proposalNotices } from "./systems/governance";
 import { attributeDrift } from "./systems/attributes";
 
 export const MAX_EVENTS_PER_TICK = 3;
@@ -51,6 +53,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   state.tick += 1;
   const rng = new Rng(state.rng);
   const ctx = new TickContext(state, rng);
+  ctx.inTick = true;
 
   const acceptedActions: PlayerAction[] = [];
   const rejectedActions: { action: unknown; reason: string }[] = [];
@@ -73,11 +76,14 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   ctx.events.push(...resolved.events);
   // A proposal whose vote could not be held (everyone who decides it died, its place is gone) is closed, not left blocking.
   for (const p of ctx.state.proposals ?? []) {
-    if (p.status === "open" && !(ctx.state.pendingDecisions ?? []).some((d) => d.proposalId === p.id)) { p.status = "failed"; p.resolvedTick = ctx.state.tick; }
+    if (p.status === "open" && !(ctx.state.pendingDecisions ?? []).some((d) => d.proposalId === p.id)) { p.status = "failed"; p.resolvedTick = ctx.state.tick; p.failReason = "Nobody was left to decide it"; }
   }
   ctx.deaths += countDeaths(resolved.events);
 
+  beginWork(ctx);
+  npcWork(ctx);
   councilDecisions(ctx);
+  shareGoods(ctx);
   seedSharing(ctx);
   sowing(ctx);
   produce(ctx);
@@ -123,6 +129,8 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   ctx.events.push(...scheduled.events);
   ctx.deaths += countDeaths(scheduled.events);
 
+  // Everyone's chosen work for the year, then the harvest it may have helped.
+  resolveWork(ctx);
   // Autumn: whatever survived the year's storms is brought in.
   harvest(ctx);
 
@@ -130,6 +138,8 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   wanderers(ctx);
   milestones(ctx);
   playerUpkeep(ctx);
+  proposalNotices(ctx.state);
+  if (ctx.state.sharedRewards) ctx.state.sharedRewards = ctx.state.sharedRewards.filter((k) => Number(k.split("|").pop()) >= ctx.state.tick - 1);
 
   ctx.state.rng = rng.state;
   const narrativeCount = ctx.events.filter((e) => e.kind === "narrative").length;

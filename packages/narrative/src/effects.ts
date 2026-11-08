@@ -7,7 +7,10 @@ import {
   TECH_BY_ID,
   TECHNOLOGIES,
   RESOURCES,
+  GOODS,
+  PRACTICE,
   type Character,
+  type SpecialtyId,
   type Effect,
   type EventCategory,
   type EventScope,
@@ -19,7 +22,7 @@ import {
   type WorldState,
 } from "@genesis/schemas";
 import { EffectError, InsufficientResourcesError } from "./errors";
-import { activeSettlements, allocateHistoryId, currentYear, fullName, getCharacter, nearestClaimable, nearestUnknown, projectOf, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
+import { activeSettlements, addGood, allocateHistoryId, currentYear, good, fullName, getCharacter, nearestClaimable, nearestUnknown, projectOf, relationshipKey, rivalOf, round2, tensionKey } from "./queries";
 import { say } from "./texts";
 import { mayActAlone, proposalDeciders, proposalKey } from "./authority";
 
@@ -50,6 +53,28 @@ export interface EffectContext {
   season?: number;
   /** Set while resolving a proposal's approval. */
   proposalId?: string;
+  /** Another player's copy of this personal event already gave the settlement its share. */
+  sharedRepeat?: boolean;
+}
+
+/** Effects that give something to everyone in the settlement (not to one person). */
+function isSharedGain(e: Effect): boolean {
+  switch (e.type) {
+    case "ADJUST_RESOURCE": return e.amount > 0;
+    case "ADD_SEEDS": return e.amount > 0;
+    case "CHANGE_FERTILITY": case "CHANGE_FACILITY": case "CHANGE_SETTLEMENT_STAT": return e.delta > 0;
+    default: return false;
+  }
+}
+
+/** One more season of relevant work. Returns true when it has just become a specialty. */
+export function addPractice(c: Character, specialty: SpecialtyId, amount: number): boolean {
+  if (c.specialties?.includes(specialty)) return false;
+  const now = (c.practice?.[specialty] ?? 0) + amount;
+  c.practice = { ...(c.practice ?? {}), [specialty]: now };
+  if (now < PRACTICE.threshold) return false;
+  c.specialties = [...(c.specialties ?? []), specialty];
+  return true;
 }
 
 function record(rec: ChangeRecorder, path: string, label: string, before: StateChange["before"], after: StateChange["after"]) {
@@ -188,6 +213,7 @@ export function changeTension(state: WorldState, a: string, b: string, delta: nu
  * rejected — content (including AI drafts) cannot run arbitrary code.
  */
 export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContext, rec: ChangeRecorder): void {
+  if (ctx.sharedRepeat && isSharedGain(effect)) return;
   switch (effect.type) {
     case "ADJUST_RESOURCE": {
       for (const s of targetSettlements(state, effect.target, ctx)) {
@@ -300,7 +326,11 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       }
       if (effect.seasons) {
         // On a building that already stands this is a repair: it keeps working as it is until the work is done.
-        if (s!.building?.[effect.facility] !== undefined) return; // already being built or repaired
+        if (s!.building?.[effect.facility] !== undefined) {
+          // A proposal has already been paid for: it fails rather than charge for work under way.
+          if (ctx.proposalId) throw new EffectError("That is already being built");
+          return;
+        }
         const due = (ctx.season ?? ctx.tick * 4) + effect.seasons;
         s!.building = { ...(s!.building ?? {}), [effect.facility]: due };
         record(rec, `settlements.${s!.id}.building.${effect.facility}`, `${s!.name} builds ${effect.facility}`, null, due);
@@ -360,6 +390,12 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       if (!c || c.specialties?.includes(effect.specialty)) return;
       c.specialties = [...(c.specialties ?? []), effect.specialty];
       record(rec, `characters.${c.id}.specialties.${effect.specialty}`, `${fullName(c)} learns ${effect.specialty}`, false, true);
+      return;
+    }
+    case "PRACTICE": {
+      const c = roleCharacter(state, effect.role, ctx);
+      if (!c) return;
+      if (addPractice(c, effect.specialty, effect.amount)) record(rec, `characters.${c.id}.specialties.${effect.specialty}`, `${fullName(c)} learns ${effect.specialty}`, false, true);
       return;
     }
     case "AFTER": {
@@ -423,6 +459,14 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
     case "SPEND": {
       const [s] = targetSettlements(state, "settlement", ctx);
       spendResources(s!, effect.costs, rec); // throws if it cannot be paid: the whole outcome fails
+      for (const g of GOODS) {
+        const need = effect.goods?.[g] ?? 0;
+        if (need <= 0) continue;
+        const have = good(s!, g);
+        if (have + 1e-9 < need) throw new InsufficientResourcesError(`${s!.name} is short of ${g}`);
+        addGood(s!, g, -need);
+        record(rec, `settlements.${s!.id}.goods.${g}`, `${s!.name} ${g}`, have, good(s!, g));
+      }
       return;
     }
     case "PROPOSE": {
@@ -446,7 +490,7 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
         return;
       }
       const deciders = proposalDeciders(state, s!, effect.kind, effect.domain);
-      state.proposals.push({ ...base, status: "open", deciders });
+      state.proposals.push({ ...base, status: "open", deciders, deadlineTick: state.tick + 1 });
       // The people who decide get it as a decision of their own, due next year. NPCs decide by their nature.
       (state.pendingDecisions ??= []).push({
         id, definitionId: PROPOSAL_EVENT, definitionVersion: 1, settlementId: s!.id, roles: { proposer: proposerId },
@@ -478,6 +522,7 @@ export function applyEffect(state: WorldState, effect: Effect, ctx: EffectContex
       } catch (err) {
         if (!(err instanceof EffectError)) throw err;
         p.status = "failed";
+        p.failReason = err.message;
       }
       record(rec, `proposals.${p.id}`, `Proposal: ${p.title}`, "open", state.proposals!.find((x) => x.id === p.id)!.status);
       return;

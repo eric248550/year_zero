@@ -90,11 +90,6 @@
           "role": "you",
           "attribute": "knowledge",
           "delta": 2
-        },
-        {
-          "type": "ADD_SPECIALTY",
-          "role": "you",
-          "specialty": "midwifery"
         }
       ],
       "outcome": "{{you}}把風險高的步驟全部拿掉。進度慢下來了，但沒有人受傷。"
@@ -110,7 +105,7 @@
     "headline": "{{you}}要決定先在誰身上試",
     "text": "「{{project}}」做出了第一批成果，但沒有人知道它安不安全。總得有人先試。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

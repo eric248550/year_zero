@@ -36,23 +36,31 @@
       ],
       "effects": [
         {
-          "type": "CHANGE_SETTLEMENT_STAT",
-          "stat": "morale",
-          "delta": 4
-        },
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "knowledge",
-          "amount": 5,
-          "target": "all_settlements"
-        },
-        {
-          "type": "ADJUST_RESOURCE",
-          "resource": "knowledge",
-          "amount": 5
+          "type": "AFTER",
+          "seasons": 4,
+          "title": "抄本送到了每一個聚落",
+          "text": "一年後，每個聚落都有了自己的書架。{{scholar}}的字跡出現在每一本抄本上。",
+          "effects": [
+            {
+              "type": "CHANGE_SETTLEMENT_STAT",
+              "stat": "morale",
+              "delta": 4
+            },
+            {
+              "type": "ADJUST_RESOURCE",
+              "resource": "knowledge",
+              "amount": 5,
+              "target": "all_settlements"
+            },
+            {
+              "type": "ADJUST_RESOURCE",
+              "resource": "knowledge",
+              "amount": 5
+            }
+          ]
         }
       ],
-      "outcome": "一年後，每個聚落都有了自己的書架。{{scholar}}的字跡出現在每一本抄本上。"
+      "outcome": "{{scholar}}開始抄寫。全部抄完要一年。"
     },
     {
       "id": "keep",
@@ -83,7 +91,7 @@
     "headline": "{{scholar}}開始抄寫檔案",
     "text": "{{scholar}}在燈下翻著地堡唯一的一套百科全書，自言自語：「如果這些燒掉了，我們就真的什麼都不剩了。」"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

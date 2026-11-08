@@ -81,9 +81,10 @@
           "delta": 3
         },
         {
-          "type": "ADD_SPECIALTY",
+          "type": "PRACTICE",
           "role": "you",
-          "specialty": "smithing"
+          "specialty": "smithing",
+          "amount": 1
         }
       ],
       "outcome": "樣品裝上去第二天就裂了。幸好只是樣品，大家知道問題在哪了。"
@@ -97,9 +98,9 @@
   "importance": "minor",
   "narrative": {
     "headline": "{{you}}要決定用什麼材料",
-    "text": "「{{project}}」需要一批零件。倉庫裡有新熔的金屬，也有一堆拆下來的舊貨。{{you}}得做決定。"
+    "text": "「{{project}}」需要一批零件。倉庫裡有一批新料，也有一堆拆下來的舊貨。{{you}}得做決定。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

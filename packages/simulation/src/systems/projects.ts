@@ -19,7 +19,9 @@ import {
 } from "@genesis/schemas";
 import {
   activeSettlements,
+  addGood,
   characterAge,
+  good,
   fullName,
   getCharacter,
   getSettlement,
@@ -29,6 +31,7 @@ import {
   residents,
   round2,
   say,
+  tensionBetween,
   techText,
   totalResource,
   unlockTechnology,
@@ -84,6 +87,7 @@ export function projectBlocker(st: WorldState, techId: string, s: Settlement | u
   if (activeProjects(st).some((p) => p.techId === techId)) return `Someone is already working on ${tech.name}`;
   if (!s || s.status !== "active") return "Settlement is not active";
   if (s.resources.materials < tech.materials) return `${s.name} needs ${tech.materials} materials`;
+  if (good(s, "parts") < tech.parts) return `${s.name} needs ${tech.parts} tools and components — needs materials`;
   return null;
 }
 
@@ -124,6 +128,10 @@ export function startProject(ctx: TickContext, tech: TechnologyInfo, s: Settleme
   const n = st.counters.nextProject ?? 1;
   st.counters.nextProject = n + 1;
   s.resources.materials = round2(s.resources.materials - tech.materials);
+  if (tech.parts) addGood(s, "parts", -tech.parts);
+  // Whatever has been worked out on paper gives the project a head start.
+  const notes = st.techNotes?.[tech.id] ?? 0;
+  if (notes) delete st.techNotes![tech.id];
   const project: Project = {
     id: `p-${String(n).padStart(3, "0")}`,
     techId: tech.id,
@@ -133,7 +141,7 @@ export function startProject(ctx: TickContext, tech: TechnologyInfo, s: Settleme
     leadId: lead.id,
     memberIds: lead.controllerId ? [lead.id] : [],
     crewIds: [],
-    progress: 0,
+    progress: round2(tech.cost * notes),
     lastGain: 0,
     idleYears: 0,
     approach: by === "council" ? COUNCIL_APPROACH[st.policy] : "steady",
@@ -192,8 +200,30 @@ export function councilProjects(ctx: TickContext): void {
   }
 }
 
+/** Big works are more than one town can pay for: friendly settlements send what they can spare. Materials move; none are made. */
+function pool(ctx: TickContext, tech: TechnologyInfo, site: Settlement): void {
+  const st = ctx.state;
+  if (tech.tier < 3 || site.resources.materials >= tech.materials) return;
+  const donors = activeSettlements(st).filter((d) => d.id !== site.id && tensionBetween(st, d.id, site.id) < 50 && d.resources.materials > 40);
+  const spare = donors.reduce((n, d) => n + d.resources.materials - 40, 0);
+  if (site.resources.materials + spare < tech.materials) return;
+  let need = tech.materials - site.resources.materials;
+  for (const d of donors.sort((a, b) => b.resources.materials - a.resources.materials || (a.id < b.id ? -1 : 1))) {
+    const give = round2(Math.min(need, d.resources.materials - 40));
+    d.resources.materials = round2(d.resources.materials - give);
+    site.resources.materials = round2(site.resources.materials + give);
+    need = round2(need - give);
+    if (need <= 0) break;
+  }
+}
+
 function councilStart(ctx: TickContext, candidates: TechnologyInfo[]): boolean {
   const st = ctx.state;
+  // Before choosing, let the settlement best placed for a big project gather what it needs.
+  for (const tech of candidates.filter((t) => t.tier >= 3).slice(0, 1)) {
+    const site = activeSettlements(st).filter((s) => good(s, "parts") >= tech.parts).sort((a, b) => b.resources.materials - a.resources.materials || (a.id < b.id ? -1 : 1))[0];
+    if (site) pool(ctx, tech, site);
+  }
   const taken = new Set(activeProjects(st).flatMap((p) => [p.leadId, ...p.crewIds]));
   for (const tech of candidates) {
     const profession = BRANCH_INFO[tech.branch].profession;
@@ -263,7 +293,9 @@ export function projects(ctx: TickContext): void {
     const members = p.memberIds.map((id) => getCharacter(st, id)!).filter((c) => !isAway(st, c));
 
     const approach = APPROACH_INFO[p.approach ?? "steady"];
-    let work = npcs.reduce((n, c) => n + workOf(st, c, tech), 0) + members.reduce((n, c) => n + workOf(st, c, tech) * PROJECTS.playerFocus, 0);
+    // Seasons someone has committed to other work are seasons they are not here.
+    const free = (c: Character) => ctx.freeShare(c.id);
+    let work = npcs.reduce((n, c) => n + workOf(st, c, tech) * free(c), 0) + members.reduce((n, c) => n + workOf(st, c, tech) * PROJECTS.playerFocus * free(c), 0);
     work *= approach.work * (hasLaw(s, "work_duty") ? 1.15 : 1);
     if (s.shortage.food > 0 || s.shortage.water > 0) work *= PROJECTS.hungerFactor;
     const perWork = PROJECTS.knowledgePerWork * approach.knowledge * (hasTech(st, "research_institute") ? 0.7 : 1);
@@ -273,7 +305,7 @@ export function projects(ctx: TickContext): void {
     }
     work = round2(work);
     // Who did the work, in proportion to what each put in.
-    const raw = [...npcs.map((c) => [c.id, workOf(st, c, tech)] as const), ...members.map((c) => [c.id, workOf(st, c, tech) * PROJECTS.playerFocus] as const)];
+    const raw = [...npcs.map((c) => [c.id, workOf(st, c, tech) * free(c)] as const), ...members.map((c) => [c.id, workOf(st, c, tech) * PROJECTS.playerFocus * free(c)] as const)];
     const total = raw.reduce((n, [, w]) => n + w, 0);
     if (work > 0 && total > 0) {
       p.contributions ??= {};

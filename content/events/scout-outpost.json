@@ -150,9 +150,10 @@
       ],
       "effects": [
         {
-          "type": "ADD_SPECIALTY",
+          "type": "PRACTICE",
           "role": "you",
-          "specialty": "wayfinding"
+          "specialty": "wayfinding",
+          "amount": 2
         },
         {
           "type": "CHANGE_TENSION",
@@ -172,7 +173,7 @@
     "headline": "{{you}}要決定下一趟去做什麼",
     "text": "{{you}}知道外面有些地方還沒人管，也知道哪裡還能挖到東西。這一趟要去哪裡？"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

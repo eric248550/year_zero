@@ -242,21 +242,23 @@ export function stepRun(db: Db, id: string, ticks: number): StepResult {
   if (!Number.isInteger(ticks) || ticks < 1 || ticks > MAX_TICKS_PER_CALL) {
     throw new RangeError(`ticks must be an integer between 1 and ${MAX_TICKS_PER_CALL}`);
   }
-  const row = getRunRow(db, id);
-  if (row.status !== "active") throw new ConflictError("Archived runs are read-only. Fork or reset to continue.");
   const content = getRunContent(db, id);
-  let state = row.headState as WorldState;
-  const fromTick = state.tick;
-  const out: StepResult = { fromTick, toTick: fromTick, events: 0, highlights: [], rejectedActions: [], rejectedEvents: [], population: 0, status: "", execMs: 0 };
+  let state: WorldState | undefined;
+  const out: StepResult = { fromTick: 0, toTick: 0, events: 0, highlights: [], rejectedActions: [], rejectedEvents: [], population: 0, status: "", execMs: 0 };
   const started = performance.now();
 
   db.transaction((tx) => {
     const t = tx as unknown as Db;
+    // Read under the write lock, so a player action cannot land between this read and the write below.
+    const row = getRunRow(t, id);
+    if (row.status !== "active") throw new ConflictError("Archived runs are read-only. Fork or reset to continue.");
+    state = row.headState as WorldState;
+    out.fromTick = state.tick;
     let queued = row.queuedActions as unknown[];
     for (let i = 0; i < ticks; i++) {
       const t0 = performance.now();
       const overrides = row.choiceOverrides;
-      const result = stepWorld(state, { events: content.events, actions: queued, choiceOverrides: overrides });
+      const result = stepWorld(state!, { events: content.events, actions: queued, choiceOverrides: overrides });
       const execMs = performance.now() - t0;
       state = result.state;
       insertHistory(t, id, result.events);
@@ -275,15 +277,16 @@ export function stepRun(db: Db, id: string, ticks: number): StepResult {
       out.events += result.events.length;
       out.highlights.push(...result.events.filter((e) => e.importance === "major" || e.importance === "critical").map((e) => ({ id: e.id, tick: e.tick, title: e.title, importance: e.importance })));
       out.rejectedActions.push(...result.rejectedActions);
-      out.rejectedEvents.push(...result.rejectedEvents.map((r) => ({ tick: state.tick, ...r })));
+      out.rejectedEvents.push(...result.rejectedEvents.map((r) => ({ tick: state!.tick, ...r })));
       queued = [];
     }
     t.update(runs).set({ headState: state, headHash: hashState(state), currentTick: state.tick, queuedActions: [], updatedAt: nowIso() }).where(eq(runs.id, id)).run();
-  });
+  }, { behavior: "immediate" });
 
-  out.toTick = state.tick;
-  out.population = population(state);
-  out.status = computeMetrics(state, { births: 0, deaths: 0, events: 0 }).status;
+  const finalState = state!;
+  out.toTick = finalState.tick;
+  out.population = population(finalState);
+  out.status = computeMetrics(finalState, { births: 0, deaths: 0, events: 0 }).status;
   out.execMs = Math.round(performance.now() - started);
   return out;
 }
@@ -311,18 +314,20 @@ export interface PlayerActionResult {
  * after death...). The action is logged so replays reproduce it exactly.
  */
 export function applyPlayerAction(db: Db, id: string, raw: unknown): PlayerActionResult {
-  const row = getRunRow(db, id);
-  if (row.status !== "active") throw new ConflictError("Archived runs are read-only");
-  const head = row.headState as WorldState;
-  const r = applyImmediate(head, raw, getRunContent(db, id).events);
-  if (r.rejected || !r.action) throw new ConflictError(r.rejected ?? "Action rejected");
-  db.transaction((tx) => {
+  // The whole read-decide-write runs under SQLite's write lock: two people acting at the
+  // same moment are applied one after the other, each against the other's result.
+  return db.transaction((tx) => {
     const t = tx as unknown as Db;
+    const row = getRunRow(t, id);
+    if (row.status !== "active") throw new ConflictError("Archived runs are read-only");
+    const head = row.headState as WorldState;
+    const r = applyImmediate(head, raw, getRunContent(t, id).events);
+    if (r.rejected || !r.action) throw new ConflictError(r.rejected ?? "Action rejected");
     t.insert(immediateActions).values({ runId: id, tick: head.tick, action: r.action, createdAt: nowIso() }).run();
     insertHistory(t, id, r.events);
     t.update(runs).set({ headState: r.state, headHash: hashState(r.state), updatedAt: nowIso() }).where(eq(runs.id, id)).run();
-  });
-  return { events: r.events, state: r.state };
+    return { events: r.events, state: r.state };
+  }, { behavior: "immediate" });
 }
 
 export function listImmediateActions(db: Db, id: string) {

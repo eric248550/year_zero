@@ -1,5 +1,7 @@
 import {
   CLAIM_SEED,
+  INDUSTRY,
+  MECHANICAL,
   CLAIM_YIELD,
   LAND,
   INFRASTRUCTURE,
@@ -14,6 +16,8 @@ import {
 } from "@genesis/schemas";
 import {
   activeSettlements,
+  addGood,
+  good,
   changeTension,
   facilityLevel,
   characterAge,
@@ -37,6 +41,8 @@ export const LEGACY = {
   upkeep: 1,
   mend: 3,
   decay: 8,
+  /** Yearly wear of a machine with materials but no tools or components. */
+  unserviced: 2,
   /** Tension each claim adds with every other settlement per year (envy). */
   claimEnvy: 0.3,
   /** Chance per year a youngster picks up a parent's or carer's specialty. */
@@ -85,6 +91,9 @@ export function infrastructure(ctx: TickContext): void {
       const cost = repair ? Math.ceil(info.materials / 2) : info.materials;
       // Keep enough for a year of upkeep and emergencies, except for the camps and mines that will make more.
       if (s.resources.materials < cost + (info.deposit ? 0 : 20)) continue;
+      const parts = repair ? Math.ceil((info.parts ?? 0) / 2) : info.parts ?? 0;
+      if (good(s, "parts") < parts) continue;
+      if (parts) addGood(s, "parts", -parts);
       const before = s.resources.materials;
       s.resources.materials = round2(before - cost);
       const due = st.tick * 4 + (repair ? 1 : info.seasons);
@@ -119,7 +128,11 @@ export function facilities(ctx: TickContext): void {
       if (id === "fields") { s.facilities![id] = Math.min(100, cond + LEGACY.mend); continue; }
       const paid = s.resources.materials >= LEGACY.upkeep;
       if (paid) s.resources.materials = round2(s.resources.materials - LEGACY.upkeep);
-      const after = Math.max(0, Math.min(100, cond + (paid ? LEGACY.mend : -LEGACY.decay)));
+      // Machines also need tools and components, or they slowly wear out even when materials are paid.
+      const machine = MECHANICAL.includes(id);
+      const serviced = !machine || good(s, "parts") >= INDUSTRY.machineUpkeep;
+      if (machine && serviced) addGood(s, "parts", -INDUSTRY.machineUpkeep);
+      const after = Math.max(0, Math.min(100, cond + (paid ? (serviced ? LEGACY.mend : -LEGACY.unserviced) : -LEGACY.decay)));
       s.facilities![id] = after;
       if (cond >= FACILITY_WORKING && after < FACILITY_WORKING) {
         ctx.system({

@@ -10,8 +10,9 @@ import { Prologue } from "@/components/play/prologue";
 import { Succession } from "@/components/play/succession";
 import { RenameCharacter } from "@/components/play/rename";
 import { Projects } from "@/components/play/projects";
+import { WorkPanel } from "@/components/play/work";
 import { redirect } from "next/navigation";
-import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor, homeOf, personalOf, legacyOf } from "@/lib/play";
+import { ageOf, conditionOf, decisionViews, inboxFor, listWorlds, loadPlay, neighboursOf, projectsFor, homeOf, personalOf, legacyOf, workFor, impactOf } from "@/lib/play";
 import { db } from "@/lib/server";
 import { getI18n } from "@/lib/i18n/server";
 
@@ -83,6 +84,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
   const place = homeOf(state, character, zh);
   const mine = personalOf(state, character, zh);
   const before = legacyOf(state, player);
+  const impact = impactOf(state, character, zh);
   const story = [...character.lifeEvents].reverse().slice(0, 8);
   const news = home ? queryHistory(db(), ctx.runId, { settlementId: home.id, minImportance: "notable", order: "desc", limit: 4 }).items.filter((e) => e.tick >= state.tick - PLAYERS.inviteTtl) : [];
 
@@ -113,7 +115,21 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
       <SectionTitle>{t("play.decisions.title")}</SectionTitle>
       <DecisionList decisions={decisions} />
 
-      <div className="mt-6"><Projects v={projectsFor(state, character, term)} /></div>
+      <div className="mt-6"><WorkPanel v={workFor(state, character, zh)} /></div>
+
+      <div className="mt-4"><Projects v={projectsFor(state, character, term)} /></div>
+
+      {(impact.finished > 0 || impact.learning.length > 0 || impact.projects.length > 0 || impact.deeds.length > 0) && (
+        <>
+          <SectionTitle>{t("play.impact.title")}</SectionTitle>
+          <div className="card space-y-2 px-4 py-3 text-sm">
+            <p className="text-xs text-ink-2">{t("play.impact.finished", { n: impact.finished })}</p>
+            {impact.learning.length > 0 && <p className="text-xs text-ink-2">{t("play.impact.learning")}：{impact.learning.map((x) => `${x.name} ${x.have}/${x.need}`).join("、")}</p>}
+            {impact.projects.length > 0 && <p className="text-xs text-ink-2">{t("play.impact.projects")}：{impact.projects.map((x) => `${x.name} ${x.share}%`).join("、")}</p>}
+            {impact.deeds.length > 0 && <ul className="space-y-0.5 text-xs text-ink-2">{impact.deeds.map((d, i) => <li key={i}><span className="num mr-1.5 text-ink-3">{d.year}</span>{d.text}</li>)}</ul>}
+          </div>
+        </>
+      )}
 
       <SectionTitle>{t("play.report.title")}</SectionTitle>
       {story.length === 0 ? (
@@ -168,9 +184,14 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-4 py-3 text-sm sm:grid-cols-4">
               {place.farm && <span>{t("play.home.seeds")} <b className="num">{place.farm.seeds}</b></span>}
               {place.farm && <span>{t("play.home.fertility")} <b className="num">{place.farm.fertility}</b></span>}
-              <span>{t("play.home.power")} <b className="num">{place.power}%</b></span>
+              <span>{t("play.home.power")} <b className="num">{t("play.home.powerDayNight", { day: place.powerDay, night: place.powerNight })}</b></span>
               <span>{t("play.home.salvage")} <b className="num">{place.salvage}</b></span>
               {place.farm && <span className="col-span-2 text-xs text-ink-3 sm:col-span-4">{t("play.home.farm", { plan: place.farm.plan, harvests: place.farm.harvests })}{place.farm.growing > 0 && place.farm.readyLabel ? ` · ${t("play.home.growing", { n: place.farm.growing, when: place.farm.readyLabel })}` : ""}</span>}
+            </div>
+            <div className="px-4 py-3">
+              <h3 className="label-xs mb-1">{t("play.home.goods")}</h3>
+              <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-sm sm:grid-cols-5">{place.goods.map((g) => <span key={g.id}>{g.name} <b className="num">{g.amount}</b></span>)}</div>
+              {place.building.length > 0 && <p className="mt-1.5 text-[11px] text-ink-3">{t("play.home.building")}：{place.building.map((b) => `${b.name}（${b.when}）`).join("、")}</p>}
             </div>
             <div className="px-4 py-3">
               <h3 className="label-xs mb-1">{t("play.home.proposals")}</h3>
@@ -180,7 +201,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
                   {place.proposals.map((p, i) => (
                     <li key={i} className="text-sm">
                       <span className={p.status === "executed" ? "text-ok" : p.status === "open" ? "text-signal" : "text-ink-3"}>{t(`play.home.proposal.${p.status}`)}</span> {p.title}
-                      <div className="text-[11px] text-ink-3">{t("play.home.proposalBy", { who: p.proposer, year: p.year })}{p.status !== "open" && (p.yes + p.no > 0) ? ` · ${t("play.home.proposalVotes", { yes: p.yes, no: p.no })}` : ""}{p.status === "open" ? ` · ${t("play.home.proposalDecider", { who: p.deciders })}` : ""}</div>
+                      <div className="text-[11px] text-ink-3">{t("play.home.proposalBy", { who: p.proposer, year: p.year })}{p.status !== "open" && (p.yes + p.no > 0) ? ` · ${t("play.home.proposalVotes", { yes: p.yes, no: p.no })}` : ""}{p.status === "open" ? ` · ${t(p.authority === "domain" ? "play.home.proposalHead" : "play.home.proposalDecider", { who: p.deciders })}` : ""}{p.deadline ? ` · ${t("play.home.proposalDeadline", { year: p.deadline })}` : ""}{p.reason ? ` · ${p.reason}` : ""}</div>
                     </li>
                   ))}
                 </ul>

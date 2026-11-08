@@ -54,7 +54,7 @@ describe("things that stay", () => {
     let s = applyImmediate(createWorld({ seed: 8 }), { type: "JOIN_WORLD", playerId: "p", playerName: "p" }).state;
     const law = def({
       id: "law-test", scope: "settlement", participation: "everyone", resolution: "vote", maxOccurrences: 1, preconditions: [{ type: "law", law: "curfew", active: false }],
-      choices: [{ id: "yes", label: "Yes", effects: [{ type: "ENACT_LAW", law: "curfew" }] }, { id: "no", label: "No", effects: [] }],
+      choices: [{ id: "yes", label: "Yes", tags: ["community"], effects: [{ type: "ENACT_LAW", law: "curfew" }] }, { id: "no", label: "No", tags: ["secrecy"], effects: [] }],
     });
     s = step(s, [law]).state;
     const p = s.pendingDecisions!.find((x) => x.definitionId === "law-test")!;

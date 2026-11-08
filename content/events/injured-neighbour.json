@@ -18,7 +18,14 @@
       "familiarWith": "you"
     }
   ],
-  "effects": [],
+  "effects": [
+    {
+      "type": "ADJUST_ATTRIBUTE",
+      "role": "hurt",
+      "attribute": "health",
+      "delta": -10
+    }
+  ],
   "choices": [
     {
       "id": "nurse",
@@ -65,6 +72,12 @@
           "a": "you",
           "b": "hurt",
           "delta": 5
+        },
+        {
+          "type": "ADJUST_ATTRIBUTE",
+          "role": "hurt",
+          "attribute": "health",
+          "delta": 5
         }
       ],
       "outcome": "{{hurt}}被送到醫護那裡。{{you}}偶爾會去看一眼。"
@@ -96,7 +109,7 @@
     "headline": "{{hurt}}受傷了",
     "text": "{{hurt}}在廢墟裡被鋼筋劃傷了腿，傷口開始發炎。"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

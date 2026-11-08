@@ -13,15 +13,16 @@ import {
   type Settlement,
   type WorldState,
 } from "@genesis/schemas";
-import { activeSettlements, characterAge, fullName, getCharacter, getSettlement, isZh, relationshipKey, residents, say } from "@genesis/narrative";
+import { activeSettlements, characterAge, fullName, getCharacter, getSettlement, isAwayNow, isZh, relationshipKey, residents, say } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
 import { TRAITS } from "../names";
 import { initAttributes } from "./attributes";
+import { cancelWork, startWork, workBlocker } from "./work";
 import { activeProjects, donateToProject, joinProject, logProject, projectBlocker, projectFor, proposableBranches, startProject } from "./projects";
 
 type PlayerActionOf<T extends PlayerAction["type"]> = Extract<PlayerAction, { type: T }>;
-export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "START_PROJECT" | "JOIN_PROJECT" | "PROJECT_APPROACH" | "DONATE_PROJECT">;
+export type IndividualAction = PlayerActionOf<"JOIN_WORLD" | "CHOOSE" | "CONTINUE_AS" | "CARE_FOR" | "INVITE" | "LEAVE_WORLD" | "PROLOGUE" | "RENAME" | "START_PROJECT" | "JOIN_PROJECT" | "PROJECT_APPROACH" | "DONATE_PROJECT" | "START_WORK" | "CANCEL_WORK">;
 
 export const PLAYERS = {
   /** Unaccepted invites expire after this many ticks (one real week in the live game). */
@@ -242,7 +243,7 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       const me = playerCharacter(st, a.playerId);
       if (!me) return "You have no living character";
       if (characterAge(st, me) < ADULT_AGE) return "You are too young to lead a project";
-      if (me.awayUntil !== undefined && me.awayUntil >= st.tick * 4) return "You are away and cannot start anything here until you are back";
+      if (isAwayNow(st, me)) return "You are away and cannot start anything here until you are back";
       if (activeProjects(st).some((p) => p.leadId === me.id)) return "You are already leading a project";
       const tech = TECH_BY_ID[a.tech];
       // You can only propose what your trade knows how to build.
@@ -258,7 +259,7 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (p.settlementId !== me.homeId) return "You can only work on projects where you live";
       if (characterAge(st, me) < ADULT_AGE) return "You are too young to work on a project";
       if (p.memberIds.includes(me.id)) return "You are already working on it";
-      if (me.awayUntil !== undefined && me.awayUntil >= st.tick * 4) return "You are away and cannot join anything until you are back";
+      if (isAwayNow(st, me)) return "You are away and cannot join anything until you are back";
       return null;
     }
     case "DONATE_PROJECT": {
@@ -269,6 +270,20 @@ export function validatePlayerAction(ctx: TickContext, a: IndividualAction): str
       if (p.donations?.[me.id] === st.tick) return "You already put materials into it this year";
       const home = getSettlement(st, p.settlementId);
       if (!home || home.resources.materials < a.amount) return `${home?.name ?? "Your settlement"} has only ${Math.floor(home?.resources.materials ?? 0)} materials`;
+      return null;
+    }
+    case "START_WORK": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      if (a.requestId && [...(st.activities ?? []), ...(st.activityLog ?? [])].some((x) => x.characterId === me.id && x.requestId === a.requestId)) return "That was already submitted";
+      return workBlocker(st, me, a.action, a.target, ctx.season);
+    }
+    case "CANCEL_WORK": {
+      const me = playerCharacter(st, a.playerId);
+      if (!me) return "You have no living character";
+      const w = (st.activities ?? []).find((x) => x.id === a.activityId);
+      if (!w || w.characterId !== me.id) return "That is not your work";
+      if (w.startSeason < ctx.season) return "It has already begun";
       return null;
     }
     case "PROJECT_APPROACH": {
@@ -511,6 +526,15 @@ export function applyPlayerAction(ctx: TickContext, a: IndividualAction): void {
     case "DONATE_PROJECT": {
       const me = playerCharacter(st, a.playerId)!;
       donateToProject(ctx, me, a.amount);
+      return;
+    }
+    case "START_WORK": {
+      const me = playerCharacter(st, a.playerId)!;
+      startWork(ctx, me, a.action, a.target, a.requestId);
+      return;
+    }
+    case "CANCEL_WORK": {
+      cancelWork(ctx, (st.activities ?? []).find((x) => x.id === a.activityId)!);
       return;
     }
     case "RENAME": {

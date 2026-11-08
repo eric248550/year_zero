@@ -4,7 +4,13 @@
   "scope": "settlement",
   "category": "resource",
   "description": "聚落這陣子缺人手，有人問你能不能多做一點。",
-  "preconditions": [],
+  "preconditions": [
+    {
+      "type": "harvests",
+      "op": ">=",
+      "value": 1
+    }
+  ],
   "roles": [
     {
       "id": "you",
@@ -76,7 +82,7 @@
     "headline": "{{asker}}來找{{you}}幫忙",
     "text": "收成的日子到了，{{asker}}找上{{you}}：「這週能不能多留幾個小時？人真的不夠。」"
   },
-  "version": 1,
+  "version": 2,
   "status": "published",
   "source": "seed",
   "tags": [

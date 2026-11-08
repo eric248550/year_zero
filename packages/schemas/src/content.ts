@@ -13,8 +13,7 @@ import {
   PROJECT_APPROACHES,
   FACILITIES,
   LAWS,
-  SPECIALTIES,
-} from "./catalog";
+  SPECIALTIES, GOODS } from "./catalog";
 import { ATTRIBUTES, FlagValueSchema } from "./world";
 
 /* ------------------------------------------------------------------ */
@@ -71,7 +70,7 @@ export const ConditionSchema = z.discriminatedUnion("type", [
   /** Harvests the target settlement has brought in. */
   z.object({ type: z.literal("harvests"), op: ComparisonOpSchema, value: z.number().int() }).strict(),
   /** Electric power available to the target settlement (0–1: own sources and the grid). */
-  z.object({ type: z.literal("power"), op: ComparisonOpSchema, value: z.number() }).strict(),
+  z.object({ type: z.literal("power"), op: ComparisonOpSchema, value: z.number(), when: z.enum(["day", "night"]).optional() }).strict(),
   /** Someone is (or is not) building this technology right now. */
   z.object({ type: z.literal("project"), tech: z.string(), active: z.boolean() }).strict(),
   /** The target settlement has this building in working order (condition ≥ 30), or not. */
@@ -161,6 +160,7 @@ export const EFFECT_TYPES = [
   "CLAIM_SITE",
   "CEDE_CLAIM",
   "ADD_SPECIALTY",
+  "PRACTICE",
   "SCHEDULE_EVENT",
   "AFTER",
   "ADD_SEEDS",
@@ -267,12 +267,14 @@ export const EffectSchema = z.discriminatedUnion("type", [
   /** Used by the approval vote: carry out (or drop) the proposal it is about. */
   z.object({ type: z.literal("RESOLVE_PROPOSAL"), approve: z.boolean() }).strict(),
   /** Pay from the target settlement; the whole outcome fails if it cannot be paid. */
-  z.object({ type: z.literal("SPEND"), costs: CostSchema }).strict(),
+  z.object({ type: z.literal("SPEND"), costs: CostSchema, goods: z.partialRecord(z.enum(GOODS), z.number().min(0)).optional() }).strict(),
   /** The council starts the next project in this branch first (sets the research focus). */
   z.object({ type: z.literal("PRIORITIZE_BRANCH"), branch: z.enum(BRANCHES) }).strict(),
   /** The target settlement hands its oldest claim to its rival. */
   z.object({ type: z.literal("CEDE_CLAIM") }).strict(),
   z.object({ type: z.literal("ADD_SPECIALTY"), role: z.string(), specialty: z.enum(SPECIALTIES) }).strict(),
+  /** Relevant work toward a specialty; it is learned once enough has been done. */
+  z.object({ type: z.literal("PRACTICE"), role: z.string(), specialty: z.enum(SPECIALTIES), amount: z.number().min(0.5).max(4).default(1) }).strict(),
   /**
    * Something that takes time: `event` (a scheduledOnly event) happens `seasons`
    * seasons from now with the same roles. Roles in `away` are gone until then

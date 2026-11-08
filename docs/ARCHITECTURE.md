@@ -131,6 +131,16 @@ rejectedEvents, metrics }`. Phases:
 The RNG state is stored in `WorldState.rng`, so a snapshot fully captures the random
 stream. Tunable constants live next to each system (`ECONOMY`, `DEMOGRAPHY`).
 
+Rules 1.2: **work** (`systems/work.ts`) is one activity system for players and NPCs: a
+character commits seasons of the coming year to an action from `WORK_ACTIONS`; it is checked
+and paid when committed, occupies `startSeason..dueSeason`, and `resolveWork` closes it once
+(removed from `state.activities` before its effects). Work that changes a shared asset goes
+through `PROPOSE` unless the character heads that domain. **Manufacturing** (`economy.ts`):
+salvage gives materials; camps and mines fill `settlement.goods` (timber, ore); `manufacture`
+turns ore + fuel at a forge into metal and metal + timber at a workshop into parts, which
+advanced projects, machines' upkeep and extraction need. Player writes run in an immediate
+SQLite transaction.
+
 ## Storylets (`packages/narrative`)
 
 Three separate things:

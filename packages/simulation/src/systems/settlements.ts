@@ -1,5 +1,5 @@
-import { FARM, LOCATION_BY_ID, TECHNOLOGIES, type Character, type Settlement } from "@genesis/schemas";
-import { activeSettlements, characterAge, hasTech, population, residents, round2 } from "@genesis/narrative";
+import { FARM, INDUSTRY, LOCATION_BY_ID, TECHNOLOGIES, type Character, type Settlement } from "@genesis/schemas";
+import { activeSettlements, addGood, characterAge, good, hasTech, population, residents, round2 } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { placeDescription, placeName, say } from "@genesis/narrative";
 
@@ -50,6 +50,10 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
   const seed = Math.min(FARM.founderSeed, from.farm?.seeds ?? 0);
   if (from.farm) from.farm.seeds = round2(from.farm.seeds - seed);
 
+  // A few tools go with them, and leave the store at home.
+  const tools = Math.min(INDUSTRY.founderParts, good(from, "parts"));
+  if (tools > 0) addGood(from, "parts", -tools);
+
   const settlement: Settlement = {
     id,
     name: placeName(st, locationId),
@@ -65,6 +69,7 @@ export function foundSettlement(ctx: TickContext, locationId: string, from: Sett
     supportedBy: from.id,
     resources: transfer,
     farm: { seeds: seed, fertility: 100, crops: [], harvests: 0 },
+    ...(tools > 0 ? { goods: { parts: tools } } : {}),
     shortage: { food: 0, water: 0 },
     shortageOrigin: { food: null, water: null },
   };
