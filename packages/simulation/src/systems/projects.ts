@@ -2,10 +2,12 @@ import {
   ADULT_AGE,
   APPROACH_INFO,
   BRANCH_INFO,
+  type BranchId,
   type PolicyId,
   type ProjectApproach,
   ELDER_AGE,
   POLICY_INFO,
+  PRIORITY_INFO,
   TECHNOLOGIES,
   TECH_BY_ID,
   TECH_FACILITY,
@@ -38,6 +40,7 @@ import {
 } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { hasLaw, isAway, raiseFacility, specialtyBoost } from "./legacy";
+import { noteTrade } from "./work";
 
 /**
  * Projects: every technology is built by people. The council or a player
@@ -70,6 +73,9 @@ export const PROJECTS = {
   /** Crew a project led by someone who chose it can draw, against one the council runs. */
   ledByPlayer: 1.5,
 } as const;
+
+/** People a world needs before the council starts putting working power first. */
+const PLAN_POPULATION = 200;
 
 export function activeProjects(st: WorldState): Project[] {
   return st.projects ?? [];
@@ -181,10 +187,15 @@ export function councilCandidates(st: WorldState): TechnologyInfo[] {
   const order = POLICY_INFO[st.policy].branchOrder;
   const busyBranches = new Set(activeProjects(st).map((p) => TECH_BY_ID[p.techId]!.branch));
   const focus = st.researchFocus;
+  // What settlements have put first pulls research their way.
+  const wanted = (b: BranchId) => Math.min(1.2, activeSettlements(st).filter((s) => s.priority && PRIORITY_INFO[s.priority].branches.includes(b)).length * 0.6);
+  // Once a settlement has the people to use it, what stands between it and working power comes up the list.
+  const needed = population(st) >= PLAN_POPULATION ? new Set(missingPowerTechs(st)) : new Set<string>();
+  const rank = (t: TechnologyInfo) => t.tier + order.indexOf(t.branch) * 0.6 + (busyBranches.has(t.branch) ? 1 : 0) - wanted(t.branch) - (needed.has(t.id) ? 2 : 0);
   return startableTechs(st).sort((a, b) =>
     Number(b.id === focus) - Number(a.id === focus) ||
     // The council's policy decides what comes first; it does not work evenly through the tree.
-    (a.tier + order.indexOf(a.branch) * 0.6 + (busyBranches.has(a.branch) ? 1 : 0)) - (b.tier + order.indexOf(b.branch) * 0.6 + (busyBranches.has(b.branch) ? 1 : 0)) ||
+    rank(a) - rank(b) ||
     (a.id < b.id ? -1 : 1));
 }
 
@@ -201,9 +212,32 @@ export function councilProjects(ctx: TickContext): void {
   }
 }
 
+/** Technologies on the way to working power that nobody has yet. */
+function missingPowerTechs(st: WorldState): string[] {
+  return ["water_wheel", "mechanical_power", "solar_power", "metallurgy", "power_grid", "research_institute"].filter((t) => !st.technologies.includes(t));
+}
+
+/** Tools for a big work move the same way: from those with more than they need, none made. */
+function poolParts(st: WorldState, tech: TechnologyInfo, site: Settlement): void {
+  if (good(site, "parts") >= tech.parts) return;
+  const donors = activeSettlements(st).filter((d) => d.id !== site.id && tensionBetween(st, d.id, site.id) < 50 && good(d, "parts") > 12);
+  if (good(site, "parts") + donors.reduce((n, d) => n + good(d, "parts") - 12, 0) < tech.parts) return;
+  let need = round2(tech.parts - good(site, "parts"));
+  for (const d of donors.sort((a, b) => good(b, "parts") - good(a, "parts") || (a.id < b.id ? -1 : 1))) {
+    const give = round2(Math.min(need, good(d, "parts") - 12));
+    addGood(d, "parts", -give);
+    addGood(site, "parts", give);
+    noteTrade(d, site, "parts", give);
+    st.stats.trade = round2((st.stats.trade ?? 0) + give);
+    need = round2(need - give);
+    if (need <= 0) break;
+  }
+}
+
 /** Big works are more than one town can pay for: friendly settlements send what they can spare. Materials move; none are made. */
 function pool(ctx: TickContext, tech: TechnologyInfo, site: Settlement): void {
   const st = ctx.state;
+  if (tech.tier >= 3) poolParts(st, tech, site);
   if (tech.tier < 3 || site.resources.materials >= tech.materials) return;
   const donors = activeSettlements(st).filter((d) => d.id !== site.id && tensionBetween(st, d.id, site.id) < 50 && d.resources.materials > 40);
   const spare = donors.reduce((n, d) => n + d.resources.materials - 40, 0);
@@ -218,11 +252,13 @@ function pool(ctx: TickContext, tech: TechnologyInfo, site: Settlement): void {
   }
 }
 
+const hosts = (s: Settlement, tech: TechnologyInfo) => !!s.priority && PRIORITY_INFO[s.priority].branches.includes(tech.branch);
+
 function councilStart(ctx: TickContext, candidates: TechnologyInfo[]): boolean {
   const st = ctx.state;
   // Before choosing, let the settlement best placed for a big project gather what it needs.
   for (const tech of candidates.filter((t) => t.tier >= 3).slice(0, 1)) {
-    const site = activeSettlements(st).filter((s) => good(s, "parts") >= tech.parts).sort((a, b) => b.resources.materials - a.resources.materials || (a.id < b.id ? -1 : 1))[0];
+    const site = [...activeSettlements(st)].sort((a, b) => b.resources.materials - a.resources.materials || (a.id < b.id ? -1 : 1))[0];
     if (site) pool(ctx, tech, site);
   }
   const taken = new Set(activeProjects(st).flatMap((p) => [p.leadId, ...p.crewIds]));
@@ -232,7 +268,8 @@ function councilStart(ctx: TickContext, candidates: TechnologyInfo[]): boolean {
       .filter((s) => projectBlocker(st, tech.id, s) === null)
       .map((s) => ({ s, people: residents(st, s.id).filter((c) => !c.controllerId && !taken.has(c.id) && c.profession === profession && characterAge(st, c) >= ADULT_AGE) }))
       .filter((o) => o.people.length > 0)
-      .sort((a, b) => b.people.length - a.people.length || (a.s.id < b.s.id ? -1 : 1));
+      // A settlement that has put this kind of work first hosts it if it can.
+      .sort((a, b) => Number(hosts(b.s, tech)) - Number(hosts(a.s, tech)) || b.people.length - a.people.length || (a.s.id < b.s.id ? -1 : 1));
     const best = options[0];
     if (!best) continue;
     const attr = BRANCH_INFO[tech.branch].attribute;

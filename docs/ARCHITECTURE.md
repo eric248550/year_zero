@@ -312,3 +312,7 @@ three personal events a year (chances 0.9 / 0.6 / 0.3); the app shows each at
 a fixed point 5–65% through the year and refreshes every 15 seconds. With
 three players, about 1.7 personal events per player-year, a third of them
 with another player in them.
+
+## Planning and NPC leadership (rules 1.4)
+
+`packages/simulation/src/planning.ts` derives, from current state only, what a goal still needs (`goalPlans`, `milestoneBlockers`). Nothing is stored, so plans follow the world and replay is unaffected. `systems/capital.ts` runs yearly: NPC leaders propose a settlement direction or the next major work through the ordinary `PROPOSE`/vote path. Major works (`MAJOR_WORKS`) are never started by routine infrastructure. `whyNotBuild` holds the physical limits; milestones in `civilization.ts` check working capability, with `any`/`all` for equivalent routes.

@@ -10,8 +10,7 @@ import {
   MAX_PROCESS,
   MAX_UPGRADE,
   MECHANICAL,
-  NPC_BUILD_BASE,
-  NPC_BUILD_PEOPLE,
+  MAJOR_WORKS,
   PRIORITY_INFO,
   PROCESSES,
   RESOURCES,
@@ -64,6 +63,7 @@ import {
 } from "@genesis/narrative";
 import type { Effect } from "@genesis/schemas";
 import type { TickContext } from "../context";
+import { whyNotBuild } from "./legacy";
 
 /**
  * Work people choose to do. One system for players and NPCs: a character
@@ -72,6 +72,9 @@ import type { TickContext } from "../context";
  * last season is simulated. Nothing here depends on a story event firing.
  */
 export const WORK = {
+  /** Food per head below which a settlement looks to its neighbours, and above which a neighbour has some to send. */
+  foodWanted: 2,
+  foodSpare: 4,
   /** A plan can only reach into the coming year. */
   planningSeasons: 4,
   /** How many of a profession's people act on their own each year: the head, plus one per this many. */
@@ -133,12 +136,6 @@ function setFacility(s: Settlement, f: FacilityId, value: number, changes: State
   const after = round2(Math.max(0, Math.min(100, value)));
   s.facilities = { ...(s.facilities ?? {}), [f]: after };
   changes.push({ path: `settlements.${s.id}.facilities.${f}`, label: `${s.name} ${f}`, before, after });
-}
-
-/** Whether a settlement would put up another building without someone choosing to. */
-export function mayAddBuilding(st: WorldState, s: Settlement): boolean {
-  const up = Object.values(s.facilities ?? {}).filter((c) => (c ?? 0) >= 30).length + Object.keys(s.building ?? {}).length;
-  return s.priority !== "hoard" && up < NPC_BUILD_BASE + Math.floor(residents(st, s.id).length / NPC_BUILD_PEOPLE);
 }
 
 const standing = (s: Settlement) => Object.entries(s.facilities ?? {}) as [FacilityId, number][];
@@ -251,7 +248,7 @@ const RULES: Record<string, Rule> = {
     },
     finish: (ctx, a, c, s) => ({ ok: true, title: tx(ctx.state, `${fullName(c)}蓋好了${facilityName(ctx.state, a.target as FacilityId)}`, `${fullName(c)} finished the ${a.target}`), text: tx(ctx.state, `${s.name}多了一座${facilityName(ctx.state, a.target as FacilityId)}。它會一直在，直到沒人保養為止。`, `${s.name} now has a ${a.target}.`), changes: [], important: true }),
     // On their own initiative people respect what the settlement decided and what its people can tend.
-    npc: (st, s, target) => { const i = INFRASTRUCTURE[target as FacilityId]; return i && mayAddBuilding(st, s) && s.resources.materials >= i.materials + (i.deposit ? 0 : 20) ? 2 : 0; },
+    npc: (st, s, target) => (INFRASTRUCTURE[target as FacilityId] && !MAJOR_WORKS.includes(target as FacilityId) && whyNotBuild(st, s, target as FacilityId) === null ? 2 : 0),
   },
   eng_inspect: {
     blocker: (st, s) => (standing(s).filter(([, cond]) => cond >= 30).length === 0 ? tx(st, "這裡沒有能保養的設施", "Nothing here to service") : null),
@@ -704,7 +701,7 @@ export function startWork(ctx: TickContext, c: Character, actionId: string, targ
 }
 
 /** Put a settlement-wide priority to whoever governs the settlement. */
-export function proposePriority(ctx: TickContext, c: Character, priority: PriorityId | null): void {
+export function proposePriority(ctx: TickContext, c: Character, priority: PriorityId | null, tags: string[] = ["community"]): void {
   const st = ctx.state;
   const s = getSettlement(st, c.homeId)!;
   const name = priority ? (isZh(st) ? PRIORITY_INFO[priority].zh : PRIORITY_INFO[priority].name) : tx(st, "不特別偏重什麼", "nothing in particular");
@@ -714,8 +711,23 @@ export function proposePriority(ctx: TickContext, c: Character, priority: Priori
     settlementIds: [s.id], characterIds: [c.id], summary: "Player action (logged for replay)",
   });
   const rec = newRecorder();
-  ctx.state = transact(st, (d) => applyEffect(d, { type: "PROPOSE", kind: "settlement", title, tags: ["community"], effects: [{ type: "SET_PRIORITY", priority }] } as Effect, {
+  ctx.state = transact(st, (d) => applyEffect(d, { type: "PROPOSE", kind: "settlement", title, tags, effects: [{ type: "SET_PRIORITY", priority }] } as Effect, {
     tick: d.tick, settlementId: s.id, roles: { you: c.id }, historyId: e.id, title, scope: "settlement", category: "governance", storylineIds: [], season: ctx.season,
+  }, rec)).state;
+  e.changes.push(...rec.changes);
+}
+
+/** A leader puts a major work to the governing body, as the engineering and the knowing it is. Paid for only if it passes, out of what is there on the day. */
+export function proposeBuilding(ctx: TickContext, c: Character, s: Settlement, f: FacilityId): void {
+  const st = ctx.state;
+  const p = RULES.eng_build!.proposal!(st, s, c, f, ctx.season);
+  const e = ctx.system({
+    category: "governance", importance: "minor", title: tx(st, `${fullName(c)}提議：${p.title}`, `${fullName(c)} proposes: ${p.title}`), text: tx(st, "交給負責決定的人了。", "It is with the people who decide."),
+    settlementIds: [s.id], characterIds: [c.id], summary: "NPC leader's plan for a major work",
+  });
+  const rec = newRecorder();
+  ctx.state = transact(st, (d) => applyEffect(d, { type: "PROPOSE", kind: "settlement", title: p.title, tags: ["industry", "science"], effects: p.effects } as Effect, {
+    tick: d.tick, settlementId: s.id, roles: { you: c.id }, historyId: e.id, title: p.title, scope: "settlement", category: "governance", storylineIds: [], season: ctx.season,
   }, rec)).state;
   e.changes.push(...rec.changes);
 }
@@ -839,10 +851,33 @@ export function resolveWork(ctx: TickContext): void {
   }
 }
 
-/** Surplus tools, metal and raw goods move to places that cannot make their own. Nothing is created. */
+/** Keep the books on who sends and who receives. */
+export function noteTrade(from: Settlement, to: Settlement, g: "food" | GoodId, amount: number): void {
+  if (g === "medicine") return;
+  from.traded = { ...from.traded, [g]: round2((from.traded?.[g] ?? 0) - amount) };
+  to.traded = { ...to.traded, [g]: round2((to.traded?.[g] ?? 0) + amount) };
+}
+
+/** Surplus tools, metal and raw goods move to places that cannot make their own, and food to where it is thin. Nothing is created. */
 export function shareGoods(ctx: TickContext): void {
   const st = ctx.state;
   const active = activeSettlements(st);
+  const roads = st.technologies.includes("trade_routes") || !!st.flags["trade.caravan"];
+  if (roads) {
+    const perHead = (s: Settlement) => s.resources.food / Math.max(1, residents(st, s.id).length);
+    for (const needy of [...active].sort((a, b) => perHead(a) - perHead(b) || (a.id < b.id ? -1 : 1))) {
+      if (perHead(needy) >= WORK.foodWanted) continue;
+      const donor = active.filter((d) => d.id !== needy.id && perHead(d) >= WORK.foodSpare && (st.tensions?.[[d.id, needy.id].sort().join("|")] ?? 0) < 50).sort((a, b) => perHead(b) - perHead(a) || (a.id < b.id ? -1 : 1))[0];
+      if (!donor) continue;
+      const people = residents(st, donor.id).length;
+      const amount = round2(Math.min(donor.resources.food - people * WORK.foodSpare * 0.6, residents(st, needy.id).length * 0.8));
+      if (amount <= 0) continue;
+      donor.resources.food = round2(donor.resources.food - amount);
+      needy.resources.food = round2(needy.resources.food + amount);
+      noteTrade(donor, needy, "food", amount);
+      st.stats.trade = round2((st.stats.trade ?? 0) + amount);
+    }
+  }
   for (const needy of active) {
     for (const g of ["parts", "metal", "timber", "ore"] as const) {
       const low = g === "parts" ? 5 : 8;
@@ -853,6 +888,7 @@ export function shareGoods(ctx: TickContext): void {
       const amount = Math.min(8, Math.floor(good(donor, g) - 16));
       addGood(donor, g, -amount);
       addGood(needy, g, amount);
+      noteTrade(donor, needy, g, amount);
       st.stats.trade = round2((st.stats.trade ?? 0) + amount);
     }
   }

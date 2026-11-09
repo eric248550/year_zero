@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INDUSTRY, NPC_BUILD_BASE, NPC_BUILD_PEOPLE, type WorldState } from "@genesis/schemas";
+import { ENGINEER_TENDS, INDUSTRY, MECHANICAL, type FacilityId, type WorldState } from "@genesis/schemas";
 import { good } from "@genesis/narrative";
 import { applyImmediate, checkInvariants, createWorld, hashState, manufacture, playerCharacter, stepWorld, TickContext, workBlocker } from "@genesis/simulation";
 import { Rng } from "@genesis/schemas";
@@ -49,8 +49,9 @@ describe("choices change the world", () => {
     h.facilities = Object.fromEntries(["greenhouse", "schoolhouse", "meeting_hall", "watchtower", "palisade", "fields"].map((f) => [f, 100]));
     for (const c of s.characters) if (!c.controllerId) c.profession = null; // nobody to act on their own initiative
     for (let i = 0; i < 12; i++) s = step(s).state;
-    const standing = Object.values(s.settlements[0]!.facilities ?? {}).filter((c) => (c ?? 0) >= 30).length;
-    expect(standing).toBeLessThanOrEqual(NPC_BUILD_BASE + Math.floor(s.characters.filter((c) => c.deathTick === null && c.homeId === h.id).length / NPC_BUILD_PEOPLE) + 1);
+    const machines = Object.entries(s.settlements[0]!.facilities ?? {}).filter(([f, c]) => (c ?? 0) >= 30 && MECHANICAL.includes(f as FacilityId)).length;
+    const engineers = s.characters.filter((c) => c.deathTick === null && c.homeId === h.id && c.profession === "Engineer").length;
+    expect(machines).toBeLessThanOrEqual(engineers * ENGINEER_TENDS + 1);
   });
 
   it("a priority proposal goes to the people who decide, and runs once", () => {

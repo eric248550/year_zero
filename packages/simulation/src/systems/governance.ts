@@ -6,6 +6,12 @@ export function proposalNotices(st: WorldState): void {
   for (const p of st.proposals ?? []) {
     if (p.status === "open" || p.notified) continue;
     p.notified = true;
+    // The record of what NPC leaders put forward and how it went.
+    if (p.kind === "settlement" && p.key.startsWith("facility:") && !getCharacter(st, p.proposerId)?.controllerId && st.stats.plans) {
+      if (p.status === "executed") st.stats.plans.approved += 1;
+      if (p.status === "rejected") st.stats.plans.rejected += 1;
+      if (p.status === "failed") st.stats.plans.failed += 1;
+    }
     const zh = isZh(st);
     const title = {
       executed: zh ? `提案通過：${p.title}` : `Approved: ${p.title}`,

@@ -52,6 +52,8 @@ export const SettlementSchema = z.object({
   goods: z.partialRecord(z.enum(GOODS), z.number().min(0)).optional(),
   /** What this settlement has decided to put first. Absent = nothing in particular. */
   priority: z.enum(PRIORITIES).optional(),
+  /** Net goods this settlement has received (+) or sent away (-) over its life. Nothing else reads it: it is the record of who depends on whom. */
+  traded: z.partialRecord(z.enum(["food", "parts", "metal", "timber", "ore"]), z.number()).optional(),
   /** Lasting improvements made to a building (0–2). */
   upgrades: z.partialRecord(z.enum(FACILITIES), z.number().int().min(0)).optional(),
   /** Lasting improvements to how things are produced (0–3), and to public health. */
@@ -359,6 +361,8 @@ export const WorldStateSchema = z.object({
     trade: z.number().optional(),
     /** Lifetime totals for balance reports. */
     flow: z.record(z.string(), z.number()).optional(),
+    /** NPC-led major works: put forward, approved, voted down, unaffordable when it came to it. */
+    plans: z.object({ proposed: z.number(), approved: z.number(), rejected: z.number(), failed: z.number() }).optional(),
   }),
   /**
    * Multiplayer state. Optional so worlds that never had a player keep the

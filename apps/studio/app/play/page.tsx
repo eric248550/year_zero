@@ -1,6 +1,8 @@
 import { fullName, getCharacter } from "@genesis/narrative";
 import { availableOrigins, civilization, successionCandidates, TRAITS, PLAYERS } from "@genesis/simulation";
 import { CivilizationCard } from "@/components/civ/civilization";
+import { Bottlenecks } from "@/components/civ/bottlenecks";
+import { bottlenecksFor } from "@/lib/bottlenecks";
 import { queryHistory } from "@genesis/database";
 import { EmptyState, SectionTitle } from "@/components/ui";
 import { ConditionPanel } from "@/components/play/condition";
@@ -110,6 +112,7 @@ export default async function YearPage({ searchParams }: { searchParams: Promise
       </section>
 
       <div className="mt-3"><CivilizationCard civ={civilization(state)} t={t} compact /></div>
+      {home && (() => { const here = state.settlements.find((x) => x.id === character.homeId); return here ? <div className="mt-3"><Bottlenecks v={bottlenecksFor(state, here, character, zh)} /></div> : null; })()}
 
       <Inbox items={inboxFor(ctx)} scope={`${ctx.runId}:${player.id}`} />
       {(() => { const r = yearReportFor(ctx, zh); return r ? <YearReport v={r} t={t as never} /> : null; })()}

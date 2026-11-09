@@ -3,6 +3,8 @@ import { BookOpen, Radio } from "lucide-react";
 import { currentYear, population } from "@genesis/narrative";
 import { civilization, worldStatus } from "@genesis/simulation";
 import { CivilizationCard } from "@/components/civ/civilization";
+import { Bottlenecks } from "@/components/civ/bottlenecks";
+import { bottlenecksFor } from "@/lib/bottlenecks";
 import { queryHistory } from "@genesis/database";
 import { EmptyState, LinkButton, Pill, SectionTitle, StatusDot, statusTone } from "@/components/ui";
 import { EventRow } from "@/components/domain";
@@ -72,6 +74,7 @@ export default async function StoryPage() {
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="space-y-5 lg:col-span-3">
           <CivilizationCard civ={civilization(state)} t={t} />
+          {state.settlements.filter((s) => s.status === "active").map((s) => <Bottlenecks key={s.id} v={bottlenecksFor(state, s, null, state.locale === "zh-TW")} place={s.name} />)}
 
           <div>
             <SectionTitle>{t("story.lines")}</SectionTitle>

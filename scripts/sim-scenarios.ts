@@ -8,6 +8,8 @@
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContentDir } from "@genesis/narrative/node";
+import * as sim from "@genesis/simulation";
+import { powerAt } from "@genesis/narrative";
 import { activeProjects, applyImmediate, checkInvariants, civilization, CIV_STAGES, createWorld, playerCharacter, projectBlocker, stepWorld, workOptions } from "@genesis/simulation";
 import { BRANCH_INFO, PlayerActionSchema, TECHNOLOGIES, type BranchId, type PolicyId, type Profession, type WorldState } from "@genesis/schemas";
 
@@ -21,6 +23,8 @@ interface Scenario {
   /** Years the priority holds; afterwards it is cleared. */
   priorityYears?: number;
   active?: boolean;
+  /** Follows the bottleneck panel: builds what it says is next and starts the projects it lists. Rules 1.4 and later. */
+  planner?: boolean;
 }
 
 const FARM: Pref[] = [{ action: "farm_clear" }, { action: "farm_seed" }, { action: "farm_soil" }, { action: "farm_tend" }];
@@ -38,9 +42,11 @@ export const SCENARIOS: Record<string, Scenario> = {
   industry: { players: ["Engineer", "Engineer", "Engineer", "Engineer", "Scout", "Scientist"], policy: "balanced", branches: ["industry", "energy"], work: ALL, priority: "industry", active: true },
   exploration: { players: ["Scout", "Scout", "Scout", "Scout", "Engineer", "Medic"], policy: "expansionist", branches: ["society"], work: ALL, priority: "expansion", active: true },
   research: { players: ["Scientist", "Scientist", "Scientist", "Scientist", "Medic", "Engineer"], policy: "scholarly", branches: ["knowledge", "medicine"], work: ALL, priority: "knowledge", active: true },
+  planner: { players: ["Engineer", "Engineer", "Scientist", "Medic", "Scout", "Farmer"], work: ALL, active: true, planner: true },
   poor: { players: ["Farmer", "Engineer", "Scientist", "Medic", "Scout", "Farmer"], policy: "expansionist", priority: "hoard", priorityYears: 50 },
 };
 
+const plans = sim as unknown as { milestoneBlockers?: (s: WorldState, x: WorldState["settlements"][number]) => { steps: { kind: string; status: string; tech?: string; facility?: string; profession: string | null }[] }[] };
 const CHECK = [25, 50, 75, 100, 150, 200, 250, 300];
 const hasPriority = PlayerActionSchema.options.some((o) => o.shape.type.value === ("SET_PRIORITY" as string));
 
@@ -49,11 +55,14 @@ function world(name: string, sc: Scenario, seed: number, years: number, events: 
   sc.players.forEach((profession, i) => { s = applyImmediate(s, { type: "JOIN_WORLD", playerId: `p${i}`, playerName: `p${i}`, profession }).state; });
   const at: Record<number, object> = {};
   const stageYear: Record<string, number> = {};
+  const milestoneYear: Record<string, number> = {};
+  const projectYears: number[] = [];
   const w = { invariants: 0, shortage: 0, lowMat: 0, noParts: 0, sy: 0, raids: 0, schisms: 0, collapses: 0, stalled: 0, projectsDone: 0, projectsWithPlayer: 0, workPlayer: 0, workNpc: 0, settledSalvageGoneAt: null as number | null, oreGoneAt: null as number | null, peak: 0, dips: 0, recoveries: [] as number[], machinesLostAfterOre: 0 };
   let dip: number | null = null;
   const players = sc.players.map((_, i) => `p${i}`);
   for (let y = 0; y < years; y++) {
     const actions: unknown[] = [];
+    const startedAt = new Map(activeProjects(s).map((p) => [p.id, p.startedTick]));
     for (const id of players) {
       const p = s.players?.[id];
       if (p?.status === "awaiting_succession") { const r = applyImmediate(s, { type: "CONTINUE_AS", playerId: id, mode: "random" }, events); if (!r.rejected) s = r.state; }
@@ -66,6 +75,17 @@ function world(name: string, sc: Scenario, seed: number, years: number, events: 
       for (const id of players) {
         const me = playerCharacter(s, id);
         if (!me || !me.profession) continue;
+        if (sc.planner && plans.milestoneBlockers) {
+          // What the bottleneck panel shows this player: the current stage, first movable step, and only if it can be funded.
+          const home = s.settlements.find((z) => z.id === me.homeId);
+          const steps = home ? plans.milestoneBlockers(s, home).flatMap((b) => b.steps) : [];
+          const f = steps.find((x) => x.kind === "facility" && x.profession === me.profession && x.facility && x.status !== "done" && x.status !== "building");
+          const opt = f ? workOptions(s, me).find((o) => o.id === "eng_build")?.targets?.find((t) => t.id === f.facility && !t.blocker) : undefined;
+          if (opt) actions.push({ type: "START_WORK", playerId: id, action: "eng_build", target: opt.id });
+          const want = steps.find((x) => x.kind === "tech" && x.status === "ready" && x.profession === me.profession && x.tech);
+          const t = want?.tech ? TECHNOLOGIES.find((x) => x.id === want.tech) : undefined;
+          if (t && home && !activeProjects(s).some((p) => p.memberIds.includes(me.id)) && home.resources.materials >= t.materials + 50 && s.settlements.reduce((n, z) => n + z.resources.knowledge, 0) >= t.cost * 3) actions.push({ type: "START_PROJECT", playerId: id, tech: t.id });
+        }
         // Lead or join work of your own trade.
         if (!process.env.NOPROJ && !activeProjects(s).some((p) => p.memberIds.includes(me.id))) {
           const own = activeProjects(s).find((p) => p.settlementId === me.homeId && BRANCH_INFO[TECHNOLOGIES.find((t) => t.id === p.techId)!.branch].profession === me.profession);
@@ -108,7 +128,7 @@ function world(name: string, sc: Scenario, seed: number, years: number, events: 
       if (e.title.includes("被擱置")) w.stalled++;
       if (e.changes.some((c) => c.path.endsWith(".status") && c.after === "abandoned")) w.collapses++;
       if (e.trigger?.summary?.startsWith("Work w-") && e.characterIds[0]) { if (s.characters.find((c) => c.id === e.characterIds[0])?.controllerId) w.workPlayer++; else w.workNpc++; }
-      if (e.trigger?.summary?.startsWith("Project ")) { w.projectsDone++; if (e.characterIds.some((id) => s.characters.find((c) => c.id === id)?.controllerId)) w.projectsWithPlayer++; }
+      if (e.trigger?.summary?.startsWith("Project ")) { const m = /Project (p-\d+)/.exec(e.trigger.summary); const from = m ? startedAt.get(m[1]!) : undefined; if (from !== undefined) projectYears.push(s.tick - from); w.projectsDone++; if (e.characterIds.some((id) => s.characters.find((c) => c.id === id)?.controllerId)) w.projectsWithPlayer++; }
     }
     const active = s.settlements.filter((x) => x.status === "active");
     for (const x of active) { w.sy++; if (x.shortage.food || x.shortage.water) w.shortage++; if (x.resources.materials < 15) w.lowMat++; if ((x.goods?.parts ?? 0) <= 0) w.noParts++; }
@@ -119,10 +139,11 @@ function world(name: string, sc: Scenario, seed: number, years: number, events: 
     if (w.settledSalvageGoneAt === null && s.locations.filter((l) => l.settlementId).every((l) => (l.salvage ?? 0) <= 0)) w.settledSalvageGoneAt = s.tick;
     if (w.oreGoneAt === null && s.tick >= 20 && s.locations.reduce((n, l) => n + (l.settlementId || l.claimedBy ? l.ore ?? 0 : 0), 0) <= 0) w.oreGoneAt = s.tick;
     void open;
-    for (const st of civilization(s).stages) if (st.done && stageYear[st.id] === undefined) stageYear[st.id] = s.tick;
+    for (const st of civilization(s).stages) { if (st.done && stageYear[st.id] === undefined) stageYear[st.id] = s.tick; for (const m of st.milestones) if (m.done && milestoneYear[`${st.id}.${m.id}`] === undefined) milestoneYear[`${st.id}.${m.id}`] = s.tick; }
     if (CHECK.includes(s.tick)) {
       const machines = active.flatMap((x) => Object.entries(x.facilities ?? {})).filter(([f, c]) => (c ?? 0) >= 30 && ["forge", "workshop", "mine", "watermill", "generator", "solar_array", "battery_bank", "power_lines"].includes(f)).length;
       at[s.tick] = {
+        lit: active.filter((x) => powerAt(s, x).night >= 0.5).length, powered: active.filter((x) => powerAt(s, x).day >= 0.5).length, linked: active.filter((x) => (x.facilities?.power_lines ?? 0) >= 30).length,
         pop, techs: s.technologies.length, settlements: active.length, facilities: active.reduce((n, x) => n + Object.values(x.facilities ?? {}).filter((c) => (c ?? 0) >= 30).length, 0), machines,
         food: Math.round(active.reduce((n, x) => n + x.resources.food, 0) / Math.max(1, pop) * 10) / 10,
         materials: Math.round(active.reduce((n, x) => n + x.resources.materials, 0)), knowledge: Math.round(active.reduce((n, x) => n + x.resources.knowledge, 0)),
@@ -140,21 +161,45 @@ function world(name: string, sc: Scenario, seed: number, years: number, events: 
   const mean = perCap.reduce((a, b) => a + b, 0) / Math.max(1, perCap.length);
   const profile = act.map((x) => { const adults = s.characters.filter((c) => c.deathTick === null && c.homeId === x.id && c.profession); const n = adults.length || 1; return Object.fromEntries((["Farmer", "Engineer", "Scientist", "Scout", "Medic"] as const).map((p) => [p, Math.round(adults.filter((c) => c.profession === p).length / n * 100)])); });
   const spread = (["Farmer", "Engineer", "Scientist", "Scout", "Medic"] as const).reduce((m, p) => { const v = profile.map((x) => x[p]!); return Math.max(m, v.length ? Math.max(...v) - Math.min(...v) : 0); }, 0);
-  return { scenario: name, seed, stageYear, at, ...w, facilitySimilarity: pairs ? Math.round(sim / pairs * 100) / 100 : 1, knowledgeCov: mean ? Math.round(Math.sqrt(perCap.reduce((a, b) => a + (b - mean) ** 2, 0) / perCap.length) / mean * 100) / 100 : 0, professionSpread: spread, trade: s.stats.trade ?? 0, flow: s.stats.flow ?? null, made: (s.stats.made ?? {}) as Record<string, number>, sources: s.stats.materialsBySource ?? null, hash: 0 };
+  const civ = civilization(s);
+  const blocker = civ.stages.find((x) => !x.done)?.milestones.filter((m) => !m.done).map((m) => `${civ.stages.find((x) => !x.done)!.id}.${m.id}`) ?? [];
+  const net = (g: string) => act.filter((x) => ((x as unknown as { traded?: Record<string, number> }).traded?.[g] ?? 0) > 0).length;
+  return { scenario: name, seed, stageYear, milestoneYear, blocker, projectYears: avg(projectYears), importsFood: net("food"), importsParts: net("parts"), activeSettlements: act.length, priorities: act.map((x) => x.priority ?? "none"), plans: (s.stats as unknown as { plans?: Record<string, number> }).plans ?? null, at, ...w, facilitySimilarity: pairs ? Math.round(sim / pairs * 100) / 100 : 1, knowledgeCov: mean ? Math.round(Math.sqrt(perCap.reduce((a, b) => a + (b - mean) ** 2, 0) / perCap.length) / mean * 100) / 100 : 0, professionSpread: spread, trade: s.stats.trade ?? 0, flow: s.stats.flow ?? null, made: (s.stats.made ?? {}) as Record<string, number>, sources: s.stats.materialsBySource ?? null, hash: 0 };
 }
 
 type W = ReturnType<typeof world>;
 const med = (v: number[]) => { const x = [...v].sort((a, b) => a - b); return x.length ? x[Math.floor(x.length / 2)]! : null; };
 const q = (v: number[], f: number) => { const x = [...v].sort((a, b) => a - b); return x.length ? x[Math.min(x.length - 1, Math.floor(x.length * f))]! : null; };
-const avg = (v: number[]) => (v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null);
+function avg(v: number[]) { return avgv(v); }
+const avgv = (v: number[]) => (v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null);
 
 function merge(dir: string) {
   const out: Record<string, unknown> = {};
   for (const f of readdirSync(dir).filter((x) => x.endsWith(".worlds.json"))) {
     const worlds = JSON.parse(readFileSync(resolve(dir, f), "utf8")) as W[];
+    const total = worlds.length;
+    const stages = CIV_STAGES.map((st) => st.id);
+    const yearsOf = (id: string) => worlds.map((w) => w.stageYear[id]).filter((x): x is number => x !== undefined);
+    const renewal = yearsOf("renewal");
+    const blockers: Record<string, number> = {};
+    for (const w of worlds) for (const b of w.blocker ?? []) blockers[b] = (blockers[b] ?? 0) + 1;
+    const allMilestones = CIV_STAGES.flatMap((st) => st.milestones.map((m) => `${st.id}.${m.id}`));
     const pick = (y: number, k: string) => worlds.map((w) => (w.at as unknown as Record<string, Record<string, number>>)[String(y)]?.[k]).filter((x): x is number => x !== undefined);
     out[f.replace(".worlds.json", "")] = {
       worlds: worlds.length,
+      completion: {
+        byYear: Object.fromEntries([100, 150, 300].map((y) => [y, Math.round((renewal.filter((x) => x <= y).length / total) * 1000) / 10])),
+        medianAmongCompleted: med(renewal), completedWorlds: renewal.length,
+        // Worlds that never finished count as later than the last year.
+        medianAllWorlds: renewal.length * 2 > total ? [...renewal, ...Array(total - renewal.length).fill(Infinity)].sort((a: number, b: number) => a - b)[Math.floor(total / 2)] : null,
+      },
+      neverPct: { stages: Object.fromEntries(stages.map((id) => [id, Math.round((1 - yearsOf(id).length / total) * 1000) / 10])), milestones: Object.fromEntries(allMilestones.map((id) => [id, Math.round((1 - worlds.filter((w) => w.milestoneYear?.[id] !== undefined).length / total) * 1000) / 10]).filter(([, v]) => (v as number) > 0)) },
+      blockers: Object.fromEntries(Object.entries(blockers).sort((a, b) => b[1] - a[1]).slice(0, 8)),
+      functional: Object.fromEntries([150, 300].map((y) => [y, { techs: med(pick(y, "techs")), worldsLit: Math.round((pick(y, "lit").filter((n) => n > 0).length / total) * 1000) / 10, settlementsLit: avg(pick(y, "lit")), settlementsPowered: avg(pick(y, "powered")), settlementsLinked: avg(pick(y, "linked")), settlements: avg(pick(y, "settlements")) }])),
+      specialization: { importsFoodPct: avg(worlds.map((w) => (w.importsFood / Math.max(1, w.activeSettlements)) * 100)), importsPartsPct: avg(worlds.map((w) => (w.importsParts / Math.max(1, w.activeSettlements)) * 100)), withDirectionPct: avg(worlds.map((w) => ((w.priorities?.filter((p) => p !== "none").length ?? 0) / Math.max(1, w.activeSettlements)) * 100)) },
+      npcPlans: worlds[0]?.plans !== undefined && worlds.some((w) => w.plans) ? { proposed: avg(worlds.map((w) => w.plans?.proposed ?? 0)), approved: avg(worlds.map((w) => w.plans?.approved ?? 0)), rejected: avg(worlds.map((w) => w.plans?.rejected ?? 0)), failed: avg(worlds.map((w) => w.plans?.failed ?? 0)) } : null,
+      projectYears: avg(worlds.map((w) => w.projectYears ?? 0)),
+      survival: { worldsAliveAt300: worlds.filter((w) => ((w.at as unknown as Record<string, { pop: number }>)["300"]?.pop ?? 0) > 0).length, settlementsAbandoned: avg(worlds.map((w) => w.collapses)) },
       milestones: Object.fromEntries(CIV_STAGES.map((st) => { const v = worlds.map((w) => w.stageYear[st.id]).filter((x): x is number => x !== undefined); return [st.id, { reached: v.length, p10: q(v, 0.1), median: med(v), p90: q(v, 0.9) }]; })),
       trends: Object.fromEntries(CHECK.filter((y) => pick(y, "pop").length).map((y) => [y, { pop: med(pick(y, "pop")), popP10: q(pick(y, "pop"), 0.1), popP90: q(pick(y, "pop"), 0.9), techs: med(pick(y, "techs")), settlements: med(pick(y, "settlements")), facilities: med(pick(y, "facilities")), machines: med(pick(y, "machines")), foodPerHead: med(pick(y, "food")), materials: med(pick(y, "materials")), knowledge: med(pick(y, "knowledge")), parts: med(pick(y, "parts")), metal: med(pick(y, "metal")), ore: med(pick(y, "ore")), salvage: med(pick(y, "salvage")) }])),
       shortagePct: avg(worlds.map((w) => (w.shortage / Math.max(1, w.sy)) * 100)), lowMaterialsPct: avg(worlds.map((w) => (w.lowMat / Math.max(1, w.sy)) * 100)), noPartsPct: avg(worlds.map((w) => (w.noParts / Math.max(1, w.sy)) * 100)),

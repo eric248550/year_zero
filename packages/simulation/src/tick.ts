@@ -12,6 +12,7 @@ import { friction, raids, schisms } from "./systems/conflict";
 import { claims, construction, facilities, infrastructure, land, teaching } from "./systems/legacy";
 import { harvest, seedSharing, sowing } from "./systems/farming";
 import { abandonment, milestones } from "./systems/settlements";
+import { leadership } from "./systems/capital";
 import { playerUpkeep } from "./systems/players";
 import { beginWork, npcWork, resolveWork, shareGoods } from "./systems/work";
 import { proposalNotices } from "./systems/governance";
@@ -104,6 +105,7 @@ export function stepWorld(prev: WorldState, input: TickInput): TickResult {
   projects(ctx);
   development(ctx);
   infrastructure(ctx);
+  leadership(ctx);
   exploration(ctx);
   schisms(ctx);
 

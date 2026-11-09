@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WorldState } from "@genesis/schemas";
+import type { Character, WorldState } from "@genesis/schemas";
 import { evaluateCondition, rivalOf, tensionBetween, tensionKey } from "@genesis/narrative";
 import { applyImmediate, checkInvariants, createWorld, playerCharacter, stepWorld } from "@genesis/simulation";
 import { def, seedContent } from "./helpers";
@@ -72,17 +72,23 @@ describe("tension between settlements", () => {
 
 describe("schisms", () => {
   it("split a crowded settlement; nobody moves a player", () => {
-    let s = applyImmediate(createWorld({ seed: 4 }), { type: "JOIN_WORLD", playerId: "p", playerName: "p" }).state;
-    const me = playerCharacter(s, "p")!;
-    const haven = s.settlements.find((x) => x.kind === "bunker")!;
-    haven.capacity = 60; // far too crowded
-    for (const l of s.locations) if (["ashford_crossing", "cinder_flats"].includes(l.id)) l.discovered = true;
+    // A schism is a chance over decades; some seeds resolve it before it comes to that.
     let split = false;
-    for (let i = 0; i < 120 && !split; i++) {
-      const r = stepWorld(s, { events: [], actions: [] });
-      split = r.events.some((e) => e.title.includes("分裂了"));
-      s = r.state;
-      s.settlements.find((x) => x.id === haven.id)!.capacity = 60;
+    let s!: WorldState;
+    let me!: Character;
+    for (const seed of [4, 5, 6, 7, 8, 9]) {
+      if (split) break;
+      s = applyImmediate(createWorld({ seed }), { type: "JOIN_WORLD", playerId: "p", playerName: "p" }).state;
+      me = playerCharacter(s, "p")!;
+      const haven = s.settlements.find((x) => x.kind === "bunker")!;
+      haven.capacity = 60; // far too crowded
+      for (const l of s.locations) if (["ashford_crossing", "cinder_flats"].includes(l.id)) l.discovered = true;
+      for (let i = 0; i < 120 && !split; i++) {
+        const r = stepWorld(s, { events: [], actions: [] });
+        split = r.events.some((e) => e.title.includes("分裂了"));
+        s = r.state;
+        s.settlements.find((x) => x.id === haven.id)!.capacity = 60;
+      }
     }
     expect(split).toBe(true);
     expect(playerCharacter(s, "p")?.homeId ?? me.homeId).toBe(me.homeId);

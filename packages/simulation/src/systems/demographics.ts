@@ -1,4 +1,5 @@
-import { ADULT_AGE, POLICY_INFO, PROFESSIONS, type Character, type Profession, type Settlement, LAND_PULL, LOCATION_BY_ID, PRIORITY_INFO, PRIORITY_PULL } from "@genesis/schemas";
+import { ADULT_AGE, POLICY_INFO, PROFESSIONS, type Character, type Profession, type Settlement, LAND_PULL, LOCATION_BY_ID, PRIORITY_INFO,
+  PRIORITY_TRAINING, PRIORITY_PULL } from "@genesis/schemas";
 import { characterAge, fullName, hasTech, inheritBonds, residents } from "@genesis/narrative";
 import type { TickContext } from "../context";
 import { newCharacterId, randomName } from "../world-factory";
@@ -195,6 +196,9 @@ export function comingOfAge(ctx: TickContext): void {
     const s = st.settlements.find((x) => x.id === c.homeId);
     if (!s) continue;
     c.profession = chooseProfession(ctx, s);
+    // A place that has chosen its trade teaches it properly.
+    const focus = s.priority ? PRIORITY_INFO[s.priority] : null;
+    if (focus?.craft && focus.profession === c.profession && !c.specialties?.includes(focus.craft) && ctx.rng.chance(PRIORITY_TRAINING)) c.specialties = [...(c.specialties ?? []), focus.craft];
     // Apprenticeship: the young come of age already taught a trade.
     if (hasTech(st, "apprenticeship") && c.attributes) {
       c.attributes.knowledge = Math.min(100, c.attributes.knowledge + 8);

@@ -198,6 +198,11 @@ function SimReport({ t }: { t: T }) {
           const end = v.trends["300"] ?? {};
           return <Row key={k} title={k}>{t("debug.sim.scenarioRow", { renewal: v.milestones.renewal?.reached ?? 0, year: String(v.milestones.renewal?.median ?? "—"), pop: String(y.pop ?? "—"), techs: String(y.techs ?? "—"), machines: String(y.machines ?? "—") })} · {t("debug.sim.scenarioDetail", { short: v.shortagePct, low: v.lowMaterialsPct, trade: v.trade, same: v.facilitySimilarity, spread: v.professionSpread, ore: String(v.oreGoneMedian ?? "—"), parts: String(end.parts ?? "—"), player: v.projectsWithPlayerPct, workP: v.workPlayer, workN: v.workNpc, crises: v.crises, recover: String(v.recoveryYearsMedian ?? "—"), stalled: v.stalledProjects })}</Row>;
         })}
+        {scenarios.map(([k, v]) => {
+          const c = (v as unknown as { completion?: { byYear: Record<string, number> }; blockers?: Record<string, number>; npcPlans?: { proposed: number; approved: number; rejected: number } | null }).completion;
+          const x = v as unknown as { blockers?: Record<string, number>; npcPlans?: { proposed: number; approved: number; rejected: number } | null; functional?: Record<string, { worldsLit: number; settlementsLit: number }> };
+          return c ? <Row key={`${k}-c`} title={`${k} · 100/150/300: ${c.byYear["100"]}% / ${c.byYear["150"]}% / ${c.byYear["300"]}%`}>{Object.entries(x.blockers ?? {}).slice(0, 3).map(([m, n]) => `${m} ${n}`).join(" · ")}{x.npcPlans ? ` · NPC ${x.npcPlans.proposed}/${x.npcPlans.approved}/${x.npcPlans.rejected}` : ""}{x.functional?.["300"] ? ` · lit ${x.functional["300"].worldsLit}%` : ""}</Row> : null;
+        })}
       </Block>
       <Block title={t("debug.sim.civ")} empty={false}>
         {kv(r.civilization).map(([k, v]) => <Row key={k} title={k}>{show(v)}</Row>)}

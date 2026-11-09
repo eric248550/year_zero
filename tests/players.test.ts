@@ -75,7 +75,8 @@ describe("joining a world", () => {
     let s = a;
     for (let i = 0; i < 15; i++) s = stepWorld(s, { events: seedContent.events }).state;
     expect(s.players).toBeUndefined();
-    expect(s.pendingDecisions).toBeUndefined();
+    // NPC leaders now put things to a vote too; none of it waits on a player.
+    expect((s.pendingDecisions ?? []).every((d) => d.participants.every((id) => !s.characters.find((c) => c.id === id)?.controllerId))).toBe(true);
     expect(s.invites).toBeUndefined();
   });
 });

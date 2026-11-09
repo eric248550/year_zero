@@ -1,4 +1,4 @@
-import { INDUSTRY, LOCATION_BY_ID, PROCESS_BONUS, type FacilityId, type LocationState, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
+import { INDUSTRY, LOCATION_BY_ID, PRIORITY_INFO, PROCESS_BONUS, type FacilityId, type LocationState, type ResourceId, type Settlement, type StateChange } from "@genesis/schemas";
 import { addGood, characterAge, good, hasTech, powerLevel, residents, round2 } from "@genesis/narrative";
 import { ADULT_AGE, ELDER_AGE } from "@genesis/schemas";
 import type { TickContext } from "../context";
@@ -121,12 +121,14 @@ export function produce(ctx: TickContext): void {
     const loc = ctx.state.locations.find((l) => l.id === s.locationId);
     const forage = Math.min(w.scouts * ECONOMY.forageFoodPerScout * efficiency, loc?.wild ?? 0);
     if (loc) loc.wild = round2((loc.wild ?? 0) - forage);
-    const made = materialsFrom(ctx, s, loc, (w.labor * ECONOMY.materialsPerLabor + w.engineers * ECONOMY.materialsPerEngineer) * m.materials * efficiency);
+    // Where everyday hands go is what a settlement has chosen; more of one thing is less of another.
+    const hands = s.priority ? PRIORITY_INFO[s.priority].labor : { food: 1, materials: 1, knowledge: 1 };
+    const made = materialsFrom(ctx, s, loc, (w.labor * ECONOMY.materialsPerLabor * hands.materials + w.engineers * ECONOMY.materialsPerEngineer) * m.materials * efficiency);
     const out: Record<ResourceId, number> = {
-      food: (w.labor * ECONOMY.foodPerLabor + w.farmers * ECONOMY.foodPerFarmer) * m.food * season * efficiency + forage,
+      food: (w.labor * ECONOMY.foodPerLabor * hands.food + w.farmers * ECONOMY.foodPerFarmer) * m.food * season * efficiency + forage,
       water: (w.labor * ECONOMY.waterPerLabor * m.water * season) * efficiency + (s.kind === "bunker" ? ECONOMY.bunkerWaterReclaimer : 0),
       materials: made,
-      knowledge: (w.scientists * ECONOMY.knowledgePerScientist + w.labor * ECONOMY.knowledgePerLabor) * m.knowledge * efficiency,
+      knowledge: (w.scientists * ECONOMY.knowledgePerScientist + w.labor * ECONOMY.knowledgePerLabor * hands.knowledge) * m.knowledge * efficiency,
     };
     for (const r of Object.keys(out) as ResourceId[]) s.resources[r] = round2(s.resources[r] + out[r]);
     manufacture(ctx, s, w.engineers);
@@ -157,7 +159,7 @@ export function materialsFrom(ctx: TickContext, s: Settlement, loc: LocationStat
   const digEffort = canDig ? raw - cutEffort : 0;
   const timber = round2(Math.min(cutEffort * camp * tools, loc.timber ?? 0, salvageLeft ? Math.max(0, INDUSTRY.target.timber - good(s, "timber")) : Infinity));
   // Ore is finite: it is dug to meet the forge's need, never just because there are hands free.
-  const ore = round2(Math.min(digEffort * mine * tools, loc.ore ?? 0, Math.max(0, INDUSTRY.target.ore - good(s, "ore"))));
+  const ore = round2(Math.min(digEffort * mine * tools, loc.ore ?? 0, Math.max(0, stockTarget(s, "ore") - good(s, "ore"))));
   const spent = timber / (camp * tools) + (ore > 0 ? ore / (mine * tools) : 0);
   loc.timber = round2((loc.timber ?? 0) - timber);
   loc.ore = round2((loc.ore ?? 0) - ore);
@@ -175,6 +177,11 @@ export function materialsFrom(ctx: TickContext, s: Settlement, loc: LocationStat
   return taken;
 }
 
+/** How much of a good routine work stocks here: more where the settlement has put industry first. */
+export function stockTarget(s: Settlement, g: "ore" | "metal" | "parts"): number {
+  return INDUSTRY.target[g] * (s.priority ? PRIORITY_INFO[s.priority].stock : 1);
+}
+
 /**
  * The year's routine production, limited by engineers and working buildings:
  * ore and fuel become metal at a forge; metal and timber become tools and
@@ -187,7 +194,7 @@ export function manufacture(ctx: TickContext, s: Settlement, engineers: number):
   const { smelt, craft } = INDUSTRY;
   const forge = level(s, "forge");
   if (forge > 0) {
-    const batches = Math.floor(Math.min(good(s, "ore") / smelt.ore, good(s, "timber") / smelt.timber, engineers * INDUSTRY.smeltPerEngineer * forge, Math.max(0, INDUSTRY.target.metal - good(s, "metal")) / smelt.metal));
+    const batches = Math.floor(Math.min(good(s, "ore") / smelt.ore, good(s, "timber") / smelt.timber, engineers * INDUSTRY.smeltPerEngineer * forge, Math.max(0, stockTarget(s, "metal") - good(s, "metal")) / smelt.metal));
     if (batches > 0) {
       addGood(s, "ore", -batches * smelt.ore);
       addGood(s, "timber", -batches * smelt.timber);
@@ -197,7 +204,7 @@ export function manufacture(ctx: TickContext, s: Settlement, engineers: number):
   }
   const shop = level(s, "workshop");
   if (shop > 0) {
-    const batches = Math.floor(Math.min(good(s, "metal") / craft.metal, good(s, "timber") / craft.timber, engineers * INDUSTRY.craftPerEngineer * shop, Math.max(0, INDUSTRY.target.parts - good(s, "parts")) / craft.parts));
+    const batches = Math.floor(Math.min(good(s, "metal") / craft.metal, good(s, "timber") / craft.timber, engineers * INDUSTRY.craftPerEngineer * shop, Math.max(0, stockTarget(s, "parts") - good(s, "parts")) / craft.parts));
     if (batches > 0) {
       addGood(s, "metal", -batches * craft.metal);
       addGood(s, "timber", -batches * craft.timber);

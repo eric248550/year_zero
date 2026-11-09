@@ -4,7 +4,7 @@
  * reference IDs declared here. Changing this file changes RULES_VERSION.
  */
 
-export const RULES_VERSION = "rules-1.3.0";
+export const RULES_VERSION = "rules-1.4.0";
 
 export const START_YEAR = 2131;
 
@@ -237,21 +237,61 @@ export const INDUSTRY = {
  */
 export const PRIORITIES = ["food", "industry", "knowledge", "expansion", "health", "hoard"] as const;
 export type PriorityId = (typeof PRIORITIES)[number];
-export const PRIORITY_INFO: Record<PriorityId, { name: string; zh: string; profession: Profession | null; builds: FacilityId[] }> = {
-  food: { name: "Food first", zh: "糧食優先", profession: "Farmer", builds: ["well", "watermill", "granary"] },
-  industry: { name: "Industry first", zh: "工業優先", profession: "Engineer", builds: ["lumber_camp", "forge", "workshop", "mine", "watermill", "generator"] },
-  knowledge: { name: "Learning first", zh: "學問優先", profession: "Scientist", builds: ["solar_array", "battery_bank", "power_lines", "generator"] },
-  expansion: { name: "Reach outward", zh: "向外拓展", profession: "Scout", builds: ["well", "lumber_camp"] },
-  health: { name: "Health first", zh: "健康優先", profession: "Medic", builds: ["well", "clinic"] },
-  hoard: { name: "Build nothing new", zh: "暫停新建", profession: null, builds: [] },
+export interface PriorityInfo {
+  name: string;
+  zh: string;
+  profession: Profession | null;
+  builds: FacilityId[];
+  /** Research this settlement would rather host. */
+  branches: BranchId[];
+  /** Craft its young are more likely to be taught. */
+  craft: SpecialtyId | null;
+  /** Where everyday hands go instead: a shift, not a bonus. Above 1 somewhere means below 1 elsewhere. */
+  labor: { food: number; materials: number; knowledge: number };
+  /** Stocks of tools, metal and ore it keeps, as a multiple of the usual. */
+  stock: number;
+  /** It reaches for major works as soon as it can afford them; others wait for a real surplus. */
+  ambitious: boolean;
+}
+export const PRIORITY_INFO: Record<PriorityId, PriorityInfo> = {
+  food: { name: "Food first", zh: "糧食優先", profession: "Farmer", builds: ["well", "watermill", "granary"], branches: ["farming"], craft: "grafting", labor: { food: 1.2, materials: 0.7, knowledge: 1 }, stock: 1, ambitious: false },
+  industry: { name: "Industry first", zh: "工業優先", profession: "Engineer", builds: ["lumber_camp", "forge", "workshop", "mine", "watermill", "generator"], branches: ["industry", "energy"], craft: "smithing", labor: { food: 0.8, materials: 1.3, knowledge: 1 }, stock: 2, ambitious: true },
+  knowledge: { name: "Learning first", zh: "學問優先", profession: "Scientist", builds: ["solar_array", "battery_bank", "power_lines", "generator"], branches: ["knowledge", "energy"], craft: "archivist", labor: { food: 0.9, materials: 0.9, knowledge: 3 }, stock: 1, ambitious: true },
+  expansion: { name: "Reach outward", zh: "向外拓展", profession: "Scout", builds: ["well", "lumber_camp"], branches: ["society"], craft: "wayfinding", labor: { food: 1, materials: 1, knowledge: 1 }, stock: 1, ambitious: false },
+  health: { name: "Health first", zh: "健康優先", profession: "Medic", builds: ["well", "clinic"], branches: ["medicine"], craft: "midwifery", labor: { food: 1, materials: 1, knowledge: 1 }, stock: 1, ambitious: false },
+  hoard: { name: "Build nothing new", zh: "暫停新建", profession: null, builds: [], branches: [], craft: null, labor: { food: 1, materials: 1, knowledge: 1 }, stock: 1, ambitious: false },
 };
 /** Share of each new generation a priority pulls into its trade. */
-export const PRIORITY_PULL = 0.14;
+export const PRIORITY_PULL = 0.2;
+/** Chance a youngster who takes up a settlement's chosen trade is taught its craft properly. */
+export const PRIORITY_TRAINING = 0.2;
 /** Share a place's land pulls by itself toward the trade it suits. */
 export const LAND_PULL = 0.08;
-/** Buildings a settlement puts up on its own initiative: this many, plus one per NPC_BUILD_PEOPLE residents. Players can go beyond it. */
-export const NPC_BUILD_BASE = 2;
-export const NPC_BUILD_PEOPLE = 25;
+/** Machines one engineer can keep running. New machinery waits until there are hands to tend it. */
+export const ENGINEER_TENDS = 3;
+/** Works big enough that a settlement decides on them together: a leader proposes, the governing body votes. */
+export const MAJOR_WORKS: readonly FacilityId[] = ["solar_array", "battery_bank", "generator", "power_lines"];
+/** How NPC leaders plan major works. */
+export const PLANNING = {
+  /** Materials kept back beyond a work's cost: emergencies, then a little per building already standing. */
+  reserve: 20,
+  reservePerBuilding: 2,
+  /** Extra a settlement with other priorities wants in hand before it spends on major works. */
+  surplusMaterials: 40,
+  surplusParts: 8,
+  /** Tools kept back beyond a work's cost. */
+  partsReserve: 4,
+  /** A leader needs this much understanding (knowledge attribute) to put a plan forward. */
+  competence: 45,
+  /** Years before the same work is put forward again after a no, or after it could not be paid for. */
+  afterRejected: 6,
+  afterFailed: 3,
+  /** Years before a settlement that has settled on a direction reconsiders it, and years of hunger before it must. */
+  directionYears: 20,
+  crisisYears: 3,
+  /** Night power a settlement needs for the world to count as having light after dark. */
+  nightPower: 0.5,
+} as const;
 
 /** A season of relevant work is one point of practice; this many make a specialty. */
 export const PRACTICE = { threshold: 8 } as const;

@@ -2,8 +2,10 @@ import {
   CLAIM_SEED,
   INDUSTRY,
   MECHANICAL,
-  NPC_BUILD_BASE,
-  NPC_BUILD_PEOPLE,
+  ADULT_AGE,
+  ENGINEER_TENDS,
+  MAJOR_WORKS,
+  PLANNING,
   PRIORITY_INFO,
   CLAIM_YIELD,
   LAND,
@@ -83,8 +85,6 @@ export function infrastructure(ctx: TickContext): void {
     if (residents(st, s.id).length < 8 || Object.keys(s.building ?? {}).length > 0) continue;
     const features = LOCATION_BY_ID[s.locationId]?.features ?? [];
     const order = PRIORITY_ORDER(s);
-    const standing = Object.values(s.facilities ?? {}).filter((c) => (c ?? 0) >= FACILITY_WORKING).length;
-    const canAddNew = s.priority !== "hoard" && standing < NPC_BUILD_BASE + Math.floor(residents(st, s.id).length / NPC_BUILD_PEOPLE);
     for (const [f, info] of order) {
       if (!st.technologies.includes(info.tech) || (info.needs && !features.includes(info.needs))) continue;
       if (info.after && facilityLevel(s, info.after) <= 0) continue; // a generator needs a water mill to turn it
@@ -94,11 +94,12 @@ export function infrastructure(ctx: TickContext): void {
       // Worn below 60: repair it (half the cost). Missing or broken: build it.
       const repair = cond >= FACILITY_WORKING && cond < 60;
       if (cond >= FACILITY_WORKING && !repair) continue;
-      // Past what its people can tend, or when it has chosen not to build, a settlement only keeps up what it has.
-      if (!repair && !canAddNew) continue;
+      // Major works are decided together (systems/capital.ts); a settlement only keeps up the ones it has.
+      if (!repair && MAJOR_WORKS.includes(f)) continue;
+      // Beyond what its people can tend or afford, or when it has chosen not to build, it only keeps up what it has.
+      if (!repair && whyNotBuild(st, s, f) !== null) continue;
       const cost = repair ? Math.ceil(info.materials / 2) : info.materials;
-      // Keep enough for a year of upkeep and emergencies, except for the camps and mines that will make more.
-      if (s.resources.materials < cost + (info.deposit ? 0 : 20)) continue;
+      if (repair && s.resources.materials < cost + 20) continue;
       const parts = repair ? Math.ceil((info.parts ?? 0) / 2) : info.parts ?? 0;
       if (good(s, "parts") < parts) continue;
       if (parts) addGood(s, "parts", -parts);
@@ -123,6 +124,41 @@ export function infrastructure(ctx: TickContext): void {
   }
 }
 
+export type BuildConstraint = "hoard" | "engineers" | "materials" | "parts" | "trade";
+
+/** Machines standing or going up. */
+export function machineCount(s: Settlement): number {
+  const up = Object.entries(s.facilities ?? {}).filter(([f, c]) => (c ?? 0) >= FACILITY_WORKING && MECHANICAL.includes(f as FacilityId)).map(([f]) => f);
+  return new Set([...up, ...Object.keys(s.building ?? {}).filter((f) => MECHANICAL.includes(f as FacilityId))]).size;
+}
+
+/** Materials a settlement holds back before spending on something new. */
+export function buildReserve(s: Settlement): number {
+  return PLANNING.reserve + PLANNING.reservePerBuilding * Object.values(s.facilities ?? {}).filter((c) => (c ?? 0) >= FACILITY_WORKING).length;
+}
+
+/**
+ * What stops a settlement's own people adding this building: the same physical
+ * limits for every settlement. Players can choose to spend the reserve; nobody
+ * can spend what is not there.
+ */
+export function whyNotBuild(st: WorldState, s: Settlement, f: FacilityId): BuildConstraint | null {
+  if (s.priority === "hoard") return "hoard";
+  const info = INFRASTRUCTURE[f];
+  if (!info) return null;
+  if (MECHANICAL.includes(f)) {
+    const engineers = residents(st, s.id).filter((c) => c.profession === "Engineer" && characterAge(st, c) >= ADULT_AGE).length;
+    if (machineCount(s) >= engineers * ENGINEER_TENDS) return "engineers";
+  }
+  // A place that has set its mind elsewhere gets tools from a neighbour who makes them, rather than building its own forge.
+  if (s.priority && !PRIORITY_INFO[s.priority].builds.includes(f) && (f === "forge" || f === "workshop" || f === "mine")
+    && activeSettlements(st).some((o) => o.id !== s.id && facilityLevel(o, f) > 0 && (st.tensions?.[[o.id, s.id].sort().join("|")] ?? 0) < 50)) return "trade";
+  // Camps and mines make more of what they cost, so they do not wait for a reserve.
+  if (s.resources.materials < info.materials + (info.deposit ? 0 : buildReserve(s))) return "materials";
+  if (good(s, "parts") < (info.parts ?? 0)) return "parts";
+  return null;
+}
+
 /** What a settlement builds next: what it has chosen to put first, then the usual order. */
 function PRIORITY_ORDER(s: Settlement): [FacilityId, NonNullable<(typeof INFRASTRUCTURE)[FacilityId]>][] {
   const all = Object.entries(INFRASTRUCTURE) as [FacilityId, NonNullable<(typeof INFRASTRUCTURE)[FacilityId]>][];
@@ -138,7 +174,10 @@ export function hasLaw(s: Settlement | undefined, law: LawId): boolean {
 export function facilities(ctx: TickContext): void {
   const st = ctx.state;
   for (const s of activeSettlements(st)) {
-    for (const [id, cond] of Object.entries(s.facilities ?? {}) as [FacilityId, number][]) {
+    // When there is not enough for everything, what the settlement has put first is seen to first.
+    const first = s.priority ? PRIORITY_INFO[s.priority].builds : [];
+    const entries = (Object.entries(s.facilities ?? {}) as [FacilityId, number][]).sort(([a], [b]) => Number(first.includes(b)) - Number(first.includes(a)));
+    for (const [id, cond] of entries) {
       // Fields are kept up by the people who farm them, not with materials.
       if (id === "fields") { s.facilities![id] = Math.min(100, cond + LEGACY.mend); continue; }
       const paid = s.resources.materials >= LEGACY.upkeep;
